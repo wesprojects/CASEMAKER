@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.38 -->
+<!-- BUILD_VERSION: 2026-08-22.40 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -294,8 +294,8 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row four">
         <label>First hole from bottom of side<input id="pClear" type="number" step="0.0001" value="6.4370" data-mm="1"></label>
         <label>Clearance at top / fixed shelves<input id="pTop" type="number" step="0.0625" value="3" data-mm="1"></label>
-        <label>Front row from front<input id="pFront" type="number" step="0.0001" value="2.0472" data-mm="1"></label>
-        <label>Back row from back<input id="pBack" type="number" step="0.0001" value="2.6772" data-mm="1"></label>
+        <label>Front row forward of back row<input id="pFront" type="number" step="0.0001" value="2.0472" data-mm="1"></label>
+        <label>Back row from back edge<input id="pBack" type="number" step="0.0001" value="2.6772" data-mm="1"></label>
         <label>Skip openings<input id="pSkip" placeholder="e.g. 1"></label>
       </div>
     </details>
@@ -398,7 +398,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.38";
+const BUILD_VERSION = "2026-08-22.40";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -492,7 +492,7 @@ function recvLine(p,axis,pos,mt,j,r,camSide){
 const F={
   groove(p,{stop=0}={}){ const gw=num('gW'),gz=num('gZ'),y=p.d-num('gSet'),L=`GROOVE_W${gw}_Z${gz}`; addLine(p,L,stop,y-gw,p.w-stop,y-gw); addLine(p,L,stop,y,p.w-stop,y); },
   pins(p,members,shelfZ){ if(!on('pOn')) return; const dia=num('pDia'),z=num('pZ'),pitch=num('pPitch'),cl=num('pClear'),clTop=num('pTop'),rowsN=sel('pRows');
-    const skip=$('pSkip').value.split(',').map(s=>parseInt(s)).filter(v=>!isNaN(v)); const rows=[num('pFront'),p.d-num('pBack')],L=lay('SHELFPIN',dia,z); const m=[...members].sort((a,b)=>a.y0-b.y0);
+    const skip=$('pSkip').value.split(',').map(s=>parseInt(s)).filter(v=>!isNaN(v)); const rows=[p.d-num('pBack')-num('pFront'),p.d-num('pBack')],L=lay('SHELFPIN',dia,z); const m=[...members].sort((a,b)=>a.y0-b.y0);   // both rows set from the BACK edge: back row, then the front row forward of it
     const seen=new Set();
     for(let i=0;i<m.length-1;i++){ if(skip.includes(i+1)) continue; const a=m[i].y0+m[i].t+(i===0?0:clTop),b=m[i+1].y0-clTop; if(b<=a) continue;
       let xs=[]; if(rowsN==='all'||!shelfZ){ for(let x=cl;x<=b+1e-6;x+=pitch) if(x>=a-1e-6) xs.push(x); }   // one grid from the side's bottom edge: first hole at the set height, then every pitch
@@ -956,7 +956,7 @@ function isoCanvas(boxes,opts){
       ctx.beginPath(); ctx.moveTo(z[0],z[1]); ctx.lineTo(z[0]-4*ss,z[1]-8*ss); ctx.lineTo(z[0]+4*ss,z[1]-8*ss); ctx.closePath(); ctx.fill(); }
     if(b.label!==undefined){ const thinX=M[0]-m[0]<M[2]-m[2]&&M[0]-m[0]<M[1]-m[1]; const c=S(thinX?[M[0],(m[1]+M[1])/2,(m[2]+M[2])/2]:[(m[0]+M[0])/2,m[1],(m[2]+M[2])/2]);
       ctx.beginPath(); ctx.arc(c[0],c[1],7*ss,0,Math.PI*2); ctx.fillStyle=dark?'#0f1115':'#fff'; ctx.fill(); ctx.stroke(); ctx.fillStyle=`rgb(${ink})`; ctx.fillText(String(b.label),c[0],c[1]+0.5*ss); } });
-  cv.style.width='100%'; cv.style.height='auto'; cv.style.display='block'; return cv;
+  cv.style.width='100%'; cv.style.height='auto'; cv.style.display='block'; cv.__S=p=>S(p); return cv;
 }
 function isoSVG(boxes,opts){ const cv=isoCanvas(boxes,opts); if(opts&&opts.dark) return cv; return `<img src="${cv.toDataURL('image/png')}" width="${opts.w||420}" height="${opts.h||300}" style="max-width:100%;height:auto">`; }
 /* ================= minimal PDF writer (Helvetica text, vector shapes, JPEG images) ================= */
@@ -1014,31 +1014,66 @@ function hwIcon(pdf,key,cx,cy){ const s=1; // small vector pictograms, ~40 pt wi
   else if(key==='glide'){ pdf.rect(cx-2.5,cy-13,5,13,{fill:1}); for(let i=-11;i<=-3;i+=3) pdf.line(cx-2.5,cy+i,cx+2.5,cy+i,0.4); pdf.poly([[cx-12,cy],[cx+12,cy],[cx+12,cy+4],[cx-12,cy+4]],{fill:1}); pdf.line(cx-12,cy+2,cx+12,cy+2,0.4); }
   else if(key==='sticker'){ pdf.circle(cx,cy,11,{fill:1}); pdf.circle(cx,cy,11,{lw:0.4,fill:null}); pdf.poly([[cx+4,cy+10.3],[cx+10.3,cy+4],[cx+8,cy+8]],{fill:0.85}); }
 }
-/* joint detail bubble: real rendered corner with the hardware, OTG style */
-function detailCanvas(){
-  const boxes=[
-    {min:[0,0,0],max:[4.2,3.2,1]},                                 // panel corner, cam face up
-    {min:[0.98,1.0,1.0],max:[1.62,1.64,1.34],label:'B'},           // cam nut proud of the face
-    {min:[-2.5,1.12,0.47],max:[-0.5,1.52,0.87],label:'A'},         // cam pin exploded out of the end, on the nut line
-    {min:[-2.2,2.25,0.3],max:[-0.65,2.65,0.7],label:'C'}           // dowel exploded at the next station, mid-thickness
-  ];
-  const holes=[
-    {c:[1.3,1.32,1.0],e1:[0.295,0,0],e2:[0,0.295,0]},              // nut bore in the face
-    {c:[0,1.32,0.685],e1:[0,0.16,0],e2:[0,0,0.16]},                // pin hole in the end edge
-    {c:[0,2.45,0.5],e1:[0,0.16,0],e2:[0,0,0.16]}                   // dowel hole in the end edge
-  ];
-  const cv=isoCanvas(boxes,{w:240,h:240,ss:3,dark:false,yaw:32,el:26,holes});
+/* joint detail bubble: crop of the ACTUAL product corner, hardware exploded on its insertion axis, OTG style */
+function hardwareMarks(panel){
+  const f=panel.frame; if(!f) return null;
+  const cam=panel.holes.find(h=>h.type==='CAM'); if(!cam) return null;
+  const near=(a,b)=>Math.abs(a-b)<0.75;
+  const pin=panel.holes.find(h=>h.edge&&h.type==='PIN'&&(near(h.x,cam.x)||near(h.y,cam.y)));
+  const dow=panel.holes.find(h=>h.edge&&h.type==='DOWEL');
+  const world=(x,y,axv)=>[0,1,2].map(i=>i===f.ax?axv:f.o[i]+x*f.ux[i]+y*f.uy[i]);
+  const out=Math.sign(f.shown-f.opp)||1;
+  const camC=world(cam.x,cam.y,f.shown);
+  const camDir=[0,0,0]; camDir[f.ax]=out;
+  const edgeDir=h=>{ const d=[0,0,0]; if(h.x<0.01) for(let i=0;i<3;i++) d[i]=-f.ux[i]; else if(Math.abs(h.x-panel.w)<0.01) for(let i=0;i<3;i++) d[i]=f.ux[i]; else if(h.y<0.01) for(let i=0;i<3;i++) d[i]=-f.uy[i]; else for(let i=0;i<3;i++) d[i]=f.uy[i]; return d; };
+  const edgeWorld=h=>{ const axv=f.shown - out*(h.zo!==undefined?h.zo:panel.t/2); return world(h.x,h.y,axv); };
+  const off=(c,d,t)=>c.map((v,i)=>v+d[i]*t);
+  const boxAt=(c,d,len,sq)=>{ const half=[sq/2,sq/2,sq/2]; for(let i=0;i<3;i++) if(Math.abs(d[i])>0.5) half[i]=len/2; return {min:c.map((v,i)=>v-half[i]),max:c.map((v,i)=>v+half[i])}; };
+  const pieces=[];   // {boxes, hole (world), tip (world, near end of piece), letter}
+  { const c=camC, d=camDir; pieces.push({letter:'B',hole:c,tip:off(c,d,1.1),boxes:[boxAt(off(c,d,1.45),d,0.5,0.72)]}); }          // cam nut + arrow post
+  { const c=camC, d=camDir; pieces.push({letter:'E',hole:off(c,d,0.4),tip:off(c,d,2.55),boxes:[boxAt(off(c,d,2.75),d,0.1,0.85)]}); }                              // cover sticker disc
+  if(pin){ const c=edgeWorld(pin), d=edgeDir(pin); pieces.push({letter:'A',hole:c,tip:off(c,d,0.8),boxes:[boxAt(off(c,d,1.0),d,0.45,0.22),boxAt(off(c,d,1.62),d,0.8,0.3),boxAt(off(c,d,2.12),d,0.2,0.4)]}); }   // pin: tip, shaft, head
+  if(dow){ const c=edgeWorld(dow), d=edgeDir(dow); pieces.push({letter:'C',hole:c,tip:off(c,d,0.8),boxes:[boxAt(off(c,d,1.45),d,1.3,0.3)]}); }
+  return {pieces,center:camC,edge:pin?edgeWorld(pin):camC,camDir};
+}
+function detailCanvas(panelName,flat,tx){
+  const p=panels.find(q=>q.name===panelName||q.name.startsWith(panelName)); if(!p||!p.box||!p.box.min) return null;
+  const hm=hardwareMarks(p); if(!hm) return null;
+  const ctr=hm.center.map((v,i)=>(v+hm.edge[i])/2), R=4.4;
+  const cube={min:ctr.map(v=>v-R),max:ctr.map(v=>v+R)};
+  const clip=bb=>{ const mn=bb.min.map((v,i)=>Math.max(v,cube.min[i])), mx=bb.max.map((v,i)=>Math.min(v,cube.max[i])); return mx.every((v,i)=>v-mn[i]>1e-4)?{min:mn,max:mx}:null; };
+  const T=flat?tx:(bb=>bb);
+  const scene=[];   // the subject panel's corner only, like the OTG details
+  (p.boxes||[p.box]).forEach(bb=>{ const c=clip({min:bb.min,max:bb.max}); if(c) scene.push(T(c)); });
+  hm.pieces.forEach(pc=>pc.boxes.forEach(bb=>scene.push(T(bb))));
+  // aim the camera at the cam face so nut + sticker are in view
+  const Td=d=>{ const o=T({min:[0,0,0],max:[0,0,0]}).min, q=T({min:d,max:d}).min; return [q[0]-o[0],q[1]-o[1],q[2]-o[2]]; };
+  const cd=Td(hm.camDir); const ax=[Math.abs(cd[0]),Math.abs(cd[1]),Math.abs(cd[2])].indexOf(Math.max(Math.abs(cd[0]),Math.abs(cd[1]),Math.abs(cd[2])));
+  let yaw=-24,el=26;
+  if(ax===0) { yaw=cd[0]>0?-58:58; el=18; }
+  else if(ax===1) { yaw=cd[1]>0?158:-22; el=18; }
+  else { el=cd[2]>0?42:-40; }
+  const cv=isoCanvas(scene,{w:250,h:250,ss:3,dark:false,yaw,el,holes:[]});
   const c2=document.createElement('canvas'); c2.width=cv.width; c2.height=cv.height; const x=c2.getContext('2d');
   x.fillStyle='#fff'; x.fillRect(0,0,c2.width,c2.height); x.drawImage(cv,0,0);
   x.globalCompositeOperation='destination-in'; x.beginPath(); x.arc(c2.width/2,c2.height/2,c2.width/2-2,0,Math.PI*2); x.fill();
   x.globalCompositeOperation='destination-over'; x.fillStyle='#fff'; x.fillRect(0,0,c2.width,c2.height);
-  return c2;
+  const pt=w=>{ const q=cv.__S(w.map ? T({min:w,max:w}).min : w); return [q[0]/cv.width,q[1]/cv.height]; };
+  const marks=hm.pieces.map(pc=>({letter:pc.letter,hole:pt(pc.hole),tip:pt(pc.tip)}));
+  return {img:c2,marks};
 }
-let detailImg=null;
-function jointDetail(pdf,cx,cy,r,letter){
-  if(!detailImg) detailImg=detailCanvas();
-  pdf.image(detailImg,cx-r,cy-r,2*r,2*r);
+function jointDetail(pdf,cx,cy,r,letter,flat,tx){
+  const src={a:'BOTTOM',b:'BACK PANEL',c:'TOP'}[letter]||'BOTTOM';
+  const d=detailCanvas(src,flat,tx); if(!d) return;
+  pdf.image(d.img,cx-r,cy-r,2*r,2*r);
   pdf.circle(cx,cy,r,{lw:1.2});
+  const X=nx=>cx-r+nx*2*r, Y=ny=>cy-r+ny*2*r;
+  d.marks.forEach(mk=>{ const x1=X(mk.tip[0]),y1=Y(mk.tip[1]),x2=X(mk.hole[0]),y2=Y(mk.hole[1]);
+    const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
+    pdf.line(x1,y1,x2-ux*2,y2-uy*2,0.7,'2 2');
+    pdf.poly([[x2,y2],[x2-ux*4-uy*2,y2-uy*4+ux*2],[x2-ux*4+uy*2,y2-uy*4-ux*2]],{fill:0});
+    const st=(mk.letter==='E'?1:mk.letter==='C'?-1:0)*7; const lx=x1-ux*9-uy*st, ly=y1-uy*9+ux*st; pdf.circle(lx,ly-2.6,5.2,{fill:1,stroke:false}); pdf.text(lx,ly,mk.letter,8.5,true,'center');
+  });
   pdf.text(cx+r*0.45,cy+r*0.92,letter,r*0.5,true);
 }
 async function buildInstructions(){
@@ -1052,17 +1087,17 @@ async function buildInstructions(){
   const L=find('LEFT SIDE'),R=find('RIGHT SIDE'),B=find('BOTTOM'),BK=find('BACK PANEL'),SH=find('SHELF'),TP=find('TOP'),AD=find('ADJ SHELF'),DR=find('DOOR'),KB=find('KICK BOARD');
   const kbFixed=KB.filter(it=>it.p.holes.length), used=new Set(), plan=[];
   const step=(text,items,detail,flat)=>{ items=items.filter(Boolean); if(!items.length) return; items.forEach(i=>used.add(i)); plan.push({text,items:[...items],all:[...used],detail,flat}); };
-  // real process: build lying on the left side (parts press on along the pin axis), then stand the unit up for the top
-  step('Lay the LEFT SIDE flat, inside face up. Screw the cam pins (A) into its face holes and tap the dowels (C) into theirs. Stand the kick board, bottom and any fixed shelf onto the pins and turn each cam nut (B) a quarter turn to lock.',[...L,...kbFixed,...B,...SH],'a',true);
-  step('Press the BACK PANEL down over the pins in the side and panel edges. Lock its cam nuts.',BK,'b',true);
-  step('Press the RIGHT SIDE down onto the pins of the bottom, shelves, kick board and back panel. Lock every cam nut you can reach.',R,'',true);
-  step('Stand the unit upright. Lower the TOP onto the pins in the side and back-panel top edges and lock its cam nuts.',TP,'c',false);
-  step('Hang the doors and adjust the hinges.',DR,'',false);
+  // real process: build lying on the RIGHT side (parts press on along the pin axis), stand up, then the top
+  step('Lay the RIGHT SIDE flat, inside face up. Screw the cam pins (A) into its face holes and tap the dowels (C) into theirs. Stand the kick board, bottom and any fixed shelf onto the pins and turn each cam nut (B) a quarter turn to lock.',[...R,...kbFixed,...B,...SH],'a',true),
+  step('Press the BACK PANEL down over the pins in the side and panel edges. Lock its cam nuts.',BK,'b',true),
+  step('Press the LEFT SIDE down onto the pins of the bottom, shelves, kick board and back panel. Lock every cam nut you can reach.',L,'',true),
+  step('Stand the unit upright. Lower the TOP onto the pins in the side and back-panel top edges and lock its cam nuts.',TP,'c',false),
+  step('Hang the doors and adjust the hinges.',DR,'',false),
   step('Tilt the unit and thread the glides (D) into the side bottom edges. Set the adjustable shelves where you want them. Press the cover stickers (E) over the cam nuts.',[...KB.filter(it=>!kbFixed.includes(it)),...AD],'',false);
   const rest=numbered.filter(it=>!used.has(it)); if(rest.length) step('Fit the remaining parts.',rest,'',false);
-  // lay-flat transform: rotate the case onto its left side (about Y): X' = H − z, Y' = y, Z' = x
-  const allB=numbered.flatMap(boxesOf); const caseH=Math.max(...allB.map(bb=>bb.max[2]),1);
-  const flatBox=bb=>({...bb,min:[caseH-bb.max[2],bb.min[1],bb.min[0]],max:[caseH-bb.min[2],bb.max[1],bb.max[0]]});
+  // lay-flat transform: rotate onto the RIGHT side (about Y): X' = z, Y' = y, Z' = W − x  (proper rotation, floor end at the left)
+  const allB=numbered.flatMap(boxesOf); const caseW=Math.max(...allB.map(bb=>bb.max[0]),1);
+  const flatBox=bb=>({...bb,min:[bb.min[2],bb.min[1],caseW-bb.max[0]],max:[bb.max[2],bb.max[1],caseW-bb.min[0]]});
   const lift=Math.max(2,(num('cH')||40)*0.08);
   const stepsPerPage=6; const totalPages=1+Math.ceil(plan.length/stepsPerPage);
   const header=(pg)=>{ pdf.page(); const lh=34, lw=lh*logo.width/logo.height; pdf.image(logo,M,M,lw,lh);
@@ -1093,7 +1128,7 @@ async function buildInstructions(){
       const prev=s.all.filter(it=>!s.items.includes(it)).flatMap(boxesOf).map(bb=>({...tx(bb),label:undefined}));
       const curB=s.items.flatMap(boxesOf).map(bb=>({...tx(bb),hi:true,dx:i===0?[0,0,0]:[0,0,lift]}));
       const cv=whiteCanvas(isoCanvas([...prev,...curB],{w:Math.round(figW),h:Math.round(figH),dark:false,ss:3})); pdf.image(cv,cx+12,cy+30,figW,figH); }
-    if(s.detail) jointDetail(pdf,cx+cellW-46,cy+26+figH/2,34,s.detail);
+    if(s.detail) jointDetail(pdf,cx+cellW-46,cy+26+figH/2,34,s.detail,s.flat,flatBox);
     // wrapped text
     const words=s.text.split(' '); const lines=[]; let ln=''; words.forEach(w=>{ const t=ln?ln+' '+w:w; if(pdf.width(t,8)>cellW-24){lines.push(ln);ln=w;} else ln=t; }); lines.push(ln);
     let ty=cy+figH+40; lines.forEach(l=>{ pdf.text(cx+12,ty,l,8); ty+=10; });
