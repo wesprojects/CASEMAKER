@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.36 -->
+<!-- BUILD_VERSION: 2026-08-22.38 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -398,7 +398,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.36";
+const BUILD_VERSION = "2026-08-22.38";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -1014,17 +1014,32 @@ function hwIcon(pdf,key,cx,cy){ const s=1; // small vector pictograms, ~40 pt wi
   else if(key==='glide'){ pdf.rect(cx-2.5,cy-13,5,13,{fill:1}); for(let i=-11;i<=-3;i+=3) pdf.line(cx-2.5,cy+i,cx+2.5,cy+i,0.4); pdf.poly([[cx-12,cy],[cx+12,cy],[cx+12,cy+4],[cx-12,cy+4]],{fill:1}); pdf.line(cx-12,cy+2,cx+12,cy+2,0.4); }
   else if(key==='sticker'){ pdf.circle(cx,cy,11,{fill:1}); pdf.circle(cx,cy,11,{lw:0.4,fill:null}); pdf.poly([[cx+4,cy+10.3],[cx+10.3,cy+4],[cx+8,cy+8]],{fill:0.85}); }
 }
+/* joint detail bubble: real rendered corner with the hardware, OTG style */
+function detailCanvas(){
+  const boxes=[
+    {min:[0,0,0],max:[4.2,3.2,1]},                                 // panel corner, cam face up
+    {min:[0.98,1.0,1.0],max:[1.62,1.64,1.34],label:'B'},           // cam nut proud of the face
+    {min:[-2.5,1.12,0.47],max:[-0.5,1.52,0.87],label:'A'},         // cam pin exploded out of the end, on the nut line
+    {min:[-2.2,2.25,0.3],max:[-0.65,2.65,0.7],label:'C'}           // dowel exploded at the next station, mid-thickness
+  ];
+  const holes=[
+    {c:[1.3,1.32,1.0],e1:[0.295,0,0],e2:[0,0.295,0]},              // nut bore in the face
+    {c:[0,1.32,0.685],e1:[0,0.16,0],e2:[0,0,0.16]},                // pin hole in the end edge
+    {c:[0,2.45,0.5],e1:[0,0.16,0],e2:[0,0,0.16]}                   // dowel hole in the end edge
+  ];
+  const cv=isoCanvas(boxes,{w:240,h:240,ss:3,dark:false,yaw:32,el:26,holes});
+  const c2=document.createElement('canvas'); c2.width=cv.width; c2.height=cv.height; const x=c2.getContext('2d');
+  x.fillStyle='#fff'; x.fillRect(0,0,c2.width,c2.height); x.drawImage(cv,0,0);
+  x.globalCompositeOperation='destination-in'; x.beginPath(); x.arc(c2.width/2,c2.height/2,c2.width/2-2,0,Math.PI*2); x.fill();
+  x.globalCompositeOperation='destination-over'; x.fillStyle='#fff'; x.fillRect(0,0,c2.width,c2.height);
+  return c2;
+}
+let detailImg=null;
 function jointDetail(pdf,cx,cy,r,letter){
-  pdf.circle(cx,cy,r,{lw:1.1}); pdf.circle(cx,cy,r-0.01,{fill:1,stroke:false}); pdf.circle(cx,cy,r,{lw:1.1});
-  const k=r/70; const P=(x,y)=>[cx+x*k,cy+y*k];
-  // panel slab with cam nut, pin and dowel entering the edge
-  pdf.poly([P(-40,10),P(20,-20),P(52,0),P(-8,30)],{fill:1}); pdf.poly([P(-40,10),P(-8,30),P(-8,42),P(-40,22)],{fill:0.93}); pdf.poly([P(-8,30),P(52,0),P(52,12),P(-8,42)],{fill:0.85});
-  pdf.circle(...P(18,2),8*k,{fill:1}); pdf.circle(...P(18,2),2.5*k,{fill:1}); pdf.line(...P(16,2),...P(20,2),0.6);
-  pdf.text(...P(30,-12),'B',11*k*1.4,true);
-  const a=-0.5; const rot=(x,y,ox,oy)=>[cx+(ox+x*Math.cos(a)-y*Math.sin(a))*k, cy+(oy+x*Math.sin(a)+y*Math.cos(a))*k];
-  pdf.poly([rot(0,-3,-38,32),rot(22,-3,-38,32),rot(22,3,-38,32),rot(0,3,-38,32)],{fill:1}); pdf.circle(...rot(25,0,-38,32),3*k,{fill:1}); pdf.text(...P(-56,22),'A',11*k*1.4,true);
-  pdf.poly([rot(0,-2.5,12,48),rot(20,-2.5,12,48),rot(20,2.5,12,48),rot(0,2.5,12,48)],{fill:1}); pdf.text(...P(36,58),'C',11*k*1.4,true);
-  pdf.text(cx-r*0.62,cy+r*0.82,letter,r*0.5,true);
+  if(!detailImg) detailImg=detailCanvas();
+  pdf.image(detailImg,cx-r,cy-r,2*r,2*r);
+  pdf.circle(cx,cy,r,{lw:1.2});
+  pdf.text(cx+r*0.45,cy+r*0.92,letter,r*0.5,true);
 }
 async function buildInstructions(){
   if(!panels.length) return;
@@ -1036,16 +1051,20 @@ async function buildInstructions(){
   const find=n=>numbered.filter(it=>it.p.name===n||it.p.name.startsWith(n));
   const L=find('LEFT SIDE'),R=find('RIGHT SIDE'),B=find('BOTTOM'),BK=find('BACK PANEL'),SH=find('SHELF'),TP=find('TOP'),AD=find('ADJ SHELF'),DR=find('DOOR'),KB=find('KICK BOARD');
   const kbFixed=KB.filter(it=>it.p.holes.length), used=new Set(), plan=[];
-  const step=(text,items,detail)=>{ items=items.filter(Boolean); if(!items.length) return; items.forEach(i=>used.add(i)); plan.push({text,items:[...items],all:[...used],detail}); };
-  step('Lay the left side inside face up. Insert the cam pins (A) and dowels (C). Fit the kick board, bottom and any fixed shelf onto the pins and turn each cam nut (B) a quarter turn to lock.',[...L,...kbFixed,...B,...SH],'a');
-  step('Fit the back panel onto its pins and dowels and lock the cam nuts.',BK,'b');
-  step('Fit the right side onto the pins and lock all cam nuts.',R,'');
-  step('Lower the top onto the pins in the sides and back panel and lock the cam nuts.',TP,'c');
-  step('Hang the doors and adjust the hinges.',DR,'');
-  step('Stand the unit up and thread in the glides (D). Set the adjustable shelves at the height you want. Apply the cover stickers (E) over the cam nuts.',[...KB.filter(it=>!kbFixed.includes(it)),...AD],'');
-  const rest=numbered.filter(it=>!used.has(it)); if(rest.length) step('Fit the remaining parts.',rest,'');
+  const step=(text,items,detail,flat)=>{ items=items.filter(Boolean); if(!items.length) return; items.forEach(i=>used.add(i)); plan.push({text,items:[...items],all:[...used],detail,flat}); };
+  // real process: build lying on the left side (parts press on along the pin axis), then stand the unit up for the top
+  step('Lay the LEFT SIDE flat, inside face up. Screw the cam pins (A) into its face holes and tap the dowels (C) into theirs. Stand the kick board, bottom and any fixed shelf onto the pins and turn each cam nut (B) a quarter turn to lock.',[...L,...kbFixed,...B,...SH],'a',true);
+  step('Press the BACK PANEL down over the pins in the side and panel edges. Lock its cam nuts.',BK,'b',true);
+  step('Press the RIGHT SIDE down onto the pins of the bottom, shelves, kick board and back panel. Lock every cam nut you can reach.',R,'',true);
+  step('Stand the unit upright. Lower the TOP onto the pins in the side and back-panel top edges and lock its cam nuts.',TP,'c',false);
+  step('Hang the doors and adjust the hinges.',DR,'',false);
+  step('Tilt the unit and thread the glides (D) into the side bottom edges. Set the adjustable shelves where you want them. Press the cover stickers (E) over the cam nuts.',[...KB.filter(it=>!kbFixed.includes(it)),...AD],'',false);
+  const rest=numbered.filter(it=>!used.has(it)); if(rest.length) step('Fit the remaining parts.',rest,'',false);
+  // lay-flat transform: rotate the case onto its left side (about Y): X' = H − z, Y' = y, Z' = x
+  const allB=numbered.flatMap(boxesOf); const caseH=Math.max(...allB.map(bb=>bb.max[2]),1);
+  const flatBox=bb=>({...bb,min:[caseH-bb.max[2],bb.min[1],bb.min[0]],max:[caseH-bb.min[2],bb.max[1],bb.max[0]]});
   const lift=Math.max(2,(num('cH')||40)*0.08);
-  const stepsPerPage=4; const totalPages=1+Math.ceil(plan.length/stepsPerPage);
+  const stepsPerPage=6; const totalPages=1+Math.ceil(plan.length/stepsPerPage);
   const header=(pg)=>{ pdf.page(); const lh=34, lw=lh*logo.width/logo.height; pdf.image(logo,M,M,lw,lh);
     pdf.text(PW-M,M+12,'Assembly Instructions',13,true,'right'); pdf.text(PW-M,M+30,'MODEL NO.: '+modelNo,15,true,'right');
     pdf.line(M,M+44,PW-M,M+44,1.4); pdf.text(PW/2,M+64,title,18,true,'center'); pdf.text(PW-M,M+64,stamp().slice(2,4)+'/'+stamp().slice(5,7)+'-'+stamp().slice(8),8,false,'right');
@@ -1065,21 +1084,23 @@ async function buildInstructions(){
   pdf.text(M+44,py+30,'1/4 TURN CLOCKWISE TO LOCK.',7.5,true); pdf.text(M+44,py+40,'Arrow on the cam nut points toward the pin hole',7); pdf.text(M+44,py+49,'before the cam nut is pushed into the panel.',7);
   if(has3d){ const cv=whiteCanvas(isoCanvas(numbered.flatMap(boxesOf).map(b=>({...b,label:undefined})),{w:300,h:300,dark:false,ss:3})); const iw=CW-leftW, ih=iw; pdf.text(M+leftW+iw/2,y+9,'COMPLETED ASSEMBLY',9,true,'center'); pdf.image(cv,M+leftW,y+14,iw,ih); }
   // ---------- steps: 2 columns, 2 rows per page
-  const cellW=CW/2, cellH=(PH-M-8-(M+76))/2;
-  plan.forEach((s,i)=>{ const k=i%stepsPerPage; if(k===0){ header(2+Math.floor(i/stepsPerPage)); const rows=Math.min(2,Math.ceil((plan.length-i)/2)); pdf.line(M,M+76,PW-M,M+76,0.9); pdf.line(PW/2,M+76,PW/2,M+76+rows*cellH,0.9); for(let r=1;r<=rows;r++) pdf.line(M,M+76+r*cellH,PW-M,M+76+r*cellH,0.9); }
+  const cellW=CW/2, cellH=(PH-M-60-(M+76))/3;   // 3 rows of 2 → all steps on one page, notes below
+  plan.forEach((s,i)=>{ const k=i%stepsPerPage; if(k===0){ header(2+Math.floor(i/stepsPerPage)); const rows=Math.min(3,Math.ceil((plan.length-i)/2)); pdf.line(M,M+76,PW-M,M+76,0.9); pdf.line(PW/2,M+76,PW/2,M+76+rows*cellH,0.9); for(let r=1;r<=rows;r++) pdf.line(M,M+76+r*cellH,PW-M,M+76+r*cellH,0.9); }
     const cx=M+(k%2)*cellW, cy=M+76+Math.floor(k/2)*cellH;
-    pdf.text(cx+10,cy+20,'STEP '+(i+1),14,true); pdf.line(cx+10,cy+23,cx+10+pdf.width('STEP '+(i+1),14,true),cy+23,1);
-    const figW=s.detail?cellW-110:cellW-24, figH=cellH-96;
-    if(has3d){ const prev=s.all.filter(it=>!s.items.includes(it)).flatMap(boxesOf).map(b=>({...b,label:undefined})); const curB=s.items.flatMap(boxesOf).map(b=>({...b,hi:true,dx:i===0?[0,0,0]:[0,0,lift]}));
+    pdf.text(cx+10,cy+18,'STEP '+(i+1),13,true); pdf.line(cx+10,cy+21,cx+10+pdf.width('STEP '+(i+1),13,true),cy+21,1);
+    const figW=s.detail?cellW-100:cellW-24, figH=cellH-88;
+    if(has3d){ const tx=s.flat?flatBox:(bb=>bb);
+      const prev=s.all.filter(it=>!s.items.includes(it)).flatMap(boxesOf).map(bb=>({...tx(bb),label:undefined}));
+      const curB=s.items.flatMap(boxesOf).map(bb=>({...tx(bb),hi:true,dx:i===0?[0,0,0]:[0,0,lift]}));
       const cv=whiteCanvas(isoCanvas([...prev,...curB],{w:Math.round(figW),h:Math.round(figH),dark:false,ss:3})); pdf.image(cv,cx+12,cy+30,figW,figH); }
-    if(s.detail) jointDetail(pdf,cx+cellW-52,cy+30+figH/2,40,s.detail);
+    if(s.detail) jointDetail(pdf,cx+cellW-46,cy+26+figH/2,34,s.detail);
     // wrapped text
-    const words=s.text.split(' '); const lines=[]; let ln=''; words.forEach(w=>{ const t=ln?ln+' '+w:w; if(pdf.width(t,8.5)>cellW-24){lines.push(ln);ln=w;} else ln=t; }); lines.push(ln);
-    let ty=cy+figH+44; lines.forEach(l=>{ pdf.text(cx+12,ty,l,8.5); ty+=11; });
+    const words=s.text.split(' '); const lines=[]; let ln=''; words.forEach(w=>{ const t=ln?ln+' '+w:w; if(pdf.width(t,8)>cellW-24){lines.push(ln);ln=w;} else ln=t; }); lines.push(ln);
+    let ty=cy+figH+40; lines.forEach(l=>{ pdf.text(cx+12,ty,l,8); ty+=10; });
     pdf.text(cx+12,ty+2,'Parts: '+s.items.map(it=>it.n+' '+it.p.name).join(', '),7.5,false,'left',0.35); });
   // notes on last page
-  const lastRows=Math.min(2,Math.ceil(((plan.length-1)%stepsPerPage+1)/2)); const ny=Math.min(PH-M-70, M+76+lastRows*cellH+12); pdf.text(M,ny+14,'IMPORTANT NOTE:',10,true);
-  ['Assemble on a carpet or blanket to avoid scratching the panels.','Check that all parts and hardware are present before starting.','Do not fully tighten the cam nuts until the unit is completely assembled.','Two people are recommended for assembly.'].forEach((t,i)=>pdf.text(M+6,ny+27+i*10,'- '+t,8));
+  const lastRows=Math.min(3,Math.ceil(((plan.length-1)%stepsPerPage+1)/2)); const ny=Math.min(PH-M-56, M+76+lastRows*cellH+8); pdf.text(M,ny+14,'IMPORTANT NOTE:',10,true);
+  pdf.line(M,ny,PW-M,ny,0.9); ['Assemble on a carpet or blanket to avoid scratching the panels. Check that all parts and hardware are present before starting.','Do not fully tighten the cam nuts until the unit is completely assembled. Two people are recommended for assembly.'].forEach((t,i)=>pdf.text(M+6,ny+26+i*10,'- '+t,8));
   const blob=pdf.build(); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`ASSEMBLY_${modelNo}_${stamp()}.pdf`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
 $('dlInstr').onclick=buildInstructions;
