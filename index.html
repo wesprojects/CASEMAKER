@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.44 -->
+<!-- BUILD_VERSION: 2026-08-22.45 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -398,7 +398,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.44";
+const BUILD_VERSION = "2026-08-22.45";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -434,6 +434,8 @@ function parseDim(t){ t=String(t).trim().toLowerCase().replace(/["in]+$/,'').tri
   let v; const fr=t.match(/^(\d+)[\s-]+(\d+)\/(\d+)$/); const f2=t.match(/^(\d+)\/(\d+)$/);
   if(fr) v=+fr[1]+(+fr[2])/(+fr[3]); else if(f2) v=(+f2[1])/(+f2[2]); else v=parseFloat(t);
   if(isNaN(v)) return NaN; return mm? v/25.4 : v; }
+$('rPin').addEventListener('change',()=>{ if(sel('rBy')!=='pin'){ $('rBy').value='pin'; build(); } });   // picking a pin length means: position by it
+$('rEdge').addEventListener('change',()=>{ if(sel('rBy')!=='edge'){ $('rBy').value='edge'; build(); } });
 document.querySelectorAll('input[data-mm]').forEach(el=>{ el.type='text'; el.inputMode='decimal';
   el.addEventListener('change',()=>{ const v=parseDim(el.value); if(!isNaN(v)&&String(v)!==el.value){ el.value=+v.toFixed(4); build(); } }); });
 document.querySelectorAll('details summary .chk').forEach(l=>l.addEventListener('click',e=>e.stopPropagation()));
@@ -446,7 +448,7 @@ function syncVisibility(){
   document.querySelectorAll('input[data-mm]').forEach(el=>{ let u=el.parentElement.querySelector('.unit.mm'); if(!u){ u=document.createElement('span'); u.className='unit mm'; el.parentElement.appendChild(u); } const v=parseFloat(el.value); u.textContent=isNaN(v)?(el.placeholder==='auto'?`auto = ${pinEdgeDepth().toFixed(4)}" (${(pinEdgeDepth()*MM).toFixed(1)} mm)`:''):`= ${(v*MM).toFixed(2)} mm`; });
   $('ebTopTL').style.visibility=sel('ebTop')==='contrast'?'':'hidden';
   $('fBodyCL').style.visibility=sel('fBody')==='custom'?'':'hidden'; $('fEdgeCL').style.visibility=sel('fEdge')==='custom'?'':'hidden'; $('ebTopCL2').style.visibility=sel('ebTopC')==='custom'?'':'hidden';
-  $('rInsetShow').value=`${camInset().toFixed(4)} in  (${(camInset()*MM).toFixed(1)} mm)`; $('rEdge').parentElement.style.visibility=sel('rBy')==='edge'?'':'hidden'; $('hBoltEZ').placeholder='auto';
+  $('rInsetShow').value=`${camInset().toFixed(4)} in  (${(camInset()*MM).toFixed(1)} mm)`; $('rEdge').parentElement.style.opacity=sel('rBy')==='edge'?'1':'0.45'; $('rPin').parentElement.style.opacity=sel('rBy')==='pin'?'1':'0.45'; $('hBoltEZ').placeholder='auto';
   $('tkDL').style.visibility=sel('tkStyle')==='notch'?'':'hidden'; $('tkDowL').style.visibility=sel('tkStyle')==='board'?'':'hidden'; $('cBotL').style.display=sel('tkStyle')==='none'?'':'none';
 }
 
