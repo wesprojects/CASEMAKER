@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.40 -->
+<!-- BUILD_VERSION: 2026-08-22.42 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -294,7 +294,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row four">
         <label>First hole from bottom of side<input id="pClear" type="number" step="0.0001" value="6.4370" data-mm="1"></label>
         <label>Clearance at top / fixed shelves<input id="pTop" type="number" step="0.0625" value="3" data-mm="1"></label>
-        <label>Front row forward of back row<input id="pFront" type="number" step="0.0001" value="2.0472" data-mm="1"></label>
+        <label>Front row from front edge<input id="pFront" type="number" step="0.0001" value="2.0472" data-mm="1"></label>
         <label>Back row from back edge<input id="pBack" type="number" step="0.0001" value="2.6772" data-mm="1"></label>
         <label>Skip openings<input id="pSkip" placeholder="e.g. 1"></label>
       </div>
@@ -398,7 +398,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.40";
+const BUILD_VERSION = "2026-08-22.42";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -492,7 +492,7 @@ function recvLine(p,axis,pos,mt,j,r,camSide){
 const F={
   groove(p,{stop=0}={}){ const gw=num('gW'),gz=num('gZ'),y=p.d-num('gSet'),L=`GROOVE_W${gw}_Z${gz}`; addLine(p,L,stop,y-gw,p.w-stop,y-gw); addLine(p,L,stop,y,p.w-stop,y); },
   pins(p,members,shelfZ){ if(!on('pOn')) return; const dia=num('pDia'),z=num('pZ'),pitch=num('pPitch'),cl=num('pClear'),clTop=num('pTop'),rowsN=sel('pRows');
-    const skip=$('pSkip').value.split(',').map(s=>parseInt(s)).filter(v=>!isNaN(v)); const rows=[p.d-num('pBack')-num('pFront'),p.d-num('pBack')],L=lay('SHELFPIN',dia,z); const m=[...members].sort((a,b)=>a.y0-b.y0);   // both rows set from the BACK edge: back row, then the front row forward of it
+    const skip=$('pSkip').value.split(',').map(s=>parseInt(s)).filter(v=>!isNaN(v)); const rows=[num('pFront'),p.d-num('pBack')],L=lay('SHELFPIN',dia,z); const m=[...members].sort((a,b)=>a.y0-b.y0);   // front row from the FRONT edge, back row from the BACK edge
     const seen=new Set();
     for(let i=0;i<m.length-1;i++){ if(skip.includes(i+1)) continue; const a=m[i].y0+m[i].t+(i===0?0:clTop),b=m[i+1].y0-clTop; if(b<=a) continue;
       let xs=[]; if(rowsN==='all'||!shelfZ){ for(let x=cl;x<=b+1e-6;x+=pitch) if(x>=a-1e-6) xs.push(x); }   // one grid from the side's bottom edge: first hole at the set height, then every pitch
@@ -1089,8 +1089,8 @@ async function buildInstructions(){
   const step=(text,items,detail,flat)=>{ items=items.filter(Boolean); if(!items.length) return; items.forEach(i=>used.add(i)); plan.push({text,items:[...items],all:[...used],detail,flat}); };
   // real process: build lying on the RIGHT side (parts press on along the pin axis), stand up, then the top
   step('Lay the RIGHT SIDE flat, inside face up. Screw the cam pins (A) into its face holes and tap the dowels (C) into theirs. Stand the kick board, bottom and any fixed shelf onto the pins and turn each cam nut (B) a quarter turn to lock.',[...R,...kbFixed,...B,...SH],'a',true),
-  step('Press the BACK PANEL down over the pins in the side and panel edges. Lock its cam nuts.',BK,'b',true),
-  step('Press the LEFT SIDE down onto the pins of the bottom, shelves, kick board and back panel. Lock every cam nut you can reach.',L,'',true),
+  step('Press the LEFT SIDE down onto the pins of the bottom, kick board and any fixed shelf. Lock every cam nut. The carcass — both sides and bottom — is now complete.',L,'',true),
+  step('Press the BACK PANEL down into place over its pins in the sides and bottom. Lock its cam nuts.',BK,'b',true),
   step('Stand the unit upright. Lower the TOP onto the pins in the side and back-panel top edges and lock its cam nuts.',TP,'c',false),
   step('Hang the doors and adjust the hinges.',DR,'',false),
   step('Tilt the unit and thread the glides (D) into the side bottom edges. Set the adjustable shelves where you want them. Press the cover stickers (E) over the cam nuts.',[...KB.filter(it=>!kbFixed.includes(it)),...AD],'',false);
