@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.58 -->
+<!-- BUILD_VERSION: 2026-08-22.65 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -73,6 +73,8 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
   </div>
   <div class="spacer"></div>
   <span class="build" id="build"></span>
+  <button id="saveProjBtn" title="Save this project as a .casemaker file">SAVE</button>
+  <button id="loadProjBtn" title="Load a saved .casemaker project">LOAD</button><input id="projFile" type="file" accept=".casemaker,.json" style="display:none">
   <button id="homeBtn" title="Reset everything to the prototype bookcase">HOME</button>
   <button id="themeBtn" title="Toggle light / dark">☾</button>
   <div class="lockup">
@@ -101,7 +103,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Width<input id="cW" type="number" step="0.0001" value="34.65" data-mm="1"></label>
         <label>Height<input id="cH" type="number" step="0.0001" value="47.24" data-mm="1"></label>
         <label>Depth<input id="cD" type="number" step="0.0001" value="13.98" data-mm="1"></label>
-        <label>Stock thickness<input id="cT" type="number" step="0.0001" value="0.98" data-mm="1"></label>
+        <label>Stock thickness<input id="cT" type="number" step="0.0001" value="1.015" data-mm="1"></label>
       </div>
     </div>
 
@@ -151,6 +153,8 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <summary>CARCASS</summary>
       <div class="row three">
         <label>Top<select id="ptTop"><option value="over" selected>Over sides</option><option value="between">Between sides</option><option value="none">None</option></select></label>
+        <label id="ptTopFitL">Top over sides<select id="ptTopFit"><option value="flush">Flush with sides</option><option value="wider" selected>Wider (overhang)</option></select></label>
+        <label id="cTopOverL">Overhang per end<input id="cTopOver" type="number" step="0.0001" value="0.0394" data-mm="1"><span class="unit">each end · front and back stay flush</span></label>
         <label>Bottom<select id="ptBottom"><option value="between" selected>Between sides</option><option value="none">None</option></select></label>
         <label id="cBotL" style="display:none">Bottom raised off floor<input id="cBot" type="number" step="0.0625" value="0" data-mm="1"></label>
       </div>
@@ -219,12 +223,11 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Dowels between each pair of cams<select id="rDowels"><option selected>1</option><option>2</option></select></label>
       </div>
       <div class="row three">
-        <label>Position cams by<select id="rBy"><option value="edge" selected>Hole edge distance</option><option value="pin">Pin length (B)</option></select></label>
-        <label>Cam pin length (B)<select id="rPin"><option value="0.9449">0.9449" (24 mm)</option><option value="1.0236">1.0236" (26 mm)</option><option value="1.2598">1.2598" (32 mm)</option><option value="1.3386">1.3386" (34 mm)</option><option value="1.378" selected>1.3780" (35 mm)</option><option value="1.7323">1.7323" (44 mm)</option><option value="1.9685">1.9685" (50 mm)</option></select><span class="unit">edge to cam center</span></label>
-        <label id="rInsetOut">Cam center from edge<input id="rInsetShow" disabled></label>
+        <label>Cam pin length (B)<select id="rPin"><option value="0.9449">0.9449" (24 mm)</option><option value="1.0236">1.0236" (26 mm)</option><option value="1.2598">1.2598" (32 mm)</option><option value="1.3386">1.3386" (34 mm)</option><option value="1.378" selected>1.3780" (35 mm)</option><option value="1.7323">1.7323" (44 mm)</option><option value="1.9685">1.9685" (50 mm)</option></select><span class="unit">sets the cam center</span></label>
+        <label>Cam center from edge<input id="rCenter" type="number" step="0.0001" value="1.378" data-mm="1" disabled>
+        <span class="chk" style="margin-top:4px"><input id="rCustom" type="checkbox"> Custom value</span></label>
       </div>
       <div class="row three">
-        <label>Cam hole edge from panel edge<input id="rEdge" type="number" step="0.0625" value="1" data-mm="1"><span class="unit">in · hole edge, not center</span></label>
         <label>Setback from front edge<input id="rFront" type="number" step="0.0625" value="2" data-mm="1"></label>
         <label>Setback from back edge<input id="rBack" type="number" step="0.0625" value="2" data-mm="1"></label>
       </div>
@@ -249,6 +252,8 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row three">
         <label>Nut slot from nut top face<input id="hPinOff" type="number" step="0.0001" value="0.315" data-mm="1"></label>
+        <label>Pin / dowel centerline from cam face<input id="hPinCtr" type="number" step="0.0001" value="0.3875" data-mm="1"><span class="unit" id="hPinCtrNote"></span>
+        <span class="chk" style="margin-top:4px"><input id="hPinMid" type="checkbox"> Center in thickness</span></label>
       </div>
       <p class="hint">All hardware fields are inches; the mm equivalent shows under each box. Pins and dowels run at MID-THICKNESS of the joining panel. The cam nut is bored deeper than its height — bore depth = nut height + (t/2 − nut slot distance) — so its slot lines up with the mid-thickness pin. The face hole takes the 3/8" pin insert.</p>
     </details>
@@ -259,12 +264,12 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <h2>EDGE MATERIAL</h2>
     <div class="row three">
       <label>Band edges<select id="ebWhere"><option value="all" selected>All four edges</option><option value="front">Front edge only</option><option value="none">None</option></select></label>
-      <label>Band thickness<select id="ebT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787" selected>2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select></label>
+      <label>Band thickness<select id="ebT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
       <label>Premill per edge<input id="ebPre" type="number" step="0.001" value="0.020" data-mm="1"></label>
     </div>
     <div class="row three">
       <label>Side panel TOP edge<select id="ebTop"><option value="match" selected>Match body</option><option value="contrast">Contrast band</option></select></label>
-      <label id="ebTopTL">Contrast thickness<select id="ebTopT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787" selected>2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select></label>
+      <label id="ebTopTL">Contrast thickness<select id="ebTopT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
       
     </div>
     <div class="row three">
@@ -310,7 +315,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
     </details>
     <details>
-      <summary><label class="chk"><input type="checkbox" id="hgOn" checked>DOOR HINGES (35 mm cup)</label></summary>
+      <summary><label class="chk"><input type="checkbox" id="hgOn">DOOR HINGES</label></summary>
       <div class="row four">
         <label>Cup Ø<input id="hgCupD" type="number" step="0.0001" value="1.378" data-mm="1"></label>
         <label>Cup depth<input id="hgCupZ" type="number" step="0.0001" value="0.5118" data-mm="1"></label>
@@ -348,17 +353,14 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="actions">
         <button class="primary" id="dlAll">DOWNLOAD ALL PANELS (one DXF)</button>
         <button id="dlOne">THIS PANEL (DXF)</button>
-        <button id="dlCSV">HOLE LIST (CSV)</button>
-        <button id="dlEdge">EDGE HOLES (for CNC #1 generator)</button>
-        <button id="dlCut">CUT LIST (CSV)</button>
       </div>
       <div class="row three" style="margin-top:10px">
-        <label>Stock sheet<select id="nestStock"><option value="48,96">4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120" selected>5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label>Stock sheet<select id="nestStock"><option value="48,96">4 × 8 ft (48 × 96)</option><option value="60,96" selected>5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
         <label>Part spacing<input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></label>
         <label>Sheet margin<input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></label>
       </div>
       <div class="actions"><button id="dlNest">NESTED SHEETS (DXF)</button><button id="dlCNC1">CNC #1 EDGE FILES (.nc)</button></div>
-      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glide holes are left out — different bit.</p>
+      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glides come out as a separate <span class="mono">_GLIDES</span> file per panel, since they need a different bit and depth.</p>
       <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12_7</span>, <span class="mono">EDGE_PIN_D8_Z35_9</span> — decimals written with underscores, AutoCAD forbids periods in layer names). Holes drilled from the opposite face are suffixed <span class="mono">_UNDERSIDE</span> / <span class="mono">_FARFACE</span> and marked on the drawing. Panel outlines are written as single closed polylines, ready to select as one profile in CAM. Every hole also gets a POINT at its center on a matching <span class="mono">_PT</span> layer for picking drill positions in Mastercam. NESTED SHEETS lays every panel (qty included, CUT sizes, rotation allowed) onto the chosen stock, one sheet outline per sheet, holes positioned for drilling on the raw blank before edgebanding.</p>
     </details>
     <details open>
@@ -367,7 +369,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <button class="primary" id="dlInstr">DOWNLOAD ASSEMBLY INSTRUCTIONS (PDF)</button>
       </div>
       <div class="row" style="margin-top:8px">
-        <label>Spare hardware per line<input id="aiSpare" type="number" min="0" step="1" value="2"></label>
+        <label>Spare hardware per line<input id="aiSpare" type="number" min="0" step="1" value="0"></label>
         <label>Product name<input id="aiTitle" value="48&quot; Bookcase"></label>
       </div>
       <p class="hint">Letter size, hardware table, parts list, completed view and step drawings.</p>
@@ -405,7 +407,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.58";
+const BUILD_VERSION = "2026-08-22.65";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -446,8 +448,8 @@ function parseDim(t){ t=String(t).trim().toLowerCase().replace(/["in]+$/,'').tri
 document.querySelectorAll('main select').forEach(el=>{ el.autocomplete='off';
   if(![...el.options].some(o=>o.value===el.value)){ const d=[...el.options].find(o=>o.defaultSelected)||el.options[0]; el.value=d.value; } });
 document.querySelectorAll('main input').forEach(el=>el.autocomplete='off');
-$('rPin').addEventListener('change',()=>{ if(sel('rBy')!=='pin'){ $('rBy').value='pin'; build(); } });   // picking a pin length means: position by it
-$('rEdge').addEventListener('change',()=>{ if(sel('rBy')!=='edge'){ $('rBy').value='edge'; build(); } });
+$('rPin').addEventListener('change',()=>{ if(!$('rCustom').checked){ $('rCenter').value=num('rPin'); build(); } });   // pin length drives the center unless Custom value is ticked
+$('rCustom').addEventListener('change',()=>{ $('rCenter').disabled=!$('rCustom').checked; if(!$('rCustom').checked) $('rCenter').value=num('rPin'); build(); });
 document.querySelectorAll('input[data-mm]').forEach(el=>{ el.type='text'; el.inputMode='decimal';
   el.addEventListener('change',()=>{ const v=parseDim(el.value); if(!isNaN(v)&&String(v)!==el.value){ el.value=+v.toFixed(4); build(); } }); });
 document.querySelectorAll('details summary .chk').forEach(l=>l.addEventListener('click',e=>e.stopPropagation()));
@@ -460,7 +462,11 @@ function syncVisibility(){
   document.querySelectorAll('input[data-mm]').forEach(el=>{ let u=el.parentElement.querySelector('.unit.mm'); if(!u){ u=document.createElement('span'); u.className='unit mm'; el.parentElement.appendChild(u); } const v=parseFloat(el.value); u.textContent=isNaN(v)?(el.placeholder==='auto'?`auto = ${pinEdgeDepth().toFixed(4)}" (${(pinEdgeDepth()*MM).toFixed(1)} mm)`:''):`= ${(v*MM).toFixed(2)} mm`; });
   $('ebTopTL').style.visibility=sel('ebTop')==='contrast'?'':'hidden';
   $('fBodyCL').style.visibility=sel('fBody')==='custom'?'':'hidden'; $('fEdgeCL').style.visibility=sel('fEdge')==='custom'?'':'hidden'; $('ebTopCL2').style.visibility=sel('ebTopC')==='custom'?'':'hidden';
-  $('rInsetShow').value=`${camInset().toFixed(4)} in  (${(camInset()*MM).toFixed(1)} mm)`; $('rEdge').parentElement.style.opacity=sel('rBy')==='edge'?'1':'0.45'; $('rPin').parentElement.style.opacity=sel('rBy')==='pin'?'1':'0.45'; $('hBoltEZ').placeholder='auto';
+  { const over=sel('ptTop')==='over'; $('ptTopFitL').style.display=over?'':'none'; $('cTopOverL').style.display=(over&&sel('ptTopFit')==='wider')?'':'none'; }
+  { const j0=joinery(), t=num('cT'), o=j0.ctr==null?t/2:Math.min(j0.ctr,t/2);
+    $('hPinCtr').disabled=$('hPinMid').checked;
+    $('hPinCtrNote').textContent=`${$('hPinMid').checked?`centered: ${r4(o)}" · `:''}wall ${r4(o-j0.pinFD/2)}" face hole · ${r4(o-j0.dowD/2)}" edge hole · nut bore ${r4(j0.camZ+Math.max(0,o-j0.slot))}"`; }
+  if(!$('rCustom').checked) $('rCenter').value=num('rPin'); $('rCenter').disabled=!$('rCustom').checked; $('hBoltEZ').placeholder='auto';
   $('tkDL').style.visibility=sel('tkStyle')==='notch'?'':'hidden'; $('tkDowL').style.visibility=sel('tkStyle')==='board'?'':'hidden'; $('cBotL').style.display=sel('tkStyle')==='none'?'':'none';
 }
 
@@ -470,11 +476,11 @@ function orient(p,view,L,R,F,B){ p.view=view; p.edges={L,R,F,B}; return p; }
 function addHole(p,type,x,y,dia,z,layer,edge,zo){ p.holes.push({type,x:r4(x),y:r4(y),d:dia,z,layer,edge:!!edge,zo:zo!==undefined?r4(zo):undefined}); }
 function addLine(p,layer,x1,y1,x2,y2){ p.lines.push({layer,x1,y1,x2,y2}); }
 
-function camInset(){ return sel('rBy')==='pin' ? num('rPin') : num('rEdge')+num('hCamD')/2; }
+function camInset(){ return $('rCustom').checked ? num('rCenter') : num('rPin'); }   // cam center from edge: the pin length, unless Custom value is ticked
 function pinEdgeDepth(){ const v=parseFloat($('hBoltEZ').value); return isNaN(v)||v<=0 ? +(camInset()+0.1181).toFixed(4) : v; }
 function joinery(){ return {
   camD:num('hCamD'),camZ:num('hCamZ'),pinED:num('hBoltED'),pinEZ:pinEdgeDepth(),pinFD:num('hBoltFD'),pinFZ:num('hBoltFZ'),
-  dowD:num('hDowD'),dowEZ:num('hDowEZ'),dowFZ:num('hDowFZ'),slot:num('hPinOff'),inset:camInset(),camSp:Math.max(1,num('rCamSp')),
+  dowD:num('hDowD'),dowEZ:num('hDowEZ'),dowFZ:num('hDowFZ'),slot:num('hPinOff'),ctr:$('hPinMid').checked?null:num('hPinCtr'),inset:camInset(),camSp:Math.max(1,num('rCamSp')),
   pat:sel('rDowPat'),dowOff:num('rDowOff'),dowN:parseInt(sel('rDowels')),front:num('rFront'),back:num('rBack') }; }
 /* stations along a joint: r = [start,end] along the panel axis */
 function stations(L,j,r){
@@ -492,13 +498,14 @@ function stations(L,j,r){
 function buttEdge(p,edge,j,r){
   const L=(edge==='L'||edge==='R')?p.d:p.w, st=stations(L,j,r);
   const pt=(s,ins)=>edge==='L'?[ins,s]:edge==='R'?[p.w-ins,s]:edge==='F'?[s,ins]:[s,p.d-ins];
-  const mid=r4(p.t/2), camZ=r4(j.camZ+Math.max(0,mid-j.slot));   // bore past the nut height so the slot meets the mid-thickness pin
+  const mid=r4(j.ctr==null?p.t/2:Math.min(j.ctr,p.t/2)), camZ=r4(j.camZ+Math.max(0,mid-j.slot));   // bore past the nut height so the slot meets the pin line
   st.cams.forEach(s=>{const [cx,cy]=pt(s,j.inset);addHole(p,'CAM',cx,cy,j.camD,camZ,lay('CAM',j.camD,camZ));const [ex,ey]=pt(s,0);addHole(p,'PIN',ex,ey,j.pinED,j.pinEZ,lay('EDGE_PIN',j.pinED,j.pinEZ),true,mid);});
-  st.dow.forEach(s=>{const [ex,ey]=pt(s,0);addHole(p,'DOWEL',ex,ey,j.dowD,j.dowEZ,lay('EDGE_DOWEL',j.dowD,j.dowEZ),true,mid);});
+  st.dow.forEach(s=>{const [ex,ey]=pt(s,0);addHole(p,'DOWEL',ex,ey,j.dowD,j.dowEZ,lay('EDGE_DOWEL',j.dowD,j.dowEZ),true,j.dowelsOnly?r4(p.t/2):mid);});   // dowel-only joints have no cam face to reference: centered
 }
 /* camSide: which face of the butting panel carries the cam nuts — 'min' (at pos) or 'max' (at pos+mt); pins sit pinOff from that face. Undefined = mid-thickness (dowel-only joints). */
 function recvLine(p,axis,pos,mt,j,r,camSide){
-  const L=axis==='x'?p.d:p.w, st=stations(L,j,r), c=r4(pos+mt/2), pt=s=>axis==='x'?[c,s]:[s,c];   // pins and dowels run at the butting panel's mid-thickness
+  const off=j.ctr==null?mt/2:Math.min(j.ctr,mt/2), L=axis==='x'?p.d:p.w, st=stations(L,j,r),
+        c=r4(camSide==='min'?pos+off:camSide==='max'?pos+mt-off:pos+mt/2), pt=s=>axis==='x'?[c,s]:[s,c];   // pin line measured from the butting panel's cam face
   st.cams.forEach(s=>{const [x,y]=pt(s);addHole(p,'PIN',x,y,j.pinFD,j.pinFZ,lay('PIN',j.pinFD,j.pinFZ));});
   st.dow.forEach(s=>{const [x,y]=pt(s);addHole(p,'DOWEL',x,y,j.dowD,j.dowFZ,lay('DOWEL',j.dowD,j.dowFZ));});
 }
@@ -543,14 +550,15 @@ function buildCase(){
   const out=[];
   // ---- horizontal members (X along width, Y = depth, front at Y=0)
   const bx = backStyle==='full' ? j.inset + j.camD/MM : 0;   // keep back-panel cams clear of the side-joint cams at the corners
+  const topOv = (topStyle==='over'&&sel('ptTopFit')==='wider') ? Math.max(0,num('cTopOver')) : 0;   // top can hang past the sides
   members.forEach(m=>{
-    const w=m.over?W:inner, x0=m.over?0:T;
+    const ov=m.over?topOv:0, w=m.over?r4(W+2*ov):inner, x0=m.over?-ov:T;
     const dep = m.dep;
     const p=newPanel(m.name,w,dep,T,`${w}" × ${dep}" × ${T}"  ·  view: ${m.face} (cam lock face), front edge at Y=0`);
     orient(p,m.face,'LEFT END','RIGHT END','FRONT','BACK');
-    if(m.over){ recvLine(p,'x',0,T,j,undefined,'max'); recvLine(p,'x',W-T,T,j,undefined,'min'); }   // sides' cam nuts on their inside faces
+    if(m.over){ recvLine(p,'x',ov,T,j,undefined,'max'); recvLine(p,'x',r4(W-T+ov),T,j,undefined,'min'); }   // sides' cam nuts on their inside faces (shifted by any overhang)
     else { buttEdge(p,'L',j); buttEdge(p,'R',j); }
-    if(backStyle==='full'&&m.name==='TOP') recvLine(p,'y',backY,BT,j,m.over?[T+bx,W-T-bx]:[bx,inner-bx],'max');   // back panel's TOP EDGE lands on the top's underside
+    if(backStyle==='full'&&m.name==='TOP') recvLine(p,'y',backY,BT,j,m.over?[r4(T+bx+ov),r4(W-T-bx+ov)]:[bx,inner-bx],'max');   // back panel's TOP EDGE lands on the top's underside
     if(backStyle==='full'&&m.name==='BOTTOM') buttEdge(p,'B',j,[bx,inner-bx]);                                     // bottom's BACK EDGE butts the back panel: cams in the bottom, pins into the back
     if(backStyle==='groove'&&(m.name==='TOP'||m.name==='BOTTOM')&&sel('gWhere')==='all') F.groove(p);
     if(m.name==='BOTTOM'&&tk==='board') recvLine(p,'y',tkIn,T,jd,[0,inner]);   // kick dowels: same underside face as the cams
@@ -654,15 +662,19 @@ function parseDXF3D(text){
 function loadOBJ(f){ const st=$('objStatus'); st.className='status';
   const isObj=/\.obj$/i.test(f.name), isDxf=/\.dxf$/i.test(f.name);
   if(!isObj&&!isDxf){st.className='status err';st.textContent='Use OBJ (grouped) or a 3D DXF (one layer per part, solids converted to mesh). STL has no groups; STEP/SKP/DWG can\'t be read in the browser.';return;}
-  f.text().then(t=>{
+  f.text().then(t=>loadOBJText(t,f.name));
+}
+function loadOBJText(t,fname){ const st=$('objStatus'); st.className='status';
+  const isObj=/\.obj$/i.test(fname);
+  {
     if(isObj){ const g=parseOBJ(t); if(!g.length){st.className='status err';st.textContent='No groups with faces found. Make each part a group or component and export OBJ with "Export groups" on.';return;}
-      disabledJoints.clear(); partOverride.clear(); nameOverride.clear(); roleOverride.clear(); model={groups:g,file:f.name}; st.textContent=`Loaded ${g.length} groups (OBJ) from ${f.name}.`; build(); return; }
+      disabledJoints.clear(); partOverride.clear(); nameOverride.clear(); roleOverride.clear(); model={groups:g,file:fname,raw:t}; st.textContent=`Loaded ${g.length} groups (OBJ) from ${fname}.`; build(); return; }
     const r=parseDXF3D(t), g=r.groups;
     if(!g.length){ st.className='status err'; st.textContent=r.solids?`Found ${r.solids} 3DSOLID/surface entities but no readable geometry — in AutoCAD run CONVTOMESH on the parts, then SAVEAS DXF again.`:'No 3D geometry found in ENTITIES.'; return; }
     const flat=g.every(x=>x.max[2]-x.min[2]<1e-6);
     if(flat){ st.className='status err'; st.textContent=`Loaded ${g.length} layers but everything is at Z=0 — a flat drawing can\'t tell me how the parts meet. Export the 3D model (CONVTOMESH, then SAVEAS DXF), or use IMPORT DXF PANEL for one flat part at a time.`; model=null; build(); return; }
     if(g.length===1){ st.className='status err'; st.textContent=`All geometry is on one layer (${g[0].name}). Put each panel on its own layer and export again.`; model=null; build(); return; }
-    disabledJoints.clear(); partOverride.clear(); nameOverride.clear(); roleOverride.clear(); model={groups:g,file:f.name}; st.textContent=`Loaded ${g.length} layers (DXF) from ${f.name}${r.solids?` · ${r.solids} unconverted solids ignored`:''}.`; build(); });
+    disabledJoints.clear(); partOverride.clear(); nameOverride.clear(); roleOverride.clear(); model={groups:g,file:fname,raw:t}; st.textContent=`Loaded ${g.length} layers (DXF) from ${fname}${r.solids?` · ${r.solids} unconverted solids ignored`:''}.`; build(); }
 }
 /* which face of panel B carries its cam nuts: 'min' or 'max' along B's thickness axis */
 function camFaceOf(B,A){ const b=B.ax, n=b.n, auto=b.auto||'';
@@ -779,10 +791,13 @@ const dropEl=$('drop'); dropEl.onclick=()=>$('file').click(); dropEl.ondragover=
 dropEl.ondrop=e=>{e.preventDefault();dropEl.classList.remove('over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);}; $('file').onchange=e=>{if(e.target.files[0])loadFile(e.target.files[0]);};
 function loadFile(f){ const st=$('dxfStatus'); st.className='status';
   if(!/\.dxf$/i.test(f.name)){st.className='status err';st.textContent='Only DXF is supported. Export DWG to DXF (SAVEAS → DXF R12/2000) and try again.';return;}
-  f.text().then(t=>{ const ents=parseDXF(t); if(!ents.length){st.className='status err';st.textContent='No lines, polylines, circles or arcs found in ENTITIES.';return;}
+  f.text().then(t=>loadFileText(t,f.name));
+}
+function loadFileText(t,fname){ const st=$('dxfStatus'); st.className='status';
+  { const ents=parseDXF(t); if(!ents.length){st.className='status err';st.textContent='No lines, polylines, circles or arcs found in ENTITIES.';return;}
     const ex=extents(ents),w=ex.maxx-ex.minx,d=ex.maxy-ex.miny,m=t.match(/\$INSUNITS\s*\r?\n\s*70\s*\r?\n\s*(\d+)/),k=((m&&m[1]==='4')||(!m&&Math.max(w,d)>400))?1/MM:1;
-    imported={entities:xform(ents,-ex.minx,-ex.miny,k),w:r4(w*k),d:r4(d*k)}; $('pW').value=imported.w;$('pD').value=imported.d;$('pName').value=f.name.replace(/\.dxf$/i,'').toUpperCase();
-    st.textContent=`Loaded ${ents.length} entities · ${imported.w}" × ${imported.d}"${k!==1?' (from mm)':''} · origin moved to lower-left.`; build(); });
+    imported={entities:xform(ents,-ex.minx,-ex.miny,k),w:r4(w*k),d:r4(d*k),raw:t,file:fname}; $('pW').value=imported.w;$('pD').value=imported.d;$('pName').value=fname.replace(/\.dxf$/i,'').toUpperCase();
+    st.textContent=`Loaded ${ents.length} entities · ${imported.w}" × ${imported.d}"${k!==1?' (from mm)':''} · origin moved to lower-left.`; build(); }
 }
 function buildImported(){ const j=joinery(),T=num('pT'); const p=newPanel(sel('pName')||'PANEL',num('pW'),num('pD'),T,`${num('pW')}" × ${num('pD')}" × ${T}"  ·  view: face being drilled, lower-left at 0,0`); p.entities=imported?imported.entities:null;
   const edges={L:['eL','x'],R:['eR','x'],F:['eF','y'],B:['eB','y']};
@@ -967,33 +982,78 @@ function nestDXF(){
   w(0,'ENDSEC');w(0,'EOF');
   return {dxf:o,sheets:sheets.length};
 }
+/* ================= CASEMAKER project files (.casemaker) ================= */
+const PROJECT_FORMAT='CASEMAKER_PROJECT', PROJECT_VERSION=1;
+function saveProject(){
+  const fields={};
+  document.querySelectorAll('main input[id],main select[id]').forEach(el=>{ if(el.type==='file') return;
+    fields[el.id]= el.type==='checkbox' ? {c:el.checked} : {v:el.value}; });
+  const proj={ format:PROJECT_FORMAT, version:PROJECT_VERSION, build:BUILD_VERSION, saved:new Date().toISOString(),
+    mode, current, fields,
+    disabledJoints:[...disabledJoints], partOverride:[...partOverride], nameOverride:[...nameOverride], roleOverride:[...roleOverride],
+    model: model&&model.raw ? {file:model.file, raw:model.raw} : null,
+    imported: imported&&imported.raw ? {file:imported.file, raw:imported.raw} : null };
+  download(`${jobName()}_${stamp()}.casemaker`, JSON.stringify(proj), 'application/json');
+}
+function applyProject(p){
+  if(!p || p.format!==PROJECT_FORMAT){ alert('Not a CASEMAKER project file.'); return; }
+  if(p.version>PROJECT_VERSION) alert('This project was saved by a newer CASEMAKER ('+(p.build||'?')+'). Loading what I understand.');
+  setMode(p.mode||'case');
+  if(p.model&&p.model.raw) loadOBJText(p.model.raw, p.model.file||'model.obj');            // rebuilds groups exactly as on import
+  if(p.imported&&p.imported.raw) loadFileText(p.imported.raw, p.imported.file||'panel.dxf');
+  Object.entries(p.fields||{}).forEach(([id,f])=>{ const el=document.getElementById(id); if(!el) return;
+    if('c' in f) el.checked=!!f.c;
+    else if(el.tagName==='SELECT'){ if([...el.options].some(o=>o.value===f.v)) el.value=f.v; }
+    else el.value=f.v; });
+  disabledJoints.clear(); (p.disabledJoints||[]).forEach(k=>disabledJoints.add(k));         // after the loaders, which clear these
+  partOverride.clear(); (p.partOverride||[]).forEach(([k,v])=>partOverride.set(k,v));
+  nameOverride.clear(); (p.nameOverride||[]).forEach(([k,v])=>nameOverride.set(k,v));
+  roleOverride.clear(); (p.roleOverride||[]).forEach(([k,v])=>roleOverride.set(k,v));
+  current=Math.max(0, p.current|0);
+  build();
+}
+$('saveProjBtn').onclick=saveProject;
+$('loadProjBtn').onclick=()=>$('projFile').click();
+$('projFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  f.text().then(t=>{ let p=null; try{ p=JSON.parse(t); }catch(_){ } if(!p){ alert('Could not read that file as a CASEMAKER project.'); return; } applyProject(p); }); };
+
 /* ---------- CNC #1 edge-drilling app handoff: one .nc per panel, its own ;PARAMS_BEGIN/;PD format ---------- */
 function cnc1Files(){
   const j=joinery(), files=[], tol=0.02;
-  panels.forEach(p=>{
-    const eh=p.holes.filter(h=>h.edge&&(h.type==='PIN'||h.type==='DOWEL')); if(!eh.length) return;
+  const planeOf=(p,h)=>h.y<=tol?'FRONT':h.y>=p.d-tol?'BACK':h.x<=tol?'LEFT':h.x>=p.w-tol?'RIGHT':null;
+  const posOn=(pl,h)=>r4(pl==='FRONT'||pl==='BACK'?h.x:h.y);
+  const mk=(p,name,list,camDepth,dowDepth,note)=>{
     const holes={FRONT:[],LEFT:[],BACK:[],RIGHT:[]};
-    eh.forEach(h=>{ const it=h.type==='DOWEL'?{p:r4(h.x),t:'dowel'}:r4(h.x), itY=h.type==='DOWEL'?{p:r4(h.y),t:'dowel'}:r4(h.y);
-      if(h.y<=tol) holes.FRONT.push(it); else if(h.y>=p.d-tol) holes.BACK.push(it);
-      else if(h.x<=tol) holes.LEFT.push(itY); else if(h.x>=p.w-tol) holes.RIGHT.push(itY); });
+    list.forEach(({h,t})=>{ const pl=planeOf(p,h); if(!pl) return; const v=posOn(pl,h); holes[pl].push(t==='dowel'?{p:v,t:'dowel'}:v); });
+    if(!Object.values(holes).some(a=>a.length)) return;
     const pos=v=>typeof v==='object'?v.p:v; Object.values(holes).forEach(a=>a.sort((a,b)=>pos(a)-pos(b)));
-    const params={ jobName:`${jobName()}_${p.name.replace(/[^A-Za-z0-9]+/g,'')}`, jobLocation:'', qty:p.qty,
+    const params={ jobName:name, jobLocation:'', qty:p.qty,
       toolOffset:3.484252, bitOffset:1.5, slot2Offset:0,                                  // CNC #1 machine defaults
       panelWidth:r4(p.w), panelLength:r4(p.d), thickness:p.t,
-      holeDepth:r4(j.pinEZ), holeDepthDowel:r4(j.dowEZ),                                  // depths from the CASEMAKER joinery
+      holeDepth:r4(camDepth), holeDepthDowel:r4(dowDepth),
       retract:0.5, safeZ:2, spindle:6000, feedIn:100, feedOut:500, tool:9, origin:9, parkY:75, dropDustHood:false,
       holes };
     const L=[];
     L.push(';CONKLIN OFFICE PRODUCT DEVELOPMENT');
     L.push(';'+new Date().toISOString().slice(0,16).replace('T',' '));
-    L.push(';'+params.jobName+'.nc');
+    L.push(';'+name+'.nc');
     L.push(';EXPORTED FROM CASEMAKER '+BUILD_VERSION+' - '+p.name+' x'+p.qty+' - '+p.view);
+    if(note) L.push(';'+note);
     L.push(';LOAD THIS FILE IN THE CNC #1 EDGE DRILLING APP, REVIEW, THEN GENERATE');
     L.push(';PARAMS_BEGIN');
     const js=JSON.stringify(params);
     for(let i=0;i<js.length;i+=60) L.push(';PD '+js.slice(i,i+60));
     L.push(';PARAMS_END');
-    files.push({name:params.jobName+'.nc', text:L.join('\n')+'\n'});
+    files.push({name:name+'.nc', text:L.join('\n')+'\n'});
+  };
+  panels.forEach(p=>{
+    const base=`${jobName()}_${p.name.replace(/[^A-Za-z0-9]+/g,'')}`;
+    const joint=p.holes.filter(h=>h.edge&&(h.type==='PIN'||h.type==='DOWEL')).map(h=>({h,t:h.type==='DOWEL'?'dowel':'cam'}));
+    mk(p,base,joint,j.pinEZ,j.dowEZ,'');
+    const glides=p.holes.filter(h=>h.edge&&h.type==='GLIDE');                              // different bit and depth: its own file/setup
+    if(glides.length){ const gd=glides[0].d, gz=glides[0].z;
+      mk(p,base+'_GLIDES',glides.map(h=>({h,t:'dowel'})),gz,gz,
+        `GLIDE HOLES ONLY - change to a ${gd}" (${(gd*MM).toFixed(1)} mm) bit, depth ${r4(gz)}" (${(gz*MM).toFixed(1)} mm)`); }
   });
   return files;
 }
@@ -1004,13 +1064,6 @@ $('dlAll').onclick=()=>{if(panels.length)download(`CASEMAKER_${jobName()}_${stam
 $('dlNest').onclick=()=>{ if(!panels.length) return; const r=nestDXF(); if(r) download(`CASEMAKER_NEST_${jobName()}_${sel('nestStock').replace(',','x')}_${stamp()}.dxf`,r.dxf); };
 $('dlCNC1').onclick=()=>{ const fs=cnc1Files(); if(!fs.length){ alert('No panels with edge drilling.'); return; } fs.forEach((f,i)=>setTimeout(()=>download(f.name,f.text,'text/plain'),i*400)); };
 $('dlOne').onclick=()=>{const p=panels[current];if(p)download(`${p.name.replace(/\s+/g,'_')}_${stamp()}.dxf`,dxf([p]));};
-$('dlCSV').onclick=()=>{let c='PANEL,VIEW,N,TYPE,EDGE,X_IN,Y_IN,Z_FROM_SHOWN_FACE_IN,DIA_IN,DEPTH_IN,DIA_MM,DEPTH_MM,LAYER\n';panels.forEach(p=>p.holes.forEach((h,i)=>{c+=`${p.name},${p.view},${i+1},${h.type},${h.edge?(h.y===0?p.edges.F:h.y===p.d?p.edges.B:h.x===0?p.edges.L:p.edges.R):''},${h.x},${h.y},${h.edge?(h.zo!==undefined?h.zo:p.t/2):''},${h.d},${h.z},${r4(h.d*MM)},${r4(h.z*MM)},${h.layer}\n`;}));download(`CASEMAKER_HOLES_${jobName()}_${stamp()}.csv`,c,'text/csv');};
-$('dlCut').onclick=()=>{let c='N,QTY,PART,FINISHED_L,FINISHED_W,CUT_L,CUT_W,THICKNESS,HOLES,EDGE_BANDING,FACE_UP_ON_CNC,LEFT_EDGE,RIGHT_EDGE,BOTTOM_EDGE,TOP_EDGE\n';panels.forEach((p,i)=>{c+=`${i+1},${p.qty},${p.name},${p.w},${p.d},${p.cutW},${p.cutD},${p.t},${p.holes.length},${p.edgeNote.replace(/,/g,';')},${p.view},${p.edges.L},${p.edges.R},${p.edges.F},${p.edges.B}\n`;});c+='\nLETTER,CODE,HARDWARE,QTY,SPARE\n';hardware().forEach(r=>{c+=`${r.letter},${r.code},${r.name},${r.qty},${r.spare}\n`;});download(`CASEMAKER_CUTLIST_${jobName()}_${stamp()}.csv`,c,'text/csv');};
-$('dlEdge').onclick=()=>{ let t=`CASEMAKER ${BUILD_VERSION}  ·  edge holes for CNC #1 edge drilling generator\n`;
-  panels.forEach(p=>{ const e=p.holes.filter(h=>h.edge); if(!e.length) return; const side=h=>h.y===0?'FRONT':h.y===p.d?'BACK':h.x===0?'LEFT':'RIGHT';
-    t+=`\n${p.name}  width X=${p.w}  length Y=${p.d}  thickness=${p.t}  ·  view: ${p.view}  ·  FRONT=${p.edges.F} LEFT=${p.edges.L} BACK=${p.edges.B} RIGHT=${p.edges.R}\n`;
-    ['FRONT','LEFT','BACK','RIGHT'].forEach(ed=>{const hs=e.filter(h=>side(h)===ed);if(!hs.length)return;t+=`  ${ed}: `+hs.map(h=>`${(ed==='FRONT'||ed==='BACK')?h.x:h.y} (${h.type} Ø${h.d}"/${(h.d*MM).toFixed(1)}mm depth ${h.z}"/${(h.z*MM).toFixed(1)}mm · center ${h.zo!==undefined?h.zo:r4(p.t/2)}" from shown face)`).join('  ')+'\n';}); });
-  download(`CASEMAKER_EDGES_${jobName()}_${stamp()}.txt`,t,'text/plain'); };
 
 /* ================= assembly instruction sheet ================= */
 /* dimetric drawing of axis-aligned boxes with a z-buffer (correct hidden faces), world X right, Y back, Z up */
