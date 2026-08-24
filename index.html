@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.42 -->
+<!-- BUILD_VERSION: 2026-08-22.44 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -220,7 +220,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row three">
         <label>Position cams by<select id="rBy"><option value="edge" selected>Hole edge distance</option><option value="pin">Pin length (B)</option></select></label>
-        <label>Cam pin length (B)<select id="rPin"><option value="0.9449">0.9449" (24 mm)</option><option value="1.0236">1.0236" (26 mm)</option><option value="1.2598">1.2598" (32 mm)</option><option value="1.3386" selected>1.3386" (34 mm)</option><option value="1.7323">1.7323" (44 mm)</option><option value="1.9685">1.9685" (50 mm)</option></select><span class="unit">edge to cam center</span></label>
+        <label>Cam pin length (B)<select id="rPin"><option value="0.9449">0.9449" (24 mm)</option><option value="1.0236">1.0236" (26 mm)</option><option value="1.2598">1.2598" (32 mm)</option><option value="1.3386">1.3386" (34 mm)</option><option value="1.378" selected>1.3780" (35 mm)</option><option value="1.7323">1.7323" (44 mm)</option><option value="1.9685">1.9685" (50 mm)</option></select><span class="unit">edge to cam center</span></label>
         <label id="rInsetOut">Cam center from edge<input id="rInsetShow" disabled></label>
       </div>
       <div class="row three">
@@ -398,7 +398,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.42";
+const BUILD_VERSION = "2026-08-22.44";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -522,7 +522,7 @@ function buildCase(){
   let shelfPos=$('cShelfPos').value.split(',').map(s=>parseFloat(s)).filter(v=>!isNaN(v));
   if(shelfPos.length!==n){ const clear=topY0-(bot+T)-n*T,gap=clear/(n+1); shelfPos=[]; for(let i=1;i<=n;i++) shelfPos.push(r4(bot+T+gap*i+T*(i-1))); $('cShelfPos').placeholder=shelfPos.join(', ')||'auto'; }
   const members=[];
-  if(hasBottom) members.push({name:'BOTTOM',y0:bot,face:'TOP FACE',t:T});
+  if(hasBottom) members.push({name:'BOTTOM',y0:bot,face:'UNDERSIDE',t:T});
   shelfPos.forEach((y,i)=>members.push({name:`SHELF ${i+1}`,y0:y,face:'UNDERSIDE',t:T}));
   if(topStyle!=='none') members.push({name:'TOP',y0:topY0,face:'UNDERSIDE',t:T,over:topStyle==='over'});
   const out=[];
@@ -537,11 +537,11 @@ function buildCase(){
     else { buttEdge(p,'L',j); buttEdge(p,'R',j); }
     if(backStyle==='full'&&(m.name==='TOP'||m.name==='BOTTOM')) recvLine(p,'y',backY,BT,j,m.over?[T+bx,W-T-bx]:[bx,inner-bx],'max');   // back panel cams face the back   // back panel end lands on this face
     if(backStyle==='groove'&&(m.name==='TOP'||m.name==='BOTTOM')&&sel('gWhere')==='all') F.groove(p);
-    if(m.name==='BOTTOM'&&tk==='board'){ const before=p.holes.length; recvLine(p,'y',tkIn,T,jd,[0,inner]); p.holes.slice(before).forEach(h=>{h.layer+='_UNDERSIDE';h.under=true;}); }
+    if(m.name==='BOTTOM'&&tk==='board') recvLine(p,'y',tkIn,T,jd,[0,inner]);   // kick dowels: same underside face as the cams
     if(m.name==='BOTTOM') F.glides(p);
     if(m.name===sel('grWhere')) F.grommet(p);
     p.box={min:[x0,0,m.y0],max:[x0+w,dep,m.y0+T]};
-    p.frame={o:[x0,0,0],ux:[1,0,0],uy:[0,1,0],ax:2,shown:m.face==='TOP FACE'?m.y0+T:m.y0,opp:m.face==='TOP FACE'?m.y0:m.y0+T};
+    p.frame={o:[x0,0,0],ux:[1,0,0],uy:[0,1,0],ax:2,shown:m.y0,opp:m.y0+T};   // drawn from the underside (cam face)
     out.push(p);
   });
   // ---- doors (X along width, Y = height, inside face view)
@@ -561,7 +561,7 @@ function buildCase(){
   const mk=(name,x0)=>{
     const p=newPanel(name,sideH,D,T,`${sideH}" × ${D}" × ${T}"  ·  view: INSIDE FACE, floor end at X=0, front edge at Y=0`);
     orient(p,'INSIDE FACE','FLOOR END','TOP END','FRONT','BACK');
-    members.forEach(m=>{ if(m.over) buttEdge(p,'R',j); else recvLine(p,'x',m.y0,T,j,undefined,m.name==='BOTTOM'?'max':'min'); });   // bottom: cams on the top face; shelves/top: underside
+    members.forEach(m=>{ if(m.over) buttEdge(p,'R',j); else recvLine(p,'x',m.y0,T,j,undefined,'min'); });   // every horizontal member carries its cam nuts on the UNDERSIDE
     if(backStyle==='full'){ const lo=hasBottom?bot+T:bot, hi=topY0; recvLine(p,'y',backY,BT,j,[lo,hi],'max'); }
     if(tk==='board') recvLine(p,'y',tkIn,T,j,[0,tkH],'max');   // kick board cams face the back
     if(backStyle==='groove') F.groove(p);
@@ -648,8 +648,7 @@ function loadOBJ(f){ const st=$('objStatus'); st.className='status';
 /* which face of panel B carries its cam nuts: 'min' or 'max' along B's thickness axis */
 function camFaceOf(B,A){ const b=B.ax, n=b.n, auto=b.auto||'';
   if(auto==='BACK PANEL'||auto==='KICK BOARD') return 'max';            // hidden on the back
-  if(auto==='BOTTOM') return 'max';                                    // bottom: cams on the top face
-  if(n===2) return 'min';                                              // shelves / top: underside
+  if(n===2) return 'min';                                              // all horizontal members: cams on the underside
   if(auto==='LEFT SIDE') return 'max'; if(auto==='RIGHT SIDE') return 'min';   // inside faces
   return b.min[n]+b.ext[n]/2 < (A.ax.min[n]+A.ax.max[n])/2 ? 'max':'min'; }
 function buildModel(){
@@ -703,9 +702,9 @@ function buildModel(){
   boxes=live;
   const AX=['X','Y','Z'];
   const out=boxes.map(b=>{ const p=newPanel(b.pname,r4(b.ext[b.u]),r4(b.ext[b.v]),b.ext[b.n],`${r4(b.ext[b.u])}" × ${r4(b.ext[b.v])}" × ${r4(b.ext[b.n])}"  ·  ${b.role==='fixed'?'view from +'+AX[b.n]+', drawing X = '+AX[b.u]+', Y = '+AX[b.v]:b.role==='adj'?'adjustable, sits on shelf pins — sized only':'sized only'}, origin at (${b.min.map(v=>+v.toFixed(3)).join(', ')})`); p.box=b; p.ax=b; p.role=b.role;
-    { const ux=[0,0,0],uy=[0,0,0]; ux[b.u]=1; uy[b.v]=1; p.frame={o:[b.min[0],b.min[1],b.min[2]].map((v,i)=>i===b.n?0:v),ux,uy,ax:b.n,shown:b.n===2&&b.auto!=='BOTTOM'?b.min[2]:b.max[b.n],opp:b.n===2&&b.auto!=='BOTTOM'?b.max[2]:b.min[b.n]}; }   // shelves/top drawn from the underside; bottom from the top face
+    { const ux=[0,0,0],uy=[0,0,0]; ux[b.u]=1; uy[b.v]=1; p.frame={o:[b.min[0],b.min[1],b.min[2]].map((v,i)=>i===b.n?0:v),ux,uy,ax:b.n,shown:b.n===2?b.min[2]:b.max[b.n],opp:b.n===2?b.max[2]:b.min[b.n]}; }   // all horizontal members drawn from the underside (cam face)
     const AXN=[['LEFT END','RIGHT END'],['FRONT','BACK'],['FLOOR END','TOP END']], FACE=['RIGHT FACE (+X)','BACK FACE (+Y)','TOP FACE (+Z)'];
-    let view=FACE[b.n]; if(b.auto==='LEFT SIDE') view='INSIDE FACE'; if(b.auto==='RIGHT SIDE') view='OUTSIDE FACE — flip to drill'; if(b.auto==='BACK PANEL') view='OUTSIDE FACE — flip to drill'; if(b.auto==='BOTTOM') view='TOP FACE (cam nut face)'; if(b.auto==='TOP') view='TOP FACE — cams are in the underside, flip to drill';
+    let view=FACE[b.n]; if(b.auto==='LEFT SIDE') view='INSIDE FACE'; if(b.auto==='RIGHT SIDE') view='OUTSIDE FACE — flip to drill'; if(b.auto==='BACK PANEL') view='OUTSIDE FACE — flip to drill'; if(b.auto==='BOTTOM') view='UNDERSIDE (cam nut face) — flip to drill'; if(b.auto==='TOP') view='TOP FACE — cams are in the underside, flip to drill';
     orient(p,view,AXN[b.u][0],AXN[b.u][1],AXN[b.v][0],AXN[b.v][1]); return p; });
   const touch=(a,b)=>Math.abs(a-b)<=tol, joints=[];
   for(const A of out) for(const B of out){ if(A===B||A.role!=='fixed'||B.role!=='fixed') continue; const a=A.ax,b=B.ax; if(a.n===b.n) continue;
@@ -726,8 +725,7 @@ function buildModel(){
     if(hi-lo<1) return;
     const jj = (B.ax.auto==='KICK BOARD'&&A.ax.n===2) ? {...j,dowelsOnly:true,dowSp:Math.max(2,num('tkDow'))} : j;   // kick board to bottom: dowels only
     const camFace = jj.dowelsOnly?undefined : camFaceOf(B,A);
-    buttEdge(B,edge,jj,[lo-b.min[t],hi-b.min[t]]); const before=A.holes.length; recvLine(A,b.n===a.u?'x':'y',b.min[b.n]-a.min[b.n],b.ext[b.n],jj,[lo-a.min[t],hi-a.min[t]],camFace);
-    if(jj.dowelsOnly&&A.ax.auto==='BOTTOM') A.holes.slice(before).forEach(h=>{h.layer+='_UNDERSIDE';h.under=true;}); });
+    buttEdge(B,edge,jj,[lo-b.min[t],hi-b.min[t]]); recvLine(A,b.n===a.u?'x':'y',b.min[b.n]-a.min[b.n],b.ext[b.n],jj,[lo-a.min[t],hi-a.min[t]],camFace); });
   const jb=$('objJoints'); jb.innerHTML=joints.length?'<b>Cam-locked joints</b> (untick to drop one):<br>':'No joints found — parts don\'t touch within tolerance, or thickness axes match.';
   joints.forEach(jt=>{ const l=document.createElement('label'); l.className='chk'; l.style.marginTop='3px'; const c=document.createElement('input'); c.type='checkbox'; c.checked=!disabledJoints.has(jt.key);
     c.onchange=()=>{ if(c.checked) disabledJoints.delete(jt.key); else disabledJoints.add(jt.key); build(); }; l.appendChild(c); l.append(`${jt.B.name} → ${jt.A.name} (${jt.edge} end, ${(jt.hi-jt.lo).toFixed(2)}")`); jb.appendChild(l); });
