@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.56 -->
+<!-- BUILD_VERSION: 2026-08-22.57 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -234,23 +234,23 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <summary>HARDWARE (mm)</summary>
       <div class="row three">
         <label>Cam nut Ø<input id="hCamD" type="number" step="0.0001" value="0.5906" data-mm="1"></label>
-        <label>Cam nut depth<input id="hCamZ" type="number" step="0.0001" value="0.5" data-mm="1"></label>
-        <label>Pin edge hole Ø<input id="hBoltED" type="number" step="0.0001" value="0.315" data-mm="1"></label>
+        <label>Cam nut height<input id="hCamZ" type="number" step="0.0001" value="0.5" data-mm="1"></label>
+        <label>Pin edge hole Ø<input id="hBoltED" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
       </div>
       <div class="row three">
         <label>Pin edge depth<input id="hBoltEZ" type="number" step="0.0001" placeholder="auto" data-mm="1"></label>
-        <label>Pin face hole Ø<input id="hBoltFD" type="number" step="0.0001" value="0.315" data-mm="1"></label>
+        <label>Pin face hole Ø (insert)<input id="hBoltFD" type="number" step="0.0001" value="0.375" data-mm="1"></label>
         <label>Pin face depth<input id="hBoltFZ" type="number" step="0.0001" value="0.4724" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Dowel Ø<input id="hDowD" type="number" step="0.0001" value="0.315" data-mm="1"></label>
+        <label>Dowel Ø<input id="hDowD" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
         <label>Dowel edge depth<input id="hDowEZ" type="number" step="0.0001" value="0.7874" data-mm="1"></label>
         <label>Dowel face depth<input id="hDowFZ" type="number" step="0.0001" value="0.5118" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Pin centerline from cam nut face<input id="hPinOff" type="number" step="0.0001" value="0.315" data-mm="1"></label>
+        <label>Nut slot from nut top face<input id="hPinOff" type="number" step="0.0001" value="0.315" data-mm="1"></label>
       </div>
-      <p class="hint">All hardware fields are inches; the mm equivalent shows under each box. Edge holes for the pins are offset from the cam-nut face by this amount so the pin meets the nut's slot; the matching face holes in the receiving panel are placed to suit. Pin face hole: 8 mm for dowel-style pins, 5 mm pilot for screw-in pins.</p>
+      <p class="hint">All hardware fields are inches; the mm equivalent shows under each box. Pins and dowels run at MID-THICKNESS of the joining panel. The cam nut is bored deeper than its height — bore depth = nut height + (t/2 − nut slot distance) — so its slot lines up with the mid-thickness pin. The face hole takes the 3/8" pin insert.</p>
     </details>
   </section>
 
@@ -404,7 +404,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.56";
+const BUILD_VERSION = "2026-08-22.57";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -473,7 +473,7 @@ function camInset(){ return sel('rBy')==='pin' ? num('rPin') : num('rEdge')+num(
 function pinEdgeDepth(){ const v=parseFloat($('hBoltEZ').value); return isNaN(v)||v<=0 ? +(camInset()+0.1181).toFixed(4) : v; }
 function joinery(){ return {
   camD:num('hCamD'),camZ:num('hCamZ'),pinED:num('hBoltED'),pinEZ:pinEdgeDepth(),pinFD:num('hBoltFD'),pinFZ:num('hBoltFZ'),
-  dowD:num('hDowD'),dowEZ:num('hDowEZ'),dowFZ:num('hDowFZ'),pinOff:num('hPinOff'),inset:camInset(),camSp:Math.max(1,num('rCamSp')),
+  dowD:num('hDowD'),dowEZ:num('hDowEZ'),dowFZ:num('hDowFZ'),slot:num('hPinOff'),inset:camInset(),camSp:Math.max(1,num('rCamSp')),
   pat:sel('rDowPat'),dowOff:num('rDowOff'),dowN:parseInt(sel('rDowels')),front:num('rFront'),back:num('rBack') }; }
 /* stations along a joint: r = [start,end] along the panel axis */
 function stations(L,j,r){
@@ -491,12 +491,13 @@ function stations(L,j,r){
 function buttEdge(p,edge,j,r){
   const L=(edge==='L'||edge==='R')?p.d:p.w, st=stations(L,j,r);
   const pt=(s,ins)=>edge==='L'?[ins,s]:edge==='R'?[p.w-ins,s]:edge==='F'?[s,ins]:[s,p.d-ins];
-  st.cams.forEach(s=>{const [cx,cy]=pt(s,j.inset);addHole(p,'CAM',cx,cy,j.camD,j.camZ,lay('CAM',j.camD,j.camZ));const [ex,ey]=pt(s,0);addHole(p,'PIN',ex,ey,j.pinED,j.pinEZ,lay('EDGE_PIN',j.pinED,j.pinEZ),true,j.pinOff);});
-  st.dow.forEach(s=>{const [ex,ey]=pt(s,0);addHole(p,'DOWEL',ex,ey,j.dowD,j.dowEZ,lay('EDGE_DOWEL',j.dowD,j.dowEZ),true,j.dowelsOnly?p.t/2:j.pinOff);});
+  const mid=r4(p.t/2), camZ=r4(j.camZ+Math.max(0,mid-j.slot));   // bore past the nut height so the slot meets the mid-thickness pin
+  st.cams.forEach(s=>{const [cx,cy]=pt(s,j.inset);addHole(p,'CAM',cx,cy,j.camD,camZ,lay('CAM',j.camD,camZ));const [ex,ey]=pt(s,0);addHole(p,'PIN',ex,ey,j.pinED,j.pinEZ,lay('EDGE_PIN',j.pinED,j.pinEZ),true,mid);});
+  st.dow.forEach(s=>{const [ex,ey]=pt(s,0);addHole(p,'DOWEL',ex,ey,j.dowD,j.dowEZ,lay('EDGE_DOWEL',j.dowD,j.dowEZ),true,mid);});
 }
 /* camSide: which face of the butting panel carries the cam nuts — 'min' (at pos) or 'max' (at pos+mt); pins sit pinOff from that face. Undefined = mid-thickness (dowel-only joints). */
 function recvLine(p,axis,pos,mt,j,r,camSide){
-  const L=axis==='x'?p.d:p.w, st=stations(L,j,r), c=camSide==='min'?pos+j.pinOff:camSide==='max'?pos+mt-j.pinOff:pos+mt/2, pt=s=>axis==='x'?[c,s]:[s,c];
+  const L=axis==='x'?p.d:p.w, st=stations(L,j,r), c=r4(pos+mt/2), pt=s=>axis==='x'?[c,s]:[s,c];   // pins and dowels run at the butting panel's mid-thickness
   st.cams.forEach(s=>{const [x,y]=pt(s);addHole(p,'PIN',x,y,j.pinFD,j.pinFZ,lay('PIN',j.pinFD,j.pinFZ));});
   st.dow.forEach(s=>{const [x,y]=pt(s);addHole(p,'DOWEL',x,y,j.dowD,j.dowFZ,lay('DOWEL',j.dowD,j.dowFZ));});
 }
