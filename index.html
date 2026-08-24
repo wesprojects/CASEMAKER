@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.45 -->
+<!-- BUILD_VERSION: 2026-08-22.47 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -352,7 +352,13 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <button id="dlEdge">EDGE HOLES (for CNC #1 generator)</button>
         <button id="dlCut">CUT LIST (CSV)</button>
       </div>
-      <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12.5</span>, <span class="mono">EDGE_PIN_D8_Z26</span>). Holes on a panel's far face get <span class="mono">_UNDERSIDE</span>.</p>
+      <div class="row three" style="margin-top:10px">
+        <label>Stock sheet<select id="nestStock"><option value="48,96">4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120" selected>5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label>Part spacing<input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></label>
+        <label>Sheet margin<input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></label>
+      </div>
+      <div class="actions"><button id="dlNest">NESTED SHEETS (DXF)</button></div>
+      <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12.5</span>, <span class="mono">EDGE_PIN_D8_Z26</span>). Holes on a panel's far face get <span class="mono">_UNDERSIDE</span>. NESTED SHEETS lays every panel (qty included, CUT sizes, rotation allowed) onto the chosen stock, one sheet outline per sheet, holes positioned for drilling on the raw blank before edgebanding.</p>
     </details>
     <details open>
       <summary>ASSEMBLY INSTRUCTIONS</summary>
@@ -398,7 +404,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.45";
+const BUILD_VERSION = "2026-08-22.47";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -878,10 +884,56 @@ function dxf(list){
     dx+=p.w+6; });
   w(0,'ENDSEC');w(0,'EOF'); return o;
 }
+/* ---------- nest all panels onto stock sheets ---------- */
+function nestDXF(){
+  const [SW,SH]=sel('nestStock').split(',').map(Number), gap=num('nestGap'), mar=num('nestMargin');
+  const pre=num('ebPre');
+  const parts=[];
+  panels.forEach(p=>{ for(let q=0;q<p.qty;q++) parts.push(p); });
+  const items=parts.map(p=>{ const adj=e=>e>0?pre-e:0; const b=p.bands||{L:0,R:0,F:0,B:0};
+    return {p,w:p.cutW,h:p.cutD,ox:adj(b.L),oy:adj(b.F)}; });      // hole shift: finished → blank coords
+  const uw=SW-2*mar, uh=SH-2*mar;
+  const bad=items.filter(it=>Math.min(it.w,it.h)>Math.min(uw,uh)||Math.max(it.w,it.h)>Math.max(uw,uh));
+  if(bad.length){ alert('Too big for the chosen stock: '+[...new Set(bad.map(it=>it.p.name))].join(', ')); return null; }
+  items.sort((a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h));
+  const sheets=[];   // {rows:[{y,h,x}], list:[{it,x,y,rot,w,h}]}
+  const tryPlace=it=>{
+    for(const sh of sheets){
+      for(const row of sh.rows){
+        for(const rot of [false,true]){ const w=rot?it.h:it.w, h=rot?it.w:it.h;
+          if(h<=row.h+1e-6 && row.x+w<=SW-mar+1e-6){ sh.list.push({it,x:row.x,y:row.y,rot,w,h}); row.x+=w+gap; return true; } } }
+      const last=sh.rows[sh.rows.length-1]; const y=last?last.y+last.h+gap:mar;
+      for(const rot of [it.w>=it.h?false:true, it.w>=it.h?true:false]){ const w=rot?it.h:it.w, h=rot?it.w:it.h;
+        if(y+h<=SH-mar+1e-6 && mar+w<=SW-mar+1e-6){ sh.rows.push({y,h,x:mar+w+gap}); sh.list.push({it,x:mar,y,rot,w,h}); return true; } }
+    }
+    return false; };
+  items.forEach(it=>{ if(!tryPlace(it)){ sheets.push({rows:[],list:[]}); if(!tryPlace(it)) sheets.pop(); } });
+  // layers
+  const layers=new Set(['OUTLINE','SHEET','TEXT']);
+  panels.forEach(p=>p.holes.forEach(h=>layers.add(h.edge&&h.zo!==undefined?`${h.layer}_OFF${h.zo}`:h.layer)));
+  const colorFor=l=>l==='SHEET'?8:l.startsWith('CAM')?2:l.startsWith('EDGE_PIN')?5:l.includes('DOWEL')?3:l.startsWith('SHELFPIN')||l.startsWith('GLIDE')?6:l.startsWith('HINGE')?30:l==='TEXT'?8:7;
+  let o=''; const w=(c,v)=>{o+=c+'\n'+v+'\n';};
+  w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(9,'$INSUNITS');w(70,1);w(0,'ENDSEC');
+  w(0,'SECTION');w(2,'TABLES');w(0,'TABLE');w(2,'LAYER');w(70,layers.size); layers.forEach(l=>{w(0,'LAYER');w(2,l);w(70,0);w(62,colorFor(l));w(6,'CONTINUOUS');}); w(0,'ENDTAB');w(0,'ENDSEC');
+  w(0,'SECTION');w(2,'ENTITIES');
+  const line=(L,x1,y1,x2,y2)=>{w(0,'LINE');w(8,L);w(10,x1.toFixed(4));w(20,y1.toFixed(4));w(30,0);w(11,x2.toFixed(4));w(21,y2.toFixed(4));w(31,0);};
+  sheets.forEach((sh,si)=>{ const X0=si*(SW+12);
+    line('SHEET',X0,0,X0+SW,0);line('SHEET',X0+SW,0,X0+SW,SH);line('SHEET',X0+SW,SH,X0,SH);line('SHEET',X0,SH,X0,0);
+    w(0,'TEXT');w(8,'TEXT');w(10,X0.toFixed(4));w(20,(SH+1).toFixed(4));w(30,0);w(40,1);w(1,`SHEET ${si+1} of ${sheets.length}  ${SW} x ${SH}  ${jobName()}`);
+    sh.list.forEach(pl=>{ const {it,rot}=pl, p=it.p, X=X0+pl.x, Y=pl.y;
+      line('OUTLINE',X,Y,X+pl.w,Y);line('OUTLINE',X+pl.w,Y,X+pl.w,Y+pl.h);line('OUTLINE',X+pl.w,Y+pl.h,X,Y+pl.h);line('OUTLINE',X,Y+pl.h,X,Y);
+      p.holes.forEach(h=>{ if(h.edge) return;                        // face holes only on the nest — edge holes are drilled after cutout
+        let bx=h.x+it.ox, by=h.y+it.oy, px,py; if(rot){ px=X+(it.h-by); py=Y+bx; } else { px=X+bx; py=Y+by; }
+        w(0,'CIRCLE');w(8,h.layer);w(10,px.toFixed(4));w(20,py.toFixed(4));w(30,0);w(40,(h.d/2).toFixed(4)); });
+      w(0,'TEXT');w(8,'TEXT');w(10,(X+0.3).toFixed(4));w(20,(Y+0.3).toFixed(4));w(30,0);w(40,0.35);if(rot)w(50,0);w(1,`${p.name}${rot?' (ROT 90)':''}`); }); });
+  w(0,'ENDSEC');w(0,'EOF');
+  return {dxf:o,sheets:sheets.length};
+}
 function download(name,text,type='application/dxf'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 const stamp=()=>new Date().toISOString().slice(0,10);
 const jobName=()=>mode==='case'?(sel('cJob').trim()||`${num('cW')}x${num('cH')}x${num('cD')}`).replace(/\s+/g,'_'):mode==='obj'&&model?model.file.replace(/\.obj$/i,'').toUpperCase():'PANEL';
 $('dlAll').onclick=()=>{if(panels.length)download(`CASEMAKER_${jobName()}_${stamp()}.dxf`,dxf(panels));};
+$('dlNest').onclick=()=>{ if(!panels.length) return; const r=nestDXF(); if(r) download(`CASEMAKER_NEST_${jobName()}_${sel('nestStock').replace(',','x')}_${stamp()}.dxf`,r.dxf); };
 $('dlOne').onclick=()=>{const p=panels[current];if(p)download(`${p.name.replace(/\s+/g,'_')}_${stamp()}.dxf`,dxf([p]));};
 $('dlCSV').onclick=()=>{let c='PANEL,VIEW,N,TYPE,EDGE,X_IN,Y_IN,Z_FROM_SHOWN_FACE_IN,DIA_IN,DEPTH_IN,DIA_MM,DEPTH_MM,LAYER\n';panels.forEach(p=>p.holes.forEach((h,i)=>{c+=`${p.name},${p.view},${i+1},${h.type},${h.edge?(h.y===0?p.edges.F:h.y===p.d?p.edges.B:h.x===0?p.edges.L:p.edges.R):''},${h.x},${h.y},${h.edge?(h.zo!==undefined?h.zo:p.t/2):''},${h.d},${h.z},${r4(h.d*MM)},${r4(h.z*MM)},${h.layer}\n`;}));download(`CASEMAKER_HOLES_${jobName()}_${stamp()}.csv`,c,'text/csv');};
 $('dlCut').onclick=()=>{let c='N,QTY,PART,FINISHED_L,FINISHED_W,CUT_L,CUT_W,THICKNESS,HOLES,EDGE_BANDING,FACE_UP_ON_CNC,LEFT_EDGE,RIGHT_EDGE,BOTTOM_EDGE,TOP_EDGE\n';panels.forEach((p,i)=>{c+=`${i+1},${p.qty},${p.name},${p.w},${p.d},${p.cutW},${p.cutD},${p.t},${p.holes.length},${p.edgeNote.replace(/,/g,';')},${p.view},${p.edges.L},${p.edges.R},${p.edges.F},${p.edges.B}\n`;});c+='\nLETTER,CODE,HARDWARE,QTY,SPARE\n';hardware().forEach(r=>{c+=`${r.letter},${r.code},${r.name},${r.qty},${r.spare}\n`;});download(`CASEMAKER_CUTLIST_${jobName()}_${stamp()}.csv`,c,'text/csv');};
