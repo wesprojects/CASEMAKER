@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.47 -->
+<!-- BUILD_VERSION: 2026-08-22.56 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -358,7 +358,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Sheet margin<input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></label>
       </div>
       <div class="actions"><button id="dlNest">NESTED SHEETS (DXF)</button></div>
-      <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12.5</span>, <span class="mono">EDGE_PIN_D8_Z26</span>). Holes on a panel's far face get <span class="mono">_UNDERSIDE</span>. NESTED SHEETS lays every panel (qty included, CUT sizes, rotation allowed) onto the chosen stock, one sheet outline per sheet, holes positioned for drilling on the raw blank before edgebanding.</p>
+      <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12_7</span>, <span class="mono">EDGE_PIN_D8_Z35_9</span> — decimals written with underscores, AutoCAD forbids periods in layer names). Holes drilled from the opposite face are suffixed <span class="mono">_UNDERSIDE</span> / <span class="mono">_FARFACE</span> and marked on the drawing. Panel outlines are written as single closed polylines, ready to select as one profile in CAM. Every hole also gets a POINT at its center on a matching <span class="mono">_PT</span> layer for picking drill positions in Mastercam. NESTED SHEETS lays every panel (qty included, CUT sizes, rotation allowed) onto the chosen stock, one sheet outline per sheet, holes positioned for drilling on the raw blank before edgebanding.</p>
     </details>
     <details open>
       <summary>ASSEMBLY INSTRUCTIONS</summary>
@@ -404,7 +404,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </main>
 
 <script>
-const BUILD_VERSION = "2026-08-22.47";
+const BUILD_VERSION = "2026-08-22.56";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -440,6 +440,11 @@ function parseDim(t){ t=String(t).trim().toLowerCase().replace(/["in]+$/,'').tri
   let v; const fr=t.match(/^(\d+)[\s-]+(\d+)\/(\d+)$/); const f2=t.match(/^(\d+)\/(\d+)$/);
   if(fr) v=+fr[1]+(+fr[2])/(+fr[3]); else if(f2) v=(+f2[1])/(+f2[2]); else v=parseFloat(t);
   if(isNaN(v)) return NaN; return mm? v/25.4 : v; }
+/* browsers can restore old field values over a freshly updated page (soft reload / session restore);
+   if a select comes back with a value that no longer exists in its option list, snap it to the marked default */
+document.querySelectorAll('main select').forEach(el=>{ el.autocomplete='off';
+  if(![...el.options].some(o=>o.value===el.value)){ const d=[...el.options].find(o=>o.defaultSelected)||el.options[0]; el.value=d.value; } });
+document.querySelectorAll('main input').forEach(el=>el.autocomplete='off');
 $('rPin').addEventListener('change',()=>{ if(sel('rBy')!=='pin'){ $('rBy').value='pin'; build(); } });   // picking a pin length means: position by it
 $('rEdge').addEventListener('change',()=>{ if(sel('rBy')!=='edge'){ $('rBy').value='edge'; build(); } });
 document.querySelectorAll('input[data-mm]').forEach(el=>{ el.type='text'; el.inputMode='decimal';
@@ -479,7 +484,7 @@ function stations(L,j,r){
     const c=span/2+(r?r[0]:0), off=Math.min(j.dowOff,Math.max(0.375,span/2-0.5)); return {cams:[c],dow:j.pat==='none'?[]:[c+off]}; }
   const nseg=Math.max(1,Math.ceil((b-a)/j.camSp)); const cams=[]; for(let i=0;i<=nseg;i++) cams.push(a+(b-a)*i/nseg);
   let dow=[];
-  if(j.pat==='beside') dow=cams.map(c=>c<mid-1e-6?c+j.dowOff:c>mid+1e-6?c-j.dowOff:c+j.dowOff);
+  if(j.pat==='beside') dow=cams.map(c=>c<mid-1e-6?c+j.dowOff:c>mid+1e-6?c-j.dowOff:(j.dowMirror?c-j.dowOff:c+j.dowOff));   // the centre cam's dowel: flipped on panels drawn mirrored, so both halves of a joint agree
   else if(j.pat==='between') for(let k=0;k<cams.length-1;k++) for(let i=1;i<=j.dowN;i++) dow.push(cams[k]+(cams[k+1]-cams[k])*i/(j.dowN+1));
   return {cams,dow};
 }
@@ -529,21 +534,22 @@ function buildCase(){
   const n=parseInt($('cShelves').value)||0;
   let shelfPos=$('cShelfPos').value.split(',').map(s=>parseFloat(s)).filter(v=>!isNaN(v));
   if(shelfPos.length!==n){ const clear=topY0-(bot+T)-n*T,gap=clear/(n+1); shelfPos=[]; for(let i=1;i<=n;i++) shelfPos.push(r4(bot+T+gap*i+T*(i-1))); $('cShelfPos').placeholder=shelfPos.join(', ')||'auto'; }
-  const members=[];
-  if(hasBottom) members.push({name:'BOTTOM',y0:bot,face:'UNDERSIDE',t:T});
-  shelfPos.forEach((y,i)=>members.push({name:`SHELF ${i+1}`,y0:y,face:'UNDERSIDE',t:T}));
-  if(topStyle!=='none') members.push({name:'TOP',y0:topY0,face:'UNDERSIDE',t:T,over:topStyle==='over'});
+  const members=[]; const memDep=n=>(backStyle==='full'&&n!=='TOP')?r4(D-backInset-BT):D;   // the back panel passes everything but the top
+  if(hasBottom) members.push({name:'BOTTOM',y0:bot,face:'UNDERSIDE',t:T,dep:memDep('BOTTOM')});
+  shelfPos.forEach((y,i)=>members.push({name:`SHELF ${i+1}`,y0:y,face:'UNDERSIDE',t:T,dep:memDep('SHELF')}));
+  if(topStyle!=='none') members.push({name:'TOP',y0:topY0,face:'UNDERSIDE',t:T,over:topStyle==='over',dep:memDep('TOP')});
   const out=[];
   // ---- horizontal members (X along width, Y = depth, front at Y=0)
   const bx = backStyle==='full' ? j.inset + j.camD/MM : 0;   // keep back-panel cams clear of the side-joint cams at the corners
   members.forEach(m=>{
     const w=m.over?W:inner, x0=m.over?0:T;
-    const dep = (backStyle==='full'&&m.name.startsWith('SHELF')) ? r4(backY) : D;
+    const dep = m.dep;
     const p=newPanel(m.name,w,dep,T,`${w}" × ${dep}" × ${T}"  ·  view: ${m.face} (cam lock face), front edge at Y=0`);
     orient(p,m.face,'LEFT END','RIGHT END','FRONT','BACK');
     if(m.over){ recvLine(p,'x',0,T,j,undefined,'max'); recvLine(p,'x',W-T,T,j,undefined,'min'); }   // sides' cam nuts on their inside faces
     else { buttEdge(p,'L',j); buttEdge(p,'R',j); }
-    if(backStyle==='full'&&(m.name==='TOP'||m.name==='BOTTOM')) recvLine(p,'y',backY,BT,j,m.over?[T+bx,W-T-bx]:[bx,inner-bx],'max');   // back panel cams face the back   // back panel end lands on this face
+    if(backStyle==='full'&&m.name==='TOP') recvLine(p,'y',backY,BT,j,m.over?[T+bx,W-T-bx]:[bx,inner-bx],'max');   // back panel's TOP EDGE lands on the top's underside
+    if(backStyle==='full'&&m.name==='BOTTOM') buttEdge(p,'B',j,[bx,inner-bx]);                                     // bottom's BACK EDGE butts the back panel: cams in the bottom, pins into the back
     if(backStyle==='groove'&&(m.name==='TOP'||m.name==='BOTTOM')&&sel('gWhere')==='all') F.groove(p);
     if(m.name==='BOTTOM'&&tk==='board') recvLine(p,'y',tkIn,T,jd,[0,inner]);   // kick dowels: same underside face as the cams
     if(m.name==='BOTTOM') F.glides(p);
@@ -569,8 +575,8 @@ function buildCase(){
   const mk=(name,x0)=>{
     const p=newPanel(name,sideH,D,T,`${sideH}" × ${D}" × ${T}"  ·  view: INSIDE FACE, floor end at X=0, front edge at Y=0`);
     orient(p,'INSIDE FACE','FLOOR END','TOP END','FRONT','BACK');
-    members.forEach(m=>{ if(m.over) buttEdge(p,'R',j); else recvLine(p,'x',m.y0,T,j,undefined,'min'); });   // every horizontal member carries its cam nuts on the UNDERSIDE
-    if(backStyle==='full'){ const lo=hasBottom?bot+T:bot, hi=topY0; recvLine(p,'y',backY,BT,j,[lo,hi],'max'); }
+    members.forEach(m=>{ if(m.over) buttEdge(p,'R',j); else recvLine(p,'x',m.y0,T,j,[0,m.dep],'min'); });   // stations run over the member's own depth, so they meet its edge holes
+    if(backStyle==='full'){ recvLine(p,'y',backY,BT,j,[0,topY0],'max'); }   // back panel runs to the floor
     if(tk==='board') recvLine(p,'y',tkIn,T,j,[0,tkH],'max');   // kick board cams face the back
     if(backStyle==='groove') F.groove(p);
     F.pins(p,members,adjZ); F.notch(p); F.glidesEdge(p);
@@ -582,11 +588,14 @@ function buildCase(){
   out.push(mk('LEFT SIDE',0)); out.push(mk('RIGHT SIDE',W-T));
   // ---- back panel
   if(backStyle==='full'){
-    const lo=hasBottom?bot+T:bot, hi=topY0, bh=r4(hi-lo);
-    const b=newPanel('BACK PANEL',inner,bh,BT,`${inner}" × ${bh}" × ${BT}"  ·  view: BACK FACE (cam nuts hidden on the outside), bottom at Y=0, ends butt into sides`);
-    orient(b,'BACK FACE (cam nut face, hidden)','RIGHT END of case','LEFT END of case','BOTTOM','TOP');
-    buttEdge(b,'L',j); buttEdge(b,'R',j);
-    if(topStyle!=='none') buttEdge(b,'B',j,[bx,inner-bx]); if(hasBottom) buttEdge(b,'F',j,[bx,inner-bx]);
+    const lo=0, hi=topY0, bh=r4(hi-lo);   // back panel goes all the way down to the floor
+    const jm={...j,dowMirror:true};   // this panel's drawing X runs opposite the case
+    const b=newPanel('BACK PANEL',inner,bh,BT,`${inner}" × ${bh}" × ${BT}"  ·  view: BACK FACE (cam nuts hidden on the outside), floor end at Y=0, ends butt into sides`);
+    orient(b,'BACK FACE (cam nut face, hidden)','RIGHT END of case','LEFT END of case','FLOOR END','TOP');
+    buttEdge(b,'L',jm); buttEdge(b,'R',jm);
+    if(topStyle!=='none') buttEdge(b,'B',jm,[bx,inner-bx]);                       // back's TOP EDGE into the top
+    if(hasBottom){ const before=b.holes.length; recvLine(b,'y',bot,T,jm,[bx,inner-bx],'min');   // bottom's back edge lands on the FRONT face — pins here, cam nuts in the bottom
+      b.holes.slice(before).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; }); }
     if(sel('grWhere')==='BACK PANEL') F.grommet(b);
     b.box={min:[T,backY,lo],max:[T+inner,backY+BT,hi]};
     b.frame={o:[T+inner,0,lo],ux:[-1,0,0],uy:[0,0,1],ax:1,shown:backY+BT,opp:backY};   // viewed from the back, mirrored
@@ -599,12 +608,12 @@ function buildCase(){
   out.push(...doors);
   // ---- sized-only parts
   const adj=parseInt($('cAdj').value)||0;
-  if(adj){ const aw=r4(inner-2*num('cAdjGap')), ad=num('cAdjD'); const a=newPanel('ADJ SHELF',aw,ad,T,`${aw}" × ${ad}" × ${T}"  ·  sized only, sits on shelf dowels`,adj);
+  if(adj){ const aw=r4(inner-2*num('cAdjGap')), adWant=num('cAdjD'), adMax=backStyle==='full'?r4(backY):D, ad=Math.min(adWant,adMax); const a=newPanel('ADJ SHELF',aw,ad,T,`${aw}" × ${ad}" × ${T}"  ·  sized only, sits on shelf dowels${ad<adWant?`  ·  depth limited by the back panel (asked ${adWant}")`:''}`,adj);
     a.boxes=adjZ.map(z=>({min:[T+num('cAdjGap'),0,z],max:[T+num('cAdjGap')+aw,ad,z+T]})); a.box=a.boxes[0]||null;
     out.push(a); }
   if(tk==='board'){ const k=newPanel('KICK BOARD',inner,tkH,T,`${inner}" × ${tkH}" × ${T}"  ·  view: BACK FACE (cam lock face), bottom at Y=0, ends butt into sides, top edge butts into bottom`);
-    orient(k,'BACK FACE','LEFT END','RIGHT END','BOTTOM','TOP');
-    buttEdge(k,'L',j); buttEdge(k,'R',j); if(hasBottom) buttEdge(k,'B',jd,[0,inner]); k.box={min:[T,tkIn,0],max:[W-T,tkIn+T,tkH]};
+    orient(k,'BACK FACE','LEFT END','RIGHT END','BOTTOM','TOP'); const jk={...j,dowMirror:true}, jdk={...jd,dowMirror:true};
+    buttEdge(k,'L',jk); buttEdge(k,'R',jk); if(hasBottom) buttEdge(k,'B',jdk,[0,inner]); k.box={min:[T,tkIn,0],max:[W-T,tkIn+T,tkH]};
     k.frame={o:[T+inner,0,0],ux:[-1,0,0],uy:[0,0,1],ax:1,shown:tkIn+T,opp:tkIn}; out.splice(out.findIndex(p=>p.name==='LEFT SIDE'),0,k); }
   else if(tk==='notch'){ const k=newPanel('KICK BOARD',inner,tkH,T,`${inner}" × ${tkH}" × ${T}"  ·  sized only`); k.box={min:[T,num('tkD'),0],max:[W-T,num('tkD')+T,tkH]}; out.push(k); }
   return out;
@@ -795,6 +804,7 @@ function hardware(){
 function build(){
   syncVisibility();
   try{ panels=mode==='case'?buildCase():mode==='obj'?buildModel():buildImported(); }catch(err){ console.error(err); panels=[]; }
+  trueViews(panels);   // make every drawing a real view of the face that lies up — mirrored parts come out mirrored
   // edge banding: finished size entered → cut size = finished + (premill − band) per banded edge
   const ebW=sel('ebWhere'), ebt=parseFloat(sel('ebT')), pre=num('ebPre'), topC=sel('ebTop')==='contrast', topT=parseFloat(sel('ebTopT'));
   panels.forEach(p=>{ const isSide=p.name.includes('SIDE');
@@ -835,6 +845,7 @@ function render(){
   ctx.save(); ctx.translate(X(p.w)+22,Y(p.d/2)); ctx.rotate(Math.PI/2); ctx.fillText(p.edges.R,0,0); ctx.restore();
   ctx.textAlign='left'; ctx.fillText('0,0',X(0)+4,Y(0)-4);
   ctx.fillStyle=css('--amber'); ctx.font='bold 12px '+mono; ctx.fillText(`VIEW: ${p.view}`,X(0),Y(p.d)-28);
+  if(p.mirrored){ ctx.fillStyle=css('--mute'); ctx.font='11px '+mono; ctx.fillText('mirrored part — this is the true view of the face up on the machine',X(0),Y(p.d)-14); }
   const col={CAM:css('--cam'),PIN:css('--bolt'),DOWEL:css('--dowel'),SHELFPIN:css('--pin'),SCREW:css('--pin'),GLIDE:css('--pin'),HINGE:css('--hinge'),GROMMET:css('--outline')};
   p.holes.forEach((h,i)=>{ const r=Math.max(3,(h.d/2)*s); ctx.beginPath(); ctx.arc(X(h.x),Y(h.y),r,0,Math.PI*2);
     if(h.edge||h.type==='GROMMET'){ctx.lineWidth=2;ctx.strokeStyle=col[h.type];ctx.stroke();} else {ctx.fillStyle=col[h.type];ctx.fill();}
@@ -842,6 +853,20 @@ function render(){
     const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${h.edge?'EDGE ':''}${h.type}${h.under?' (underside)':''}${h.edge&&h.zo!==undefined?` · ${h.zo}" from face`:''}</td><td>${h.x.toFixed(4)}</td><td>${h.y.toFixed(4)}</td><td>${h.d.toFixed(4)} (${(h.d*MM).toFixed(1)})</td><td>${h.z.toFixed(4)} (${(h.z*MM).toFixed(1)})</td><td>${h.layer}</td>`; $('tbl').querySelector('tbody').appendChild(tr); });
 }
 
+/* Every drawing must be a TRUE view of the face lying up on the CNC, not a look-through-the-panel mirror
+   image. A frame whose ux x uy points away from the shown face is mirrored: flip the drawing in X and swap
+   the left/right edge labels. Left and right sides then come out as mirrored programs, as they must be. */
+function trueViews(list){
+  list.forEach(p=>{ const f=p.frame; if(!f||p.entities) return;
+    const n=[0,0,0]; n[f.ax]=Math.sign(f.shown-f.opp)||1;
+    const c=[f.ux[1]*f.uy[2]-f.ux[2]*f.uy[1], f.ux[2]*f.uy[0]-f.ux[0]*f.uy[2], f.ux[0]*f.uy[1]-f.ux[1]*f.uy[0]];
+    if(c[0]*n[0]+c[1]*n[1]+c[2]*n[2] > 0) return;                      // already a true view
+    p.holes.forEach(h=>{ h.x=r4(p.w-h.x); });
+    p.lines.forEach(l=>{ l.x1=r4(p.w-l.x1); l.x2=r4(p.w-l.x2); });
+    f.o=[0,1,2].map(i=>f.o[i]+p.w*f.ux[i]); f.ux=f.ux.map(v=>-v);      // keep world positions identical
+    const e=p.edges; p.edges={...e,L:e.R,R:e.L};
+    p.mirrored=true; });
+}
 /* face holes in world space, for the 3D render */
 function holes3D(){ const out=[];
   panels.forEach(p=>{ if(!p.frame) return; const f=p.frame;
@@ -864,19 +889,27 @@ $('orbitReset').onclick=()=>{ orbit.yaw=-20; orbit.el=24; orbit.zoom=1; renderIs
 })();
 
 /* ================= exports: DXF / CSV / edge list ================= */
+const LNAME=n=>String(n).replace(/[^A-Za-z0-9_$-]/g,'_');   // AutoCAD symbol names can't contain periods etc. — DXFIN aborts silently on an invalid layer name
 function dxf(list){
-  const layers=new Set(['OUTLINE','TEXT']); list.forEach(p=>{p.holes.forEach(h=>layers.add(h.edge&&h.zo!==undefined?`${h.layer}_OFF${h.zo}`:h.layer));p.lines.forEach(l=>layers.add(l.layer));});
-  const colorFor=l=>l.startsWith('CAM')?2:l.startsWith('EDGE_PIN')?5:l.startsWith('PIN')?4:l.includes('DOWEL')?3:l.startsWith('SHELFPIN')||l.startsWith('GLIDE')?6:l.startsWith('HINGE_CUP')?30:l.startsWith('HINGE')?6:l.startsWith('GROOVE')||l==='NOTCH'?1:l==='TEXT'?8:7;
+  const layers=new Set(['OUTLINE','TEXT']); list.forEach(p=>{p.holes.forEach(h=>{const L=h.edge&&h.zo!==undefined?`${h.layer}_OFF${h.zo}`:h.layer; layers.add(L); layers.add(L+'_PT');});p.lines.forEach(l=>layers.add(l.layer));});
+  const colorFor=l=>l.endsWith('_PT')?7:l.startsWith('CAM')?2:l.startsWith('EDGE_PIN')?5:l.startsWith('PIN')?4:l.includes('DOWEL')?3:l.startsWith('SHELFPIN')||l.startsWith('GLIDE')?6:l.startsWith('HINGE_CUP')?30:l.startsWith('HINGE')?6:l.startsWith('GROOVE')||l==='NOTCH'?1:l==='TEXT'?8:7;
   let o=''; const w=(c,v)=>{o+=c+'\n'+v+'\n';};
-  w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(9,'$INSUNITS');w(70,1);w(0,'ENDSEC');
-  w(0,'SECTION');w(2,'TABLES');w(0,'TABLE');w(2,'LAYER');w(70,layers.size); layers.forEach(l=>{w(0,'LAYER');w(2,l);w(70,0);w(62,colorFor(l));w(6,'CONTINUOUS');}); w(0,'ENDTAB');w(0,'ENDSEC');
+  w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(0,'ENDSEC');   // R12: keep the header minimal, $INSUNITS isn't an AC1009 variable
+  w(0,'SECTION');w(2,'TABLES');w(0,'TABLE');w(2,'LAYER');w(70,layers.size); layers.forEach(l=>{w(0,'LAYER');w(2,LNAME(l));w(70,0);w(62,colorFor(l));w(6,'CONTINUOUS');}); w(0,'ENDTAB');w(0,'ENDSEC');
   w(0,'SECTION');w(2,'ENTITIES'); let dx=0;
+  /* R12 closed polyline (AC1009 has no LWPOLYLINE): POLYLINE + VERTEX list + SEQEND, 70=1 closes it */
+  const plineAt=(L,pts,closed,ox)=>{ w(0,'POLYLINE');w(8,LNAME(L));w(66,1);w(70,closed?1:0);w(10,0);w(20,0);w(30,0);
+    pts.forEach(([x,y])=>{ w(0,'VERTEX');w(8,LNAME(L));w(10,(x+ox).toFixed(4));w(20,y.toFixed(4));w(30,0); });
+    w(0,'SEQEND');w(8,LNAME(L)); };
   list.forEach(p=>{
-    const line=(L,x1,y1,x2,y2)=>{w(0,'LINE');w(8,L);w(10,(x1+dx).toFixed(4));w(20,y1.toFixed(4));w(30,0);w(11,(x2+dx).toFixed(4));w(21,y2.toFixed(4));w(31,0);};
-    if(p.entities){ p.entities.forEach(e=>{ if(e.type==='LINE') line('OUTLINE',e.g[10],e.g[20],e.g[11],e.g[21]); else if(e.type==='CIRCLE'){w(0,'CIRCLE');w(8,'OUTLINE');w(10,(e.g[10]+dx).toFixed(4));w(20,e.g[20].toFixed(4));w(30,0);w(40,e.g[40].toFixed(4));} else if(e.type==='ARC'){w(0,'ARC');w(8,'OUTLINE');w(10,(e.g[10]+dx).toFixed(4));w(20,e.g[20].toFixed(4));w(30,0);w(40,e.g[40].toFixed(4));w(50,e.g[50]);w(51,e.g[51]);} else if(e.type==='LWPOLYLINE'){for(let i=0;i<e.v.length-1;i++)line('OUTLINE',e.v[i].x,e.v[i].y,e.v[i+1].x,e.v[i+1].y);if(e.g[70]&1)line('OUTLINE',e.v[e.v.length-1].x,e.v[e.v.length-1].y,e.v[0].x,e.v[0].y);} }); }
-    else { line('OUTLINE',0,0,p.w,0);line('OUTLINE',p.w,0,p.w,p.d);line('OUTLINE',p.w,p.d,0,p.d);line('OUTLINE',0,p.d,0,0); }
+    const pline=(L,pts,closed)=>plineAt(L,pts,closed,dx);
+    const line=(L,x1,y1,x2,y2)=>{w(0,'LINE');w(8,LNAME(L));w(10,(x1+dx).toFixed(4));w(20,y1.toFixed(4));w(30,0);w(11,(x2+dx).toFixed(4));w(21,y2.toFixed(4));w(31,0);};
+    if(p.entities){ p.entities.forEach(e=>{ if(e.type==='LINE') line('OUTLINE',e.g[10],e.g[20],e.g[11],e.g[21]); else if(e.type==='CIRCLE'){w(0,'CIRCLE');w(8,'OUTLINE');w(10,(e.g[10]+dx).toFixed(4));w(20,e.g[20].toFixed(4));w(30,0);w(40,e.g[40].toFixed(4));} else if(e.type==='ARC'){w(0,'ARC');w(8,'OUTLINE');w(10,(e.g[10]+dx).toFixed(4));w(20,e.g[20].toFixed(4));w(30,0);w(40,e.g[40].toFixed(4));w(50,e.g[50]);w(51,e.g[51]);} else if(e.type==='LWPOLYLINE'){ pline('OUTLINE',e.v.map(v=>[v.x,v.y]),!!(e.g[70]&1)); } }); }
+    else pline('OUTLINE',[[0,0],[p.w,0],[p.w,p.d],[0,p.d]],true);   // one closed polyline per panel: CAM sees a single profile, no joining needed
     p.lines.forEach(l=>line(l.layer,l.x1,l.y1,l.x2,l.y2));
-    p.holes.forEach(h=>{w(0,'CIRCLE');w(8,h.edge&&h.zo!==undefined?`${h.layer}_OFF${h.zo}`:h.layer);w(10,(h.x+dx).toFixed(4));w(20,h.y.toFixed(4));w(30,0);w(40,(h.d/2).toFixed(4));});
+    p.holes.forEach(h=>{ const L=LNAME(h.edge&&h.zo!==undefined?`${h.layer}_OFF${h.zo}`:h.layer);
+      w(0,'CIRCLE');w(8,L);w(10,(h.x+dx).toFixed(4));w(20,h.y.toFixed(4));w(30,0);w(40,(h.d/2).toFixed(4));
+      w(0,'POINT');w(8,LNAME(L+'_PT'));w(10,(h.x+dx).toFixed(4));w(20,h.y.toFixed(4));w(30,0); });   // center point to snap/select in Mastercam
     w(0,'TEXT');w(8,'TEXT');w(10,dx.toFixed(4));w(20,(p.d+0.75).toFixed(4));w(30,0);w(40,0.5);w(1,`${p.name}${p.qty>1?' x'+p.qty:''}  FINISHED ${p.w} x ${p.d} x ${p.t}  CUT ${p.cutW} x ${p.cutD}  (${p.edgeNote})`);
     w(0,'TEXT');w(8,'TEXT');w(10,dx.toFixed(4));w(20,(p.d+0.25).toFixed(4));w(30,0);w(40,0.25);w(1,`VIEW: ${p.view}  |  ${p.note.replace(/"/g,'in')}`);
     const lbl=(x,y,txt,rot)=>{w(0,'TEXT');w(8,'TEXT');w(10,(x+dx).toFixed(4));w(20,y.toFixed(4));w(30,0);w(40,0.2);w(50,rot||0);w(1,txt);};
@@ -910,21 +943,24 @@ function nestDXF(){
   items.forEach(it=>{ if(!tryPlace(it)){ sheets.push({rows:[],list:[]}); if(!tryPlace(it)) sheets.pop(); } });
   // layers
   const layers=new Set(['OUTLINE','SHEET','TEXT']);
-  panels.forEach(p=>p.holes.forEach(h=>layers.add(h.edge&&h.zo!==undefined?`${h.layer}_OFF${h.zo}`:h.layer)));
-  const colorFor=l=>l==='SHEET'?8:l.startsWith('CAM')?2:l.startsWith('EDGE_PIN')?5:l.includes('DOWEL')?3:l.startsWith('SHELFPIN')||l.startsWith('GLIDE')?6:l.startsWith('HINGE')?30:l==='TEXT'?8:7;
+  panels.forEach(p=>p.holes.forEach(h=>{ layers.add(h.edge&&h.zo!==undefined?`${h.layer}_OFF${h.zo}`:h.layer); layers.add(h.layer+'_PT'); }));
+  const colorFor=l=>l.endsWith('_PT')?7:l==='SHEET'?8:l.startsWith('CAM')?2:l.startsWith('EDGE_PIN')?5:l.includes('DOWEL')?3:l.startsWith('SHELFPIN')||l.startsWith('GLIDE')?6:l.startsWith('HINGE')?30:l==='TEXT'?8:7;
   let o=''; const w=(c,v)=>{o+=c+'\n'+v+'\n';};
-  w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(9,'$INSUNITS');w(70,1);w(0,'ENDSEC');
-  w(0,'SECTION');w(2,'TABLES');w(0,'TABLE');w(2,'LAYER');w(70,layers.size); layers.forEach(l=>{w(0,'LAYER');w(2,l);w(70,0);w(62,colorFor(l));w(6,'CONTINUOUS');}); w(0,'ENDTAB');w(0,'ENDSEC');
+  w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(0,'ENDSEC');
+  w(0,'SECTION');w(2,'TABLES');w(0,'TABLE');w(2,'LAYER');w(70,layers.size); layers.forEach(l=>{w(0,'LAYER');w(2,LNAME(l));w(70,0);w(62,colorFor(l));w(6,'CONTINUOUS');}); w(0,'ENDTAB');w(0,'ENDSEC');
   w(0,'SECTION');w(2,'ENTITIES');
-  const line=(L,x1,y1,x2,y2)=>{w(0,'LINE');w(8,L);w(10,x1.toFixed(4));w(20,y1.toFixed(4));w(30,0);w(11,x2.toFixed(4));w(21,y2.toFixed(4));w(31,0);};
+  const line=(L,x1,y1,x2,y2)=>{w(0,'LINE');w(8,LNAME(L));w(10,x1.toFixed(4));w(20,y1.toFixed(4));w(30,0);w(11,x2.toFixed(4));w(21,y2.toFixed(4));w(31,0);};
+  const pline=(L,pts)=>{ w(0,'POLYLINE');w(8,LNAME(L));w(66,1);w(70,1);w(10,0);w(20,0);w(30,0);
+    pts.forEach(([x,y])=>{ w(0,'VERTEX');w(8,LNAME(L));w(10,x.toFixed(4));w(20,y.toFixed(4));w(30,0); }); w(0,'SEQEND');w(8,LNAME(L)); };
   sheets.forEach((sh,si)=>{ const X0=si*(SW+12);
-    line('SHEET',X0,0,X0+SW,0);line('SHEET',X0+SW,0,X0+SW,SH);line('SHEET',X0+SW,SH,X0,SH);line('SHEET',X0,SH,X0,0);
+    pline('SHEET',[[X0,0],[X0+SW,0],[X0+SW,SH],[X0,SH]]);
     w(0,'TEXT');w(8,'TEXT');w(10,X0.toFixed(4));w(20,(SH+1).toFixed(4));w(30,0);w(40,1);w(1,`SHEET ${si+1} of ${sheets.length}  ${SW} x ${SH}  ${jobName()}`);
     sh.list.forEach(pl=>{ const {it,rot}=pl, p=it.p, X=X0+pl.x, Y=pl.y;
-      line('OUTLINE',X,Y,X+pl.w,Y);line('OUTLINE',X+pl.w,Y,X+pl.w,Y+pl.h);line('OUTLINE',X+pl.w,Y+pl.h,X,Y+pl.h);line('OUTLINE',X,Y+pl.h,X,Y);
+      pline('OUTLINE',[[X,Y],[X+pl.w,Y],[X+pl.w,Y+pl.h],[X,Y+pl.h]]);
       p.holes.forEach(h=>{ if(h.edge) return;                        // face holes only on the nest — edge holes are drilled after cutout
         let bx=h.x+it.ox, by=h.y+it.oy, px,py; if(rot){ px=X+(it.h-by); py=Y+bx; } else { px=X+bx; py=Y+by; }
-        w(0,'CIRCLE');w(8,h.layer);w(10,px.toFixed(4));w(20,py.toFixed(4));w(30,0);w(40,(h.d/2).toFixed(4)); });
+        w(0,'CIRCLE');w(8,LNAME(h.layer));w(10,px.toFixed(4));w(20,py.toFixed(4));w(30,0);w(40,(h.d/2).toFixed(4));
+        w(0,'POINT');w(8,LNAME(h.layer+'_PT'));w(10,px.toFixed(4));w(20,py.toFixed(4));w(30,0); });
       w(0,'TEXT');w(8,'TEXT');w(10,(X+0.3).toFixed(4));w(20,(Y+0.3).toFixed(4));w(30,0);w(40,0.35);if(rot)w(50,0);w(1,`${p.name}${rot?' (ROT 90)':''}`); }); });
   w(0,'ENDSEC');w(0,'EOF');
   return {dxf:o,sheets:sheets.length};
