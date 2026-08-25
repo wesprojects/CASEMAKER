@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.72 -->
+<!-- BUILD_VERSION: 2026-08-22.74 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -361,6 +361,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Stock sheet<select id="nestStock"><option value="48,96">4 × 8 ft (48 × 96)</option><option value="60,96" selected>5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
         <label>Part spacing<input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></label>
         <label>Sheet margin<input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></label>
+        <label>Grain<select id="nestGrain"><option value="on" selected>Match sheet grain (no 90° turns)</option><option value="off">Ignore grain (rotate to fit)</option></select></label>
       </div>
       <div class="actions"><button id="dlNest">NESTED SHEETS (DXF)</button><button id="dlCNC1">CNC #1 EDGE FILES (.nc)</button></div>
       <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glide holes ride along in the same file as cam-depth holes (same 5/16 bit).</p>
@@ -384,7 +385,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
   <section>
     <h2>PANELS</h2>
     <div class="tabs" id="panelTabs"></div>
-    <div class="tabs" style="margin-bottom:6px"><button id="pzBtn" title="Left-drag orbit / rotate · right-drag pan · wheel zoom at the cursor">🖱 PAN/ZOOM: OFF</button><button id="p3Btn" title="Show this panel as a slab with real hole depths">PANEL 3D: OFF</button><button id="pzReset" style="display:none">RECENTER</button></div>
+    <div class="tabs" style="margin-bottom:6px"><button id="pzBtn" title="Left-drag orbit / rotate · right-drag pan · wheel zoom at the cursor">🖱 PAN/ZOOM: OFF</button><button id="p3Btn" title="Show this panel as a slab with real hole depths">PANEL 3D: OFF</button><label class="chk" style="font-size:11px;margin-left:8px">Grain<select id="pGrain" style="margin-left:4px"><option value="len">along length</option><option value="wid">across (width)</option><option value="none">none / free</option></select></label><button id="pzReset" style="display:none">RECENTER</button></div>
     <div class="canvaswrap"><canvas id="cv" width="1200" height="600"></canvas></div>
     <div class="legend"><span class="c">Cam lock (face)</span><span class="b">Cam pin</span><span class="d">Dowel</span><span class="p">Shelf pin / screw / glide</span><span class="h">Hinge cup</span><span class="g">Groove / notch</span><span style="color:var(--mute)">Hollow = edge hole, on the edge</span></div>
     <div id="viewNote" class="hint"></div>
@@ -414,7 +415,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.72";
+const BUILD_VERSION = "2026-08-22.74";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -443,7 +444,7 @@ document.querySelectorAll('#modeTabs button').forEach(b=>b.onclick=()=>{setMode(
 $('cPreset').onchange=()=>{ const v=sel('cPreset'); if(!v) return; const [w,h,d]=v.split(','); $('cW').value=w;$('cH').value=h;$('cD').value=d;$('cShelfPos').value=''; build(); };
 const ROLES=[['none','—'],['butt','Butts in (cam locks here)'],['recv','Receives']];
 ['eL','eR','eF','eB'].forEach(id=>{const s=$(id);ROLES.forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;s.appendChild(o);});s.onchange=()=>{$(id+'p').disabled=s.value!=='recv';build();};});
-document.querySelectorAll('main input,main select').forEach(el=>{ if(!['file','fileObj','cPreset'].includes(el.id)){ el.addEventListener('input',build); if(el.tagName==='SELECT') el.addEventListener('change',build); } });   // Safari doesn't fire 'input' on selects
+document.querySelectorAll('main input,main select').forEach(el=>{ if(!['file','fileObj','cPreset','pGrain'].includes(el.id)){ el.addEventListener('input',build); if(el.tagName==='SELECT') el.addEventListener('change',build); } });   // pGrain excluded above: it has its own handler and the generic one would overwrite the pick.   // Safari doesn't fire 'input' on selects
 /* dimensional fields accept mm or fractions and convert to inches:  32mm → 1.2598 · 3/4 → 0.75 · 1-1/2 → 1.5 · 1 1/2" → 1.5 */
 function parseDim(t){ t=String(t).trim().toLowerCase().replace(/["in]+$/,'').trim(); if(!t) return NaN;
   let mm=false; if(/mm$/.test(t)){ mm=true; t=t.replace(/mm$/,'').trim(); } else if(/cm$/.test(t)){ t=t.replace(/cm$/,'').trim(); const v=parseDim(t); return v*10/25.4*25.4/25.4? v*0.3937008: NaN; }
@@ -473,6 +474,7 @@ function syncVisibility(){
   { const j0=joinery(), t=num('cT'), o=j0.ctr==null?t/2:Math.min(j0.ctr,t/2);
     $('hPinCtr').disabled=$('hPinMid').checked;
     $('hPinCtrNote').textContent=`${$('hPinMid').checked?`centered: ${r4(o)}" · `:''}wall ${r4(o-j0.pinFD/2)}" face hole · ${r4(o-j0.dowD/2)}" edge hole · nut bore ${r4(j0.camZ+Math.max(0,o-j0.slot))}"`; }
+  if(panels[current]) $('pGrain').value=grainOf(panels[current]);
   if(!$('rCustom').checked) $('rCenter').value=num('rPin'); $('rCenter').disabled=!$('rCustom').checked; $('hBoltEZ').placeholder='auto';
   $('tkDL').style.visibility=sel('tkStyle')==='notch'?'':'hidden'; $('tkDowL').style.visibility=sel('tkStyle')==='board'?'':'hidden'; $('cBotL').style.display=sel('tkStyle')==='none'?'':'none';
 }
@@ -1017,26 +1019,41 @@ function dxf(list){
     dx+=p.w+6; });
   w(0,'ENDSEC');w(0,'EOF'); return o;
 }
+/* ---------- grain direction ---------- */
+const grainOverride=new Map();
+function grainOf(p){ if(grainOverride.has(p.name)) return grainOverride.get(p.name);
+  const n=p.name;   // per the Yasen 5CLBK48 sheet: 'len' = grain along the part's drawing length (w), 'wid' = along its depth (d)
+  if(n.includes('SIDE')) return 'len';                                       // sides: grain runs up the height
+  if(n.startsWith('BACK')||n.startsWith('KICK')||n.startsWith('DOOR')) return 'wid';   // back panel and kick: grain runs vertically = across the part's length
+  if(n==='TOP'||n==='BOTTOM'||n.includes('SHELF')) return 'len';             // horizontals: grain runs side to side, along the part's length
+  return 'len'; }
+$('pGrain').onchange=()=>{ const p=panels[current]; if(p){ grainOverride.set(p.name,$('pGrain').value); build(); } };   // rebuild so the nest picks it up
+
 /* ---------- nest all panels onto stock sheets ---------- */
 function nestDXF(){
   const [SW,SH]=sel('nestStock').split(',').map(Number), gap=num('nestGap'), mar=num('nestMargin');
   const pre=num('ebPre');
   const parts=[];
   panels.forEach(p=>{ for(let q=0;q<p.qty;q++) parts.push(p); });
+  const grainOn=sel('nestGrain')==='on';
   const items=parts.map(p=>{ const adj=e=>e>0?pre-e:0; const b=p.bands||{L:0,R:0,F:0,B:0};
-    return {p,w:p.cutW,h:p.cutD,ox:adj(b.L),oy:adj(b.F)}; });      // hole shift: finished → blank coords
+    return {p,w:p.cutW,h:p.cutD,ox:adj(b.L),oy:adj(b.F),grain:grainOf(p)}; });   // hole shift: finished -> blank coords
   const uw=SW-2*mar, uh=SH-2*mar;
-  const bad=items.filter(it=>Math.min(it.w,it.h)>Math.min(uw,uh)||Math.max(it.w,it.h)>Math.max(uw,uh));
-  if(bad.length){ alert('Too big for the chosen stock: '+[...new Set(bad.map(it=>it.p.name))].join(', ')); return null; }
+  // sheet grain runs along the sheet LENGTH (the 96/120/144 direction = Y here)
+  const allowed=it=>{ if(!grainOn||it.grain==='none') return [false,true];
+    return it.grain==='len' ? [true] : [false]; };        // sheet grain runs up the sheet: a 'len' part stands with its length vertical, a 'wid' part lies flat
+  const fits=it=>allowed(it).some(rot=>{ const w=rot?it.h:it.w, h=rot?it.w:it.h; return w<=uw+1e-6&&h<=uh+1e-6; });
+  const bad=items.filter(it=>!fits(it));
+  if(bad.length){ alert((grainOn?'Will not fit with the grain running the same way: ':'Too big for the chosen stock: ')+[...new Set(bad.map(it=>it.p.name))].join(', ')+(grainOn?'\n\nSwitch Grain to "Ignore grain" or pick a longer sheet.':'')); return null; }
   items.sort((a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h));
   const sheets=[];   // {rows:[{y,h,x}], list:[{it,x,y,rot,w,h}]}
   const tryPlace=it=>{
     for(const sh of sheets){
       for(const row of sh.rows){
-        for(const rot of [false,true]){ const w=rot?it.h:it.w, h=rot?it.w:it.h;
+        for(const rot of allowed(it)){ const w=rot?it.h:it.w, h=rot?it.w:it.h;
           if(h<=row.h+1e-6 && row.x+w<=SW-mar+1e-6){ sh.list.push({it,x:row.x,y:row.y,rot,w,h}); row.x+=w+gap; return true; } } }
       const last=sh.rows[sh.rows.length-1]; const y=last?last.y+last.h+gap:mar;
-      for(const rot of [it.w>=it.h?false:true, it.w>=it.h?true:false]){ const w=rot?it.h:it.w, h=rot?it.w:it.h;
+      for(const rot of allowed(it)){ const w=rot?it.h:it.w, h=rot?it.w:it.h;
         if(y+h<=SH-mar+1e-6 && mar+w<=SW-mar+1e-6){ sh.rows.push({y,h,x:mar+w+gap}); sh.list.push({it,x:mar,y,rot,w,h}); return true; } }
     }
     return false; };
@@ -1054,14 +1071,16 @@ function nestDXF(){
     pts.forEach(([x,y])=>{ w(0,'VERTEX');w(8,LNAME(L));w(10,x.toFixed(4));w(20,y.toFixed(4));w(30,0); }); w(0,'SEQEND');w(8,LNAME(L)); };
   sheets.forEach((sh,si)=>{ const X0=si*(SW+12);
     pline('SHEET',[[X0,0],[X0+SW,0],[X0+SW,SH],[X0,SH]]);
-    w(0,'TEXT');w(8,'TEXT');w(10,X0.toFixed(4));w(20,(SH+1).toFixed(4));w(30,0);w(40,1);w(1,`SHEET ${si+1} of ${sheets.length}  ${SW} x ${SH}  ${jobName()}`);
+    w(0,'TEXT');w(8,'TEXT');w(10,X0.toFixed(4));w(20,(SH+1).toFixed(4));w(30,0);w(40,1);w(1,`SHEET ${si+1} of ${sheets.length}  ${SW} x ${SH}  ${jobName()}${grainOn?'  GRAIN RUNS WITH THE SHEET LENGTH':'  NO GRAIN CONSTRAINT'}`);
+    if(grainOn){ const ax=X0-2.2; line('TEXT',ax,mar,ax,SH-mar); line('TEXT',ax,SH-mar,ax-0.5,SH-mar-1.2); line('TEXT',ax,SH-mar,ax+0.5,SH-mar-1.2);
+      w(0,'TEXT');w(8,'TEXT');w(10,(ax-1.6).toFixed(4));w(20,(SH/2).toFixed(4));w(30,0);w(40,0.9);w(50,90);w(1,'GRAIN'); }
     sh.list.forEach(pl=>{ const {it,rot}=pl, p=it.p, X=X0+pl.x, Y=pl.y;
       pline('OUTLINE',[[X,Y],[X+pl.w,Y],[X+pl.w,Y+pl.h],[X,Y+pl.h]]);
       p.holes.forEach(h=>{ if(h.edge) return;                        // face holes only on the nest — edge holes are drilled after cutout
         let bx=h.x+it.ox, by=h.y+it.oy, px,py; if(rot){ px=X+(it.h-by); py=Y+bx; } else { px=X+bx; py=Y+by; }
         w(0,'CIRCLE');w(8,LNAME(h.layer));w(10,px.toFixed(4));w(20,py.toFixed(4));w(30,0);w(40,(h.d/2).toFixed(4));
         w(0,'POINT');w(8,LNAME(h.layer+'_PT'));w(10,px.toFixed(4));w(20,py.toFixed(4));w(30,0); });
-      w(0,'TEXT');w(8,'TEXT');w(10,(X+0.3).toFixed(4));w(20,(Y+0.3).toFixed(4));w(30,0);w(40,0.35);if(rot)w(50,0);w(1,`${p.name}${rot?' (ROT 90)':''}`); }); });
+      w(0,'TEXT');w(8,'TEXT');w(10,(X+0.3).toFixed(4));w(20,(Y+0.3).toFixed(4));w(30,0);w(40,0.35);if(rot)w(50,0);w(1,`${p.name}${rot?' (ROT 90)':''}${grainOn?'  GRAIN '+(it.grain==='len'?'ALONG PART LENGTH':it.grain==='wid'?'ACROSS PART WIDTH':'FREE'):''}`); }); });
   w(0,'ENDSEC');w(0,'EOF');
   return {dxf:o,sheets:sheets.length};
 }
