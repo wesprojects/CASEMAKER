@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.71 -->
+<!-- BUILD_VERSION: 2026-08-22.72 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -363,7 +363,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Sheet margin<input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></label>
       </div>
       <div class="actions"><button id="dlNest">NESTED SHEETS (DXF)</button><button id="dlCNC1">CNC #1 EDGE FILES (.nc)</button></div>
-      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glides come out as a separate <span class="mono">_GLIDES</span> file per panel, since they need a different bit and depth.</p>
+      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glide holes ride along in the same file as cam-depth holes (same 5/16 bit).</p>
       <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12_7</span>, <span class="mono">EDGE_PIN_D8_Z35_9</span> — decimals written with underscores, AutoCAD forbids periods in layer names). Holes drilled from the opposite face are suffixed <span class="mono">_UNDERSIDE</span> / <span class="mono">_FARFACE</span> and marked on the drawing. Panel outlines are written as single closed polylines, ready to select as one profile in CAM. Every hole also gets a POINT at its center on a matching <span class="mono">_PT</span> layer for picking drill positions in Mastercam. NESTED SHEETS lays every panel (qty included, CUT sizes, rotation allowed) onto the chosen stock, one sheet outline per sheet, holes positioned for drilling on the raw blank before edgebanding.</p>
     </details>
     <details open>
@@ -414,7 +414,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.71";
+const BUILD_VERSION = "2026-08-22.72";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -1132,11 +1132,8 @@ function cnc1Files(){
   panels.forEach(p=>{
     const base=`${jobName()}_${p.name.replace(/[^A-Za-z0-9]+/g,'')}`;
     const joint=p.holes.filter(h=>h.edge&&(h.type==='PIN'||h.type==='DOWEL')).map(h=>({h,t:h.type==='DOWEL'?'dowel':'cam'}));
-    mk(p,base,joint,j.pinEZ,j.dowEZ,'');
-    const glides=p.holes.filter(h=>h.edge&&h.type==='GLIDE');                              // different bit and depth: its own file/setup
-    if(glides.length){ const gd=glides[0].d, gz=glides[0].z;
-      mk(p,base+'_GLIDES',glides.map(h=>({h,t:'dowel'})),gz,gz,
-        `GLIDE HOLES ONLY - change to a ${gd}" (${(gd*MM).toFixed(1)} mm) bit, depth ${r4(gz)}" (${(gz*MM).toFixed(1)} mm)`); }
+    const glides=p.holes.filter(h=>h.edge&&h.type==='GLIDE').map(h=>({h,t:'cam'}));   // glides ride along as 'cam' holes: same 5/16 bit, cam depth
+    mk(p,base,joint.concat(glides),j.pinEZ,j.dowEZ, glides.length?`INCLUDES ${glides.length} GLIDE HOLES - drilled as cam-depth holes with the same bit`:'');
   });
   return files;
 }
