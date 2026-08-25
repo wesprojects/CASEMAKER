@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.77 -->
+<!-- BUILD_VERSION: 2026-08-22.82 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -106,7 +106,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Width<input id="cW" type="number" step="0.0001" value="34.65" data-mm="1"></label>
         <label>Height<input id="cH" type="number" step="0.0001" value="47.24" data-mm="1"></label>
         <label>Depth<input id="cD" type="number" step="0.0001" value="13.98" data-mm="1"></label>
-        <label>Stock thickness<input id="cT" type="number" step="0.0001" value="1.015" data-mm="1"></label>
+        <label>Stock thickness<input id="cT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
       </div>
     </div>
 
@@ -163,7 +163,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row three">
         <label>Back panel<select id="ptBack"><option value="full" selected>Full stock, cam locked</option><option value="groove">Thin, in a groove</option><option value="none">None</option></select></label>
-        <label>Back panel thickness<input id="cBackT" type="number" step="0.0001" value="1" data-mm="1"></label>
+        <label>Back panel thickness<input id="cBackT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
         <label>Back flush with<select id="cBackFlush"><option value="back">Back edge</option><option value="inset" selected>Inset</option></select></label>
       </div>
       <div class="row three" id="backInsetRow" style="display:none">
@@ -172,7 +172,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row four">
         <label>Toe kick<select id="tkStyle"><option value="board" selected>Kick board, cam locked</option><option value="notch">Side notch + loose board</option><option value="none">None</option></select></label>
         <label>Kick height = bottom off floor<input id="tkH" type="number" step="0.0001" value="2.76" data-mm="1"></label>
-        <label>Kick inset from front<input id="tkInset" type="number" step="0.0625" value="0.1875" data-mm="1"></label>
+        <label>Kick inset from front<input id="tkInset" type="number" step="0.0001" value="0.0591" data-mm="1"></label>
         <label id="tkDL">Notch depth from front<input id="tkD" type="number" step="0.0625" value="2.5" data-mm="1"></label>
       </div>
       <div class="row four">
@@ -194,7 +194,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row three">
         <label>Adjustable shelves (qty)<input id="cAdj" type="number" min="0" step="1" value="2"></label>
         <label>Adj. shelf depth<input id="cAdjD" type="number" step="0.0001" value="13.15" data-mm="1"></label>
-        <label>Side clearance (each)<input id="cAdjGap" type="number" step="0.0625" value="0.0625" data-mm="1"></label>
+        <label>Side clearance (each)<input id="cAdjGap" type="number" step="0.0001" value="0.0197" data-mm="1"></label>
       </div>
     </details>
     <details>
@@ -244,13 +244,13 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Pin edge hole Ø<input id="hBoltED" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Pin edge depth<input id="hBoltEZ" type="number" step="0.0001" placeholder="auto" data-mm="1"></label>
+        <label>Pin edge depth<input id="hBoltEZ" type="number" step="0.0001" value="1.25" placeholder="auto" data-mm="1"><span class="unit">depth drilled into the edge for the cam pin</span></label>
         <label>Pin face hole Ø (insert)<input id="hBoltFD" type="number" step="0.0001" value="0.375" data-mm="1"></label>
         <label>Pin face depth<input id="hBoltFZ" type="number" step="0.0001" value="0.4724" data-mm="1"></label>
       </div>
       <div class="row three">
         <label>Dowel Ø<input id="hDowD" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
-        <label>Dowel edge depth<input id="hDowEZ" type="number" step="0.0001" value="0.7874" data-mm="1"></label>
+        <label>Dowel edge depth<input id="hDowEZ" type="number" step="0.0001" value="0.75" data-mm="1"></label>
         <label>Dowel face depth<input id="hDowFZ" type="number" step="0.0001" value="0.5118" data-mm="1"></label>
       </div>
       <div class="row three">
@@ -268,14 +268,16 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <div class="row three">
       <label>Band edges<select id="ebWhere"><option value="all" selected>All four edges</option><option value="front">Front edge only</option><option value="none">None</option></select></label>
       <label>Band thickness<select id="ebT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
-      <label>Premill per edge<input id="ebPre" type="number" step="0.001" value="0.020" data-mm="1"></label>
+      <label>Premill per edge<input id="ebPre" type="number" step="0.001" value="0.020" data-mm="1"><span class="unit">0.5 mm for 3 mm PVC</span></label>
     </div>
     <div class="row three">
       <label>Side panel TOP edge<select id="ebTop"><option value="match" selected>Match body</option><option value="contrast">Contrast band</option></select></label>
       <label id="ebTopTL">Contrast thickness<select id="ebTopT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
       <label class="chk"><input id="ebKick" type="checkbox" checked> Band the kick plate<span class="unit">off: no band and no premill, so it cuts at finished size</span></label>
       <label>Shelf band<select id="ebShelfT"><option value="0.0394" selected>1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select><span class="unit">fixed and adjustable shelves</span></label>
+      <label>Shelf premill<input id="ebShelfPre" type="number" step="0.001" value="0.0394" data-mm="1"></label>
       <label>Kick band<select id="ebKickT"><option value="0.0394" selected>1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select></label>
+      <label>Kick premill<input id="ebKickPre" type="number" step="0.001" value="0.0394" data-mm="1"></label>
     </div>
     <div class="row three">
       <label>Panel finish<select id="fBody"><option value="#b06a3c" selected>Cherry</option><option value="#7a4a2b">Mahogany</option><option value="#6b4a33">Walnut</option><option value="#d9b98c">Maple</option><option value="#3a2e28">Espresso</option><option value="#e8e6e0">Designer White</option><option value="#9a9a98">Folkstone Grey</option><option value="#1d1d1f">Black</option><option value="custom">Custom…</option></select></label>
@@ -366,7 +368,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Grain<select id="nestGrain"><option value="on" selected>Match sheet grain (no 90° turns)</option><option value="off">Ignore grain (rotate to fit)</option></select></label>
       </div>
       <div class="actions"><button id="dlNest">NESTED SHEETS (DXF)</button><button id="dlCNC1">CNC #1 EDGE FILES (.nc)</button></div>
-      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glide holes ride along in the same file as cam-depth holes (same 5/16 bit). Because the pins sit off-centre, each file carries the real stock thickness plus a Z depth override — the true drill height off the table, with the panel cam face up.</p>
+      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, each turned 90° left so the long side runs down Y (the vacuum zone), in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glides are centred in the thickness, so they come out as their own <span class="mono">_GLIDES</span> file with its own drill Z. Because the pins sit off-centre, each file carries the real stock thickness plus a Z depth override — the true drill height off the table, with the panel cam face up.</p>
       <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12_7</span>, <span class="mono">EDGE_PIN_D8_Z35_9</span> — decimals written with underscores, AutoCAD forbids periods in layer names). Holes drilled from the opposite face are suffixed <span class="mono">_UNDERSIDE</span> / <span class="mono">_FARFACE</span> and marked on the drawing. Panel outlines are written as single closed polylines, ready to select as one profile in CAM. Every hole also gets a POINT at its center on a matching <span class="mono">_PT</span> layer for picking drill positions in Mastercam. NESTED SHEETS lays every panel (qty included, CUT sizes, rotation allowed) onto the chosen stock, one sheet outline per sheet, holes positioned for drilling on the raw blank before edgebanding.</p>
     </details>
     <details open>
@@ -417,7 +419,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.77";
+const BUILD_VERSION = "2026-08-22.82";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -532,7 +534,8 @@ const F={
       else { const half=Math.floor((parseInt(rowsN)-1)/2); shelfZ.filter(sz=>sz>a-pitch&&sz<b+pitch).forEach(sz=>{ const c=sz-dia/2; for(let q=-half;q<=half;q++){ const x=c+q*pitch; if(x>=a&&x<=b) xs.push(x); } }); }
       xs.forEach(x=>{ const key=x.toFixed(3); if(seen.has(key)) return; seen.add(key); rows.forEach(y=>addHole(p,'SHELFPIN',x,y,dia,z,L)); }); } },
   glides(p){ if(!on('glOn')||sel('glWhere')!=='bottom') return; const d=num('glD'),z=num('glZ'),ix=num('glX'),iy=num('glY'),L=lay('GLIDE',d,z); [[ix,iy],[p.w-ix,iy],[ix,p.d-iy],[p.w-ix,p.d-iy]].forEach(([x,y])=>addHole(p,'GLIDE',x,y,d,z,L)); },
-  glidesEdge(side){ if(!on('glOn')||sel('glWhere')!=='sides') return; const d=num('glD'),z=num('glZ'),iy=num('glY'),L=lay('EDGE_GLIDE',d,z); [iy,side.d-iy].forEach(y=>addHole(side,'GLIDE',0,y,d,z,L,true)); },
+  glidesEdge(side){ if(!on('glOn')||sel('glWhere')!=='sides') return; const d=num('glD'),z=num('glZ'),iy=num('glY'),L=lay('EDGE_GLIDE',d,z);
+    [iy,side.d-iy].forEach(y=>addHole(side,'GLIDE',0,y,d,z,L,true,r4(side.t/2))); },   // glides are the one edge hole that stays centred in the thickness
   hingeCups(door){ if(!on('hgOn')) return []; const n=hingeCount(door.d),e=num('hgEnd'),ys=[]; for(let i=0;i<n;i++) ys.push(n===1?door.d/2:e+(door.d-2*e)*i/(n-1));
     const k=num('hgK'),x=door.hingeEdge==='L'?k:door.w-k,cd=num('hgCupD'),cz=num('hgCupZ'),ss=num('hgCupS')/2,sd=num('hgScrD'),sz=num('hgScrZ');
     ys.forEach(y=>{ addHole(door,'HINGE',x,y,cd,cz,lay('HINGE_CUP',cd,cz)); const sx=door.hingeEdge==='L'?x+9.5/MM:x-9.5/MM; [y-ss,y+ss].forEach(yy=>addHole(door,'SCREW',sx,yy,sd,sz,lay('HINGE_SCREW',sd,sz))); }); return ys; },
@@ -837,18 +840,19 @@ function build(){
   const ebW=sel('ebWhere'), ebt=parseFloat(sel('ebT')), pre=num('ebPre'), topC=sel('ebTop')==='contrast', topT=parseFloat(sel('ebTopT'));
   const kickBand=on('ebKick');
   panels.forEach(p=>{ const isSide=p.name.includes('SIDE'), isKick=p.name==='KICK BOARD', isShelf=p.name.includes('SHELF');
-    const bt = isKick?parseFloat(sel('ebKickT')) : isShelf?parseFloat(sel('ebShelfT')) : ebt;   // shelves and kick carry their own band
+    const bt = isKick?parseFloat(sel('ebKickT')) : isShelf?parseFloat(sel('ebShelfT')) : ebt;   // shelves and kick carry their own band...
+    const pm = isKick?num('ebKickPre') : isShelf?num('ebShelfPre') : pre;                        // ...and their own premill (1 mm band is premilled 1 mm)
     let bL=0,bR=0,bF=0,bB=0;                       // band thickness applied per edge
     if(!(isKick&&!kickBand)){                      // unbanded kick plate: no band, and therefore no premill either
       if(ebW==='all'){ bL=bR=bF=bB=bt; } else if(ebW==='front'){ bF=bt; }
       if(isSide&&topC&&ebW!=='none') bR=topT;      // side TOP END gets the contrast band
     }
     p.bands={L:bL,R:bR,F:bF,B:bB};
-    const adj=e=>e>0?pre-e:0;                      // banded edge: cut = finished + premill − band; unbanded edge: cut = finished
+    const adj=e=>e>0?pm-e:0;                       // banded edge: cut = finished + premill − band; unbanded edge: cut = finished
     p.cutW=r4(p.w+adj(bL)+adj(bR)); p.cutD=r4(p.d+adj(bF)+adj(bB));
     p.edgeNote = (isKick&&!kickBand) ? 'no edge band (cut at finished size)'
       : ebW==='none' ? 'no edge band'
-      : (ebW==='all'?`banded all 4 edges`:`banded ${p.edges.F} only`)+((isKick||isShelf)?` · ${(bt*MM).toFixed(0)} mm band`:'')+(isSide&&topC?` · ${$('ebTopC').selectedOptions[0].textContent} ${(topT*MM).toFixed(0)} mm on ${p.edges.R}`:'');
+      : (ebW==='all'?`banded all 4 edges`:`banded ${p.edges.F} only`)+((isKick||isShelf)?` · ${(bt*MM).toFixed(0)} mm band, ${(pm*MM).toFixed(1)} mm premill`:'')+(isSide&&topC?` · ${$('ebTopC').selectedOptions[0].textContent} ${(topT*MM).toFixed(0)} mm on ${p.edges.R}`:'');
   });
   if(current>=panels.length) current=0;
   const tabs=$('panelTabs'); tabs.innerHTML=''; panels.forEach((p,i)=>{const b=document.createElement('button');b.textContent=p.name;b.className=i===current?'on':'';b.onclick=()=>{current=i;build();};tabs.appendChild(b);});
@@ -1125,19 +1129,26 @@ $('projFile').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f)
 /* ---------- CNC #1 edge-drilling app handoff: one .nc per panel, its own ;PARAMS_BEGIN/;PD format ---------- */
 function cnc1Files(){
   const j=joinery(), files=[], tol=0.02;
-  const planeOf=(p,h)=>h.y<=tol?'FRONT':h.y>=p.d-tol?'BACK':h.x<=tol?'LEFT':h.x>=p.w-tol?'RIGHT':null;
-  const posOn=(pl,h)=>r4(pl==='FRONT'||pl==='BACK'?h.x:h.y);
+  /* CNC #1 runs the part turned 90° LEFT: the panel's long dimension goes down Y (the vacuum zone),
+     the short one across X. So (x,y) in CASEMAKER becomes (d − y, x) on the machine, panel W×L = d×w. */
+  const rot=(p,h)=>{ const tol=0.02;
+    if(h.y<=tol)          return {plane:'RIGHT', pos:r4(h.x)};        // panel FRONT edge ends up on the machine's RIGHT
+    if(h.y>=p.d-tol)      return {plane:'LEFT',  pos:r4(h.x)};        // panel BACK edge -> machine LEFT
+    if(h.x<=tol)          return {plane:'FRONT', pos:r4(p.d-h.y)};    // panel LEFT end -> machine FRONT
+    if(h.x>=p.w-tol)      return {plane:'BACK',  pos:r4(p.d-h.y)};    // panel RIGHT end -> machine BACK
+    return null; };
   const mk=(p,name,list,camDepth,dowDepth,note)=>{
     const holes={FRONT:[],LEFT:[],BACK:[],RIGHT:[]};
-    list.forEach(({h,t})=>{ const pl=planeOf(p,h); if(!pl) return; const v=posOn(pl,h); holes[pl].push(t==='dowel'?{p:v,t:'dowel'}:v); });
+    list.forEach(({h,t})=>{ const q=rot(p,h); if(!q) return; holes[q.plane].push(t==='dowel'?{p:q.pos,t:'dowel'}:q.pos); });
     if(!Object.values(holes).some(a=>a.length)) return;
     const pos=v=>typeof v==='object'?v.p:v; Object.values(holes).forEach(a=>a.sort((a,b)=>pos(a)-pos(b)));
     /* CNC #1 now takes an explicit Z depth override, so send the REAL thickness plus the true drill
        height: the panel lies cam-face UP and the pins sit ctr from that face, so Z = t − ctr. */
-    const ctr = j.ctr==null ? p.t/2 : Math.min(j.ctr,p.t/2), drillZ = r4(p.t-ctr);
+    const zoList=[...new Set(list.map(({h})=>h.zo!==undefined?h.zo:p.t/2))];
+    const ctr = zoList.length===1 ? zoList[0] : (j.ctr==null ? p.t/2 : Math.min(j.ctr,p.t/2)), drillZ = r4(p.t-ctr);
     const params={ jobName:name, jobLocation:'', qty:p.qty,
       toolOffset:3.484252, bitOffset:1.5, slot2Offset:0,                                  // CNC #1 machine defaults
-      panelWidth:r4(p.w), panelLength:r4(p.d), thickness:p.t, zOverride:drillZ,
+      panelWidth:r4(p.d), panelLength:r4(p.w), thickness:p.t, zOverride:drillZ,   // turned 90° left: long side down Y
       holeDepth:r4(camDepth), holeDepthDowel:r4(dowDepth),
       retract:0.5, safeZ:2, spindle:6000, feedIn:100, feedOut:500, tool:9, origin:9, parkY:75, dropDustHood:false,
       holes };
@@ -1148,6 +1159,7 @@ function cnc1Files(){
     L.push(';EXPORTED FROM CASEMAKER '+BUILD_VERSION+' - '+p.name+' x'+p.qty+' - '+p.view);
     L.push(`;STOCK ${p.t}" - HOLE CENTERLINE ${r4(ctr)}" FROM THE CAM FACE`);
     L.push(`;PANEL LIES CAM FACE UP: Z DEPTH OVERRIDE ${drillZ}" OFF THE TABLE`);
+    L.push(`;LOAD TURNED 90 LEFT FROM THE CASEMAKER DRAWING: ${r4(p.w)}" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ${r4(p.d)}" ACROSS X`);
     if(note) L.push(';'+note);
     L.push(';LOAD THIS FILE IN THE CNC #1 EDGE DRILLING APP, REVIEW, THEN GENERATE');
     L.push(';PARAMS_BEGIN');
@@ -1159,8 +1171,11 @@ function cnc1Files(){
   panels.forEach(p=>{
     const base=`${jobName()}_${p.name.replace(/[^A-Za-z0-9]+/g,'')}`;
     const joint=p.holes.filter(h=>h.edge&&(h.type==='PIN'||h.type==='DOWEL')).map(h=>({h,t:h.type==='DOWEL'?'dowel':'cam'}));
-    const glides=p.holes.filter(h=>h.edge&&h.type==='GLIDE').map(h=>({h,t:'cam'}));   // glides ride along as 'cam' holes: same 5/16 bit, cam depth
-    mk(p,base,joint.concat(glides),j.pinEZ,j.dowEZ, glides.length?`INCLUDES ${glides.length} GLIDE HOLES - drilled as cam-depth holes with the same bit`:'');
+    mk(p,base,joint,j.pinEZ,j.dowEZ,'');
+    const glides=p.holes.filter(h=>h.edge&&h.type==='GLIDE');   // centred in the thickness, so they need their own drill Z: separate file/setup
+    if(glides.length){ const gd=glides[0].d, gz=glides[0].z;
+      mk(p,base+'_GLIDES',glides.map(h=>({h,t:'cam'})),gz,gz,
+        `GLIDE HOLES ONLY - CENTRED IN THE THICKNESS, so this file carries its own Z; bit ${gd}" (${(gd*MM).toFixed(1)} mm), depth ${r4(gz)}"`); }
   });
   return files;
 }
