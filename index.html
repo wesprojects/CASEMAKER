@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.70 -->
+<!-- BUILD_VERSION: 2026-08-22.71 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -414,7 +414,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.70";
+const BUILD_VERSION = "2026-08-22.71";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -862,36 +862,43 @@ $('p3Btn').onclick=()=>{ panel3d=!panel3d; $('p3Btn').textContent='PANEL 3D: '+(
 function drawPanel3D(ctx,p){
   const cvS=isoCanvas([{min:[0,0,0],max:[p.w,p.d,p.t]}],{w:1200,h:600,ss:2,dark:root.dataset.theme==='dark',yaw:p3view.yaw,el:p3view.el});
   const g=cvS.getContext('2d'), S=q=>cvS.__S(q), dark=root.dataset.theme==='dark';
-  const ellipse=(c,u,v,r)=>{ const pts=[]; for(let i=0;i<=24;i++){ const a=i/24*Math.PI*2, q=[0,1,2].map(k=>c[k]+u[k]*r*Math.cos(a)+v[k]*r*Math.sin(a)); pts.push(S(q)); } return pts; };
-  const path=pts=>{ g.beginPath(); pts.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); };
-  const bore=(c,n,u,v,r,dz,dashed,face)=>{ const cb=[0,1,2].map(k=>c[k]-n[k]*dz);
-    g.save(); if(face){ path(face.map(S)); g.closePath(); g.clip(); }                              // a bore can never draw outside its own face
-    const o=ellipse(c,u,v,r), b=ellipse(cb,u,v,r);
-    if(dashed){ g.setLineDash([5,4]); path(o); g.strokeStyle=dark?'#8a93a3':'#666'; g.lineWidth=1.6; g.stroke(); g.setLineDash([]); g.restore(); return; }
-    const s0=S(c), s1=S(cb), ax=[s1[0]-s0[0],s1[1]-s0[1]], L=Math.hypot(ax[0],ax[1]);
-    path(o); g.fillStyle=dark?'rgba(0,0,0,.62)':'rgba(0,0,0,.38)'; g.fill();
-    if(L>0.5){ const side=q=>(q[0]-s0[0])*ax[0]+(q[1]-s0[1])*ax[1]>0;
-      const oh=o.filter(side), bh=b.filter(side);
-      if(oh.length>2&&bh.length>2){ g.beginPath(); oh.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); bh.reverse().forEach(q=>g.lineTo(q[0],q[1])); g.closePath();
-        g.fillStyle=dark?'rgba(20,24,30,.9)':'rgba(60,60,60,.55)'; g.fill(); } }
-    path(b); g.fillStyle=dark?'#39414e':'#9a9a9a'; g.fill(); g.strokeStyle=dark?'#59647a':'#777'; g.lineWidth=1; g.stroke();
-    path(o); g.strokeStyle=dark?'#9aa4b6':'#555'; g.lineWidth=1.4; g.stroke(); g.restore(); };
   const t=p.t, W=p.w, D=p.d;
-  const F={top:[[0,0,t],[W,0,t],[W,D,t],[0,D,t]], bot:[[0,0,0],[W,0,0],[W,D,0],[0,D,0]], front:[[0,0,0],[W,0,0],[W,0,t],[0,0,t]],
-           right:[[W,0,0],[W,D,0],[W,D,t],[W,0,t]], back:[[0,D,0],[W,D,0],[W,D,t],[0,D,t]], left:[[0,0,0],[0,D,0],[0,D,t],[0,0,t]]};
+  const HCOL={CAM:'232,163,61', PIN:'77,163,255', DOWEL:'67,197,111', SHELFPIN:'180,140,255', GLIDE:'180,140,255', SCREW:'180,140,255', HINGE:'240,140,70'};
+  const hull=pts=>{ const P=[...pts].sort((a,b)=>a[0]-b[0]||a[1]-b[1]), cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+    const lo=[]; for(const q of P){ while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0) lo.pop(); lo.push(q); }
+    const up=[]; for(let i=P.length-1;i>=0;i--){ const q=P[i]; while(up.length>1&&cr(up[up.length-2],up[up.length-1],q)<=0) up.pop(); up.push(q); }
+    return lo.slice(0,-1).concat(up.slice(0,-1)); };
+  const path=pts=>{ g.beginPath(); pts.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); };
+  const slab=hull([[0,0,0],[W,0,0],[W,D,0],[0,D,0],[0,0,t],[W,0,t],[W,D,t],[0,D,t]].map(S));      // nothing draws outside the part
+  const ellipse=(c,u,v,r)=>{ const pts=[]; for(let i=0;i<24;i++){ const a=i/24*Math.PI*2, q=[0,1,2].map(k=>c[k]+u[k]*r*Math.cos(a)+v[k]*r*Math.sin(a)); pts.push(S(q)); } return pts; };
+  /* the whole drilled volume as a translucent cylinder in the hole's legend color */
+  const bore=(type,c,n,u,v,r,dz,dashed)=>{ const cb=[0,1,2].map(k=>c[k]-n[k]*dz);
+    g.save(); path(slab); g.closePath(); g.clip();
+    const o=ellipse(c,u,v,r), bb=ellipse(cb,u,v,r), body=hull(o.concat(bb));
+    const col=HCOL[type]||'160,170,190';
+    if(dashed){ g.setLineDash([5,4]); path(body); g.closePath(); g.strokeStyle=`rgba(${col},.85)`; g.lineWidth=1.5; g.stroke();
+      path(o); g.closePath(); g.stroke(); g.setLineDash([]); g.restore(); return; }
+    path(body); g.closePath(); g.fillStyle=`rgba(${col},${dark?.30:.26})`; g.fill();               // the cylinder body
+    path(bb); g.closePath(); g.fillStyle=`rgba(${col},${dark?.55:.45})`; g.fill();                 // its flat bottom, at true depth
+    g.strokeStyle=`rgba(${col},.95)`; g.lineWidth=1.3;
+    path(body); g.closePath(); g.stroke();                                                          // silhouette
+    path(bb); g.closePath(); g.stroke();
+    path(o); g.closePath(); g.fillStyle=dark?'rgba(0,0,0,.45)':'rgba(0,0,0,.3)'; g.fill(); g.stroke();   // the opening reads as a hole
+    g.restore(); };
+  const B=bore;
   const yr=p3view.yaw*Math.PI/180, er=p3view.el*Math.PI/180;
   const Vv=[-Math.sin(yr)*Math.cos(er), -Math.cos(yr)*Math.cos(er), Math.sin(er)];
-  const vis=n=>n[0]*Vv[0]+n[1]*Vv[1]+n[2]*Vv[2] > 0.02;                                            // a face you can currently see gets solid bores; hidden faces go dashed
+  const vis=n=>n[0]*Vv[0]+n[1]*Vv[1]+n[2]*Vv[2] > 0.02;
   p.holes.forEach(h=>{ const r=h.d/2, dz=Math.min(h.z||t/2,t);
-    if(!h.edge){ const un=!!h.under, n=un?[0,0,-1]:[0,0,1], face=un?F.bot:F.top, z=un?0:t;
-      bore([h.x,h.y,z],n,[1,0,0],[0,1,0],r,dz,!vis(n),face); }
+    if(!h.edge){ const un=!!h.under, n=un?[0,0,-1]:[0,0,1], z=un?0:t;
+      B(h.type,[h.x,h.y,z],n,[1,0,0],[0,1,0],r,dz,!vis(n)); }
     else { const z=t-(h.zo!==undefined?h.zo:t/2);
-      if(h.y<=0.02)          bore([h.x,0,z],[0,-1,0],[1,0,0],[0,0,1],r,dz,!vis([0,-1,0]),F.front);
-      else if(h.x>=p.w-0.02) bore([W,h.y,z],[1,0,0],[0,1,0],[0,0,1],r,dz,!vis([1,0,0]),F.right);
-      else if(h.y>=p.d-0.02) bore([h.x,D,z],[0,1,0],[1,0,0],[0,0,1],r,dz,!vis([0,1,0]),F.back);
-      else                   bore([0,h.y,z],[-1,0,0],[0,1,0],[0,0,1],r,dz,!vis([-1,0,0]),F.left); } });
+      if(h.y<=0.02)          B(h.type,[h.x,0,z],[0,-1,0],[1,0,0],[0,0,1],r,dz,!vis([0,-1,0]));
+      else if(h.x>=p.w-0.02) B(h.type,[W,h.y,z],[1,0,0],[0,1,0],[0,0,1],r,dz,!vis([1,0,0]));
+      else if(h.y>=p.d-0.02) B(h.type,[h.x,D,z],[0,1,0],[1,0,0],[0,0,1],r,dz,!vis([0,1,0]));
+      else                   B(h.type,[0,h.y,z],[-1,0,0],[0,1,0],[0,0,1],r,dz,!vis([-1,0,0])); } });
   g.font='bold 22px ui-monospace,Menlo,Consolas,monospace'; g.fillStyle='#c8892a';
-  g.fillText(`${p.name} — ${p.w}" × ${p.d}" × ${p.t}"  ·  bores at true depth · dashed = hole on a hidden face`,26,34);
+  g.fillText(`${p.name} — ${p.w}" × ${p.d}" × ${p.t}"  ·  each cylinder is the drilled volume at true depth · dashed = drilled from a hidden face`,26,34);
   ctx.drawImage(cvS,0,0,1200,600);
 }
 function render(){
