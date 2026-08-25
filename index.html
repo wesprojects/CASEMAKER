@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.75 -->
+<!-- BUILD_VERSION: 2026-08-22.77 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -366,7 +366,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Grain<select id="nestGrain"><option value="on" selected>Match sheet grain (no 90° turns)</option><option value="off">Ignore grain (rotate to fit)</option></select></label>
       </div>
       <div class="actions"><button id="dlNest">NESTED SHEETS (DXF)</button><button id="dlCNC1">CNC #1 EDGE FILES (.nc)</button></div>
-      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glide holes ride along in the same file as cam-depth holes (same 5/16 bit).</p>
+      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glide holes ride along in the same file as cam-depth holes (same 5/16 bit). Because the pins sit off-centre, each file carries the real stock thickness plus a Z depth override — the true drill height off the table, with the panel cam face up.</p>
       <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12_7</span>, <span class="mono">EDGE_PIN_D8_Z35_9</span> — decimals written with underscores, AutoCAD forbids periods in layer names). Holes drilled from the opposite face are suffixed <span class="mono">_UNDERSIDE</span> / <span class="mono">_FARFACE</span> and marked on the drawing. Panel outlines are written as single closed polylines, ready to select as one profile in CAM. Every hole also gets a POINT at its center on a matching <span class="mono">_PT</span> layer for picking drill positions in Mastercam. NESTED SHEETS lays every panel (qty included, CUT sizes, rotation allowed) onto the chosen stock, one sheet outline per sheet, holes positioned for drilling on the raw blank before edgebanding.</p>
     </details>
     <details open>
@@ -417,7 +417,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.75";
+const BUILD_VERSION = "2026-08-22.77";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -1132,9 +1132,12 @@ function cnc1Files(){
     list.forEach(({h,t})=>{ const pl=planeOf(p,h); if(!pl) return; const v=posOn(pl,h); holes[pl].push(t==='dowel'?{p:v,t:'dowel'}:v); });
     if(!Object.values(holes).some(a=>a.length)) return;
     const pos=v=>typeof v==='object'?v.p:v; Object.values(holes).forEach(a=>a.sort((a,b)=>pos(a)-pos(b)));
+    /* CNC #1 now takes an explicit Z depth override, so send the REAL thickness plus the true drill
+       height: the panel lies cam-face UP and the pins sit ctr from that face, so Z = t − ctr. */
+    const ctr = j.ctr==null ? p.t/2 : Math.min(j.ctr,p.t/2), drillZ = r4(p.t-ctr);
     const params={ jobName:name, jobLocation:'', qty:p.qty,
       toolOffset:3.484252, bitOffset:1.5, slot2Offset:0,                                  // CNC #1 machine defaults
-      panelWidth:r4(p.w), panelLength:r4(p.d), thickness:p.t,
+      panelWidth:r4(p.w), panelLength:r4(p.d), thickness:p.t, zOverride:drillZ,
       holeDepth:r4(camDepth), holeDepthDowel:r4(dowDepth),
       retract:0.5, safeZ:2, spindle:6000, feedIn:100, feedOut:500, tool:9, origin:9, parkY:75, dropDustHood:false,
       holes };
@@ -1143,6 +1146,8 @@ function cnc1Files(){
     L.push(';'+new Date().toISOString().slice(0,16).replace('T',' '));
     L.push(';'+name+'.nc');
     L.push(';EXPORTED FROM CASEMAKER '+BUILD_VERSION+' - '+p.name+' x'+p.qty+' - '+p.view);
+    L.push(`;STOCK ${p.t}" - HOLE CENTERLINE ${r4(ctr)}" FROM THE CAM FACE`);
+    L.push(`;PANEL LIES CAM FACE UP: Z DEPTH OVERRIDE ${drillZ}" OFF THE TABLE`);
     if(note) L.push(';'+note);
     L.push(';LOAD THIS FILE IN THE CNC #1 EDGE DRILLING APP, REVIEW, THEN GENERATE');
     L.push(';PARAMS_BEGIN');
