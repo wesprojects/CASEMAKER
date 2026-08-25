@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.74 -->
+<!-- BUILD_VERSION: 2026-08-22.75 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -157,17 +157,17 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row three">
         <label>Top<select id="ptTop"><option value="over" selected>Over sides</option><option value="between">Between sides</option><option value="none">None</option></select></label>
         <label id="ptTopFitL">Top over sides<select id="ptTopFit"><option value="flush">Flush with sides</option><option value="wider" selected>Wider (overhang)</option></select></label>
-        <label id="cTopOverL">Overhang per end<input id="cTopOver" type="number" step="0.0001" value="0.0394" data-mm="1"><span class="unit">each end · front and back stay flush</span></label>
+        <label id="cTopOverL">Overhang per end<input id="cTopOver" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">each end · front and back stay flush</span></label>
         <label>Bottom<select id="ptBottom"><option value="between" selected>Between sides</option><option value="none">None</option></select></label>
         <label id="cBotL" style="display:none">Bottom raised off floor<input id="cBot" type="number" step="0.0625" value="0" data-mm="1"></label>
       </div>
       <div class="row three">
         <label>Back panel<select id="ptBack"><option value="full" selected>Full stock, cam locked</option><option value="groove">Thin, in a groove</option><option value="none">None</option></select></label>
         <label>Back panel thickness<input id="cBackT" type="number" step="0.0001" value="1" data-mm="1"></label>
-        <label>Back flush with<select id="cBackFlush"><option value="back" selected>Back edge</option><option value="inset">Inset</option></select></label>
+        <label>Back flush with<select id="cBackFlush"><option value="back">Back edge</option><option value="inset" selected>Inset</option></select></label>
       </div>
       <div class="row three" id="backInsetRow" style="display:none">
-        <label>Back inset from back edge<input id="cBackInset" type="number" step="0.0625" value="0.5" data-mm="1"></label>
+        <label>Back inset from back edge<input id="cBackInset" type="number" step="0.0001" value="0.0394" data-mm="1"></label>
       </div>
       <div class="row four">
         <label>Toe kick<select id="tkStyle"><option value="board" selected>Kick board, cam locked</option><option value="notch">Side notch + loose board</option><option value="none">None</option></select></label>
@@ -273,7 +273,9 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <div class="row three">
       <label>Side panel TOP edge<select id="ebTop"><option value="match" selected>Match body</option><option value="contrast">Contrast band</option></select></label>
       <label id="ebTopTL">Contrast thickness<select id="ebTopT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
-      <label class="chk"><input id="ebKick" type="checkbox"> Band the kick plate<span class="unit">off: no band and no premill, so it cuts at finished size</span></label>
+      <label class="chk"><input id="ebKick" type="checkbox" checked> Band the kick plate<span class="unit">off: no band and no premill, so it cuts at finished size</span></label>
+      <label>Shelf band<select id="ebShelfT"><option value="0.0394" selected>1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select><span class="unit">fixed and adjustable shelves</span></label>
+      <label>Kick band<select id="ebKickT"><option value="0.0394" selected>1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select></label>
     </div>
     <div class="row three">
       <label>Panel finish<select id="fBody"><option value="#b06a3c" selected>Cherry</option><option value="#7a4a2b">Mahogany</option><option value="#6b4a33">Walnut</option><option value="#d9b98c">Maple</option><option value="#3a2e28">Espresso</option><option value="#e8e6e0">Designer White</option><option value="#9a9a98">Folkstone Grey</option><option value="#1d1d1f">Black</option><option value="custom">Custom…</option></select></label>
@@ -415,7 +417,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.74";
+const BUILD_VERSION = "2026-08-22.75";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -834,10 +836,11 @@ function build(){
   // edge banding: finished size entered → cut size = finished + (premill − band) per banded edge
   const ebW=sel('ebWhere'), ebt=parseFloat(sel('ebT')), pre=num('ebPre'), topC=sel('ebTop')==='contrast', topT=parseFloat(sel('ebTopT'));
   const kickBand=on('ebKick');
-  panels.forEach(p=>{ const isSide=p.name.includes('SIDE'), isKick=p.name==='KICK BOARD';
+  panels.forEach(p=>{ const isSide=p.name.includes('SIDE'), isKick=p.name==='KICK BOARD', isShelf=p.name.includes('SHELF');
+    const bt = isKick?parseFloat(sel('ebKickT')) : isShelf?parseFloat(sel('ebShelfT')) : ebt;   // shelves and kick carry their own band
     let bL=0,bR=0,bF=0,bB=0;                       // band thickness applied per edge
     if(!(isKick&&!kickBand)){                      // unbanded kick plate: no band, and therefore no premill either
-      if(ebW==='all'){ bL=bR=bF=bB=ebt; } else if(ebW==='front'){ bF=ebt; }
+      if(ebW==='all'){ bL=bR=bF=bB=bt; } else if(ebW==='front'){ bF=bt; }
       if(isSide&&topC&&ebW!=='none') bR=topT;      // side TOP END gets the contrast band
     }
     p.bands={L:bL,R:bR,F:bF,B:bB};
@@ -845,7 +848,7 @@ function build(){
     p.cutW=r4(p.w+adj(bL)+adj(bR)); p.cutD=r4(p.d+adj(bF)+adj(bB));
     p.edgeNote = (isKick&&!kickBand) ? 'no edge band (cut at finished size)'
       : ebW==='none' ? 'no edge band'
-      : (ebW==='all'?`banded all 4 edges`:`banded ${p.edges.F} only`)+(isSide&&topC?` · ${$('ebTopC').selectedOptions[0].textContent} ${(topT*MM).toFixed(0)} mm on ${p.edges.R}`:'');
+      : (ebW==='all'?`banded all 4 edges`:`banded ${p.edges.F} only`)+((isKick||isShelf)?` · ${(bt*MM).toFixed(0)} mm band`:'')+(isSide&&topC?` · ${$('ebTopC').selectedOptions[0].textContent} ${(topT*MM).toFixed(0)} mm on ${p.edges.R}`:'');
   });
   if(current>=panels.length) current=0;
   const tabs=$('panelTabs'); tabs.innerHTML=''; panels.forEach((p,i)=>{const b=document.createElement('button');b.textContent=p.name;b.className=i===current?'on':'';b.onclick=()=>{current=i;build();};tabs.appendChild(b);});
