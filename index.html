@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.86 -->
+<!-- BUILD_VERSION: 2026-08-22.88 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -28,6 +28,13 @@ button:hover{border-color:var(--mute)}
 button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 button.primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
 main{display:grid;grid-template-columns:410px 1fr;gap:14px;padding:14px;max-width:1700px;margin:0 auto}
+.fullwide{grid-column:1 / -1}
+.fullwide{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.fullwide h2{grid-column:1 / -1}
+.fullwide details{min-width:0}
+.fullwide details{padding-bottom:2px}
+.fullwide .row{margin-bottom:0}
+@media(max-width:980px){.fullwide{grid-template-columns:1fr}}
 main>div:last-child{position:sticky;top:72px;align-self:start}
 @media(max-width:980px){main{grid-template-columns:1fr} main>div:last-child{position:static}}
 section{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:14px}
@@ -87,6 +94,36 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </header>
 
 <main>
+  <section class="fullwide">
+    <h2>OUTPUT</h2>
+    <details open>
+      <summary>CNC</summary>
+      <div class="actions">
+        <button class="primary" id="dlNest">NESTED SHEETS (DXF)</button>
+        <button class="primary" id="dlCNC1">CNC #1 EDGE FILES (.nc)</button>
+        <button id="dlOne">THIS PANEL (DXF)</button>
+      </div>
+      <div class="row three" style="margin-top:10px">
+        <label>Stock sheet<select id="nestStock"><option value="48,96">4 × 8 ft (48 × 96)</option><option value="60,96" selected>5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label>Part spacing<input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></label>
+        <label>Sheet margin<input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></label>
+        <label>Grain<select id="nestGrain"><option value="on" selected>Match sheet grain (no 90° turns)</option><option value="off">Ignore grain (rotate to fit)</option></select></label>
+        <label class="chk"><input id="nestBlankHoles" type="checkbox"> Shift holes for drilling before banding</label>
+      </div>
+    </details>
+    <details open>
+      <summary>ASSEMBLY INSTRUCTIONS</summary>
+      <div class="actions">
+        <button class="primary" id="dlInstr">DOWNLOAD ASSEMBLY INSTRUCTIONS (PDF)</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Spare hardware per line<input id="aiSpare" type="number" min="0" step="1" value="0"></label>
+        <label>Product name<input id="aiTitle" value="48&quot; Bookcase"></label>
+      </div>
+      <p class="hint">Letter size, hardware table, parts list, completed view and step drawings.</p>
+    </details>
+  </section>
+
 <div>
   <!-- ================= SOURCE ================= -->
   <section>
@@ -215,7 +252,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
   <!-- ================= JOINERY ================= -->
   <section>
     <h2>JOINERY</h2>
-    <details open>
+    <details>
       <summary>LAYOUT RULE</summary>
       <div class="row three">
         <label>Max cam lock spacing<input id="rCamSp" type="number" step="0.5" value="20" data-mm="1"></label>
@@ -352,38 +389,6 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     </details>
   </section>
 
-  <!-- ================= OUTPUT ================= -->
-  <section>
-    <h2>OUTPUT</h2>
-    <details open>
-      <summary>CNC</summary>
-      <div class="actions">
-        <button class="primary" id="dlAll">DOWNLOAD ALL PANELS (one DXF)</button>
-        <button id="dlOne">THIS PANEL (DXF)</button>
-      </div>
-      <div class="row three" style="margin-top:10px">
-        <label>Stock sheet<select id="nestStock"><option value="48,96">4 × 8 ft (48 × 96)</option><option value="60,96" selected>5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
-        <label>Part spacing<input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></label>
-        <label>Sheet margin<input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></label>
-        <label class="chk"><input id="nestBlankHoles" type="checkbox"> Shift holes for drilling before banding<span class="unit">off: parts are banded first, holes stay on finished dimensions</span></label>
-        <label>Grain<select id="nestGrain"><option value="on" selected>Match sheet grain (no 90° turns)</option><option value="off">Ignore grain (rotate to fit)</option></select></label>
-      </div>
-      <div class="actions"><button id="dlNest">NESTED SHEETS (DXF)</button><button id="dlCNC1">CNC #1 EDGE FILES (.nc)</button></div>
-      <p class="hint">CNC #1 EDGE FILES writes one .nc file per panel that has edge drilling, each turned 90° left so the long side runs down Y (the vacuum zone); the back panel runs cam face DOWN, everything else cam face up, in the CNC #1 edge-drilling app's own format — open each in that app with LOAD FILE, review, then generate. Panel width/length/thickness, qty, cam and dowel positions per edge, and the hole depths all come across; machine settings (tool, origin, feeds, park) use the CNC #1 defaults. Glides are centred in the thickness and ride in the same file on their own per-hole Z. Because the pins sit off-centre, each file carries the real stock thickness plus a Z depth override — the true drill height off the table, with the panel cam face up.</p>
-      <p class="hint">DXF R12, inches. Each drawing shows the face that lies UP on the CNC when drilling — the VIEW label and the FACE UP column on the cut sheet say which face that is. Layer names carry tool and depth (<span class="mono">CAM_D15_Z12_7</span>, <span class="mono">EDGE_PIN_D8_Z35_9</span> — decimals written with underscores, AutoCAD forbids periods in layer names). Holes drilled from the opposite face are suffixed <span class="mono">_UNDERSIDE</span> / <span class="mono">_FARFACE</span> and marked on the drawing. Panel outlines are written as single closed polylines, ready to select as one profile in CAM. Every hole also gets a POINT at its center on a matching <span class="mono">_PT</span> layer for picking drill positions in Mastercam. NESTED SHEETS lays every panel (qty included, CUT sizes, rotation allowed) onto the chosen stock, one sheet outline per sheet, holes positioned for drilling on the raw blank before edgebanding.</p>
-    </details>
-    <details open>
-      <summary>ASSEMBLY INSTRUCTIONS</summary>
-      <div class="actions">
-        <button class="primary" id="dlInstr">DOWNLOAD ASSEMBLY INSTRUCTIONS (PDF)</button>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <label>Spare hardware per line<input id="aiSpare" type="number" min="0" step="1" value="0"></label>
-        <label>Product name<input id="aiTitle" value="48&quot; Bookcase"></label>
-      </div>
-      <p class="hint">Letter size, hardware table, parts list, completed view and step drawings.</p>
-    </details>
-  </section>
 </div>
 
 <div>
@@ -420,7 +425,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.86";
+const BUILD_VERSION = "2026-08-22.88";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -1191,7 +1196,6 @@ function cnc1Files(){
 function download(name,text,type='application/dxf'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 const stamp=()=>new Date().toISOString().slice(0,10);
 const jobName=()=>mode==='case'?(sel('cJob').trim()||`${num('cW')}x${num('cH')}x${num('cD')}`).replace(/\s+/g,'_'):mode==='obj'&&model?model.file.replace(/\.obj$/i,'').toUpperCase():'PANEL';
-$('dlAll').onclick=()=>{if(panels.length)download(`CASEMAKER_${jobName()}_${stamp()}.dxf`,dxf(panels));};
 $('dlNest').onclick=()=>{ if(!panels.length) return; const r=nestDXF(); if(r) download(`CASEMAKER_NEST_${jobName()}_${sel('nestStock').replace(',','x')}_${stamp()}.dxf`,r.dxf); };
 $('dlCNC1').onclick=()=>{ const fs=cnc1Files(); if(!fs.length){ alert('No panels with edge drilling.'); return; } fs.forEach((f,i)=>setTimeout(()=>download(f.name,f.text,'text/plain'),i*400)); };
 $('dlOne').onclick=()=>{const p=panels[current];if(p)download(`${p.name.replace(/\s+/g,'_')}_${stamp()}.dxf`,dxf([p]));};
