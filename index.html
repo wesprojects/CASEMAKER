@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-30.26 -->
+<!-- BUILD_VERSION: 2026-08-30.28 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -120,7 +120,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
             <option value='{"cW":34.6457,"cH":28.4646,"cD":22.5591,"cT":0.9843,"cBackT":0.7087,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"cAdj":1,"cDoors":2,"hgOn":true,"cDoorY0":3.3465,"cDoorY1":28.4646,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>5CLSC34</option>
             <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":2,"drFile":1,"drAlign":"bottom","drY0":2.7559,"drSideGap":0.0394,"drHeights":"318mm, 157mm, 157mm","drBoxHeights":"245mm, 90mm, 90mm","drSlideBox":"15.748","drSlideFile":"20.0787"}'>5CLBBF22</option>
             <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":0,"drFile":2,"drAlign":"bottom","drY0":2.7559,"drSideGap":0.0394,"drHeights":"318mm, 318mm","drBoxHeights":"245mm, 245mm","drSlideFile":"20.0787"}'>5CLFF22</option>
-            <option value='{"cW":34.6457,"cH":36.0236,"cD":14.9606,"cT":0.9843,"cBackT":0.6299,"tkStyle":"none","ptTop":"over","ptTopFit":"flush","cTopFront":0,"cBackFlush":"back","cAdj":2,"cDoors":0,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","glOn":false}'>5CLH72</option>
+            <option value='{"cW":34.6457,"cH":36.0236,"cD":14.9606,"cT":0.9843,"cBackT":0.6299,"tkStyle":"none","ptTop":"over","ptTopFit":"flush","cTopFront":0,"ptBottom":"none","cBackFlush":"back","cAdj":2,"cDoors":0,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","glOn":true,"glType":"pin","glWhere":"sides","glY":3.0512}'>5CLH72</option>
             <option value='{"cW":34.6457,"cH":27.9528,"cD":22.5591,"cT":0.9843,"cBackT":0.7087,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":0,"drFile":2,"drAlign":"bottom","drY0":2.7559,"drSideGap":0.0787,"drGap":0.0787,"drHeights":"318mm, 318mm","drBoxHeights":"245mm, 245mm","drSlideFile":"21.1811","drT":0.4724}'>5CLLF34</option>
             <option value='{"cW":15.5118,"cH":22.8346,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.1654,"tkInset":0.0591,"cTopOver":0.1181,"cTopFront":0.6299,"cAdj":0,"cDoors":0,"drBox":1,"drFile":1,"drAlign":"top","drTopGap":0.1181,"drGap":0.0787,"drSideGap":-0.0394,"drHeights":"318mm, 184mm","drBoxHeights":"245mm, 120mm","drSlideBox":"20.0787","drSlideFile":"20.0787","glOn":true,"glType":"caster","glWhere":"bottom"}'>5CLBFM</option>
           </optgroup></select></label>
@@ -384,7 +384,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <details>
       <summary><label class="chk"><input type="checkbox" id="glOn" checked>GLIDES / CASTERS</label></summary>
       <div class="row four">
-        <label>Type<select id="glType"><option value="glide" selected>Levelling glide</option><option value="caster">Swivel caster</option></select></label>
+        <label>Type<select id="glType"><option value="glide" selected>Levelling glide</option><option value="caster">Swivel caster</option><option value="pin">Cam pin · fixes down to the surface below</option></select></label>
         <label>In<select id="glWhere"><option value="sides" selected>Side panel bottom edge</option><option value="bottom">Bottom panel face</option></select></label>
         <label>Ø<input id="glD" type="number" step="0.0001" value="0.3937" data-mm="1"></label>
         <label>Depth<input id="glZ" type="number" step="0.0001" value="0.4724" data-mm="1"></label>
@@ -505,7 +505,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-30.26";
+const BUILD_VERSION = "2026-08-30.28";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -632,7 +632,8 @@ const F={
       else { const half=Math.floor((parseInt(rowsN)-1)/2); shelfZ.filter(sz=>sz>a-pitch&&sz<b+pitch).forEach(sz=>{ const c=sz-dia/2; for(let q=-half;q<=half;q++){ const x=c+q*pitch; if(x>=a&&x<=b) xs.push(x); } }); }
       xs.forEach(x=>{ const key=x.toFixed(3); if(seen.has(key)) return; seen.add(key); rows.forEach(y=>addHole(p,'SHELFPIN',x,y,dia,z,L)); }); } },
   glides(p){ if(!on('glOn')||sel('glWhere')!=='bottom') return; const d=num('glD'),z=num('glZ'),ix=num('glX'),iy=num('glY'),L=lay('GLIDE',d,z); [[ix,iy],[p.w-ix,iy],[ix,p.d-iy],[p.w-ix,p.d-iy]].forEach(([x,y])=>addHole(p,'GLIDE',x,y,d,z,L)); },
-  glidesEdge(side){ if(!on('glOn')||sel('glWhere')!=='sides') return; const d=num('glD'),z=num('glZ'),iy=num('glY'),L=lay('EDGE_GLIDE',d,z);
+  glidesEdge(side){ if(!on('glOn')||sel('glWhere')!=='sides') return; const j0=joinery(), pin=sel('glType')==='pin';
+    const d=pin?j0.pinED:num('glD'), z=pin?j0.pinEZ:num('glZ'), iy=num('glY'), L=lay(pin?'EDGE_PIN_MOUNT':'EDGE_GLIDE',d,z);
     [iy,side.d-iy].forEach(y=>addHole(side,'GLIDE',0,y,d,z,L,true,r4(side.t/2))); },   // glides are the one edge hole that stays centred in the thickness
   hingeCups(door){ if(!on('hgOn')) return []; const n=hingeCount(door.d),e=num('hgEnd'),ys=[]; for(let i=0;i<n;i++) ys.push(n===1?door.d/2:e+(door.d-2*e)*i/(n-1));
     const k=num('hgK'),x=door.hingeEdge==='L'?k:door.w-k,cd=num('hgCupD'),cz=num('hgCupZ'),ss=num('hgCupS')/2,sd=num('hgScrD'),sz=num('hgScrZ');
@@ -809,7 +810,8 @@ function buildCase(){
     } else $('drNote').textContent='';
   }
   // adjustable shelf positions: evenly in the largest opening
-  const adjQ=parseInt($('cAdj').value)||0, adjZ=[]; { const ms=[...members].sort((x,y)=>x.y0-y.y0); let best=null; for(let i=0;i<ms.length-1;i++){const o=[ms[i].y0+T,ms[i+1].y0]; if(!best||o[1]-o[0]>best[1]-best[0]) best=o;}
+  const openMembers = hasBottom ? members : [{name:'FLOOR',y0:-T,t:T,dep:memDep('SHELF')},...members];   // a hutch stands on the worksurface: that IS the bottom of the opening
+  const adjQ=parseInt($('cAdj').value)||0, adjZ=[]; { const ms=[...openMembers].sort((x,y)=>x.y0-y.y0); let best=null; for(let i=0;i<ms.length-1;i++){const o=[ms[i].y0+T,ms[i+1].y0]; if(!best||o[1]-o[0]>best[1]-best[0]) best=o;}
     if(best&&drawerBay==='full') best=[Math.max(best[0],drawerTop+1),best[1]];   // a full-width drawer stack pushes the shelves above it
     if(best&&best[1]-best[0]>T) for(let i=1;i<=adjQ;i++) adjZ.push(best[0]+(best[1]-best[0])*i/(adjQ+1)); }
   // ---- sides (X = height along length, Y = depth, inside face view)
@@ -824,7 +826,7 @@ function buildCase(){
     if(backStyle==='full'){ recvLine(p,'y',backY,BT,j,[0,topY0],'max'); }   // back panel runs to the floor
     if(tk==='board') recvLine(p,'y',tkIn,T,j,[0,tkH],'max');   // kick board cams face the back
     if(backStyle==='groove') F.groove(p);
-    F.pins(p,members,adjZ); F.notch(p); F.glidesEdge(p);
+    F.pins(p,openMembers,adjZ); F.notch(p); F.glidesEdge(p);
     doors.forEach(dr=>{ if(dr.hingeEdge===(name==='LEFT SIDE'?'L':'R')) F.hingePlates(p,dr,dr.ys); });
     p.box={min:[x0,0,0],max:[x0+T,D,sideH]};
     p.frame={o:[0,0,0],ux:[0,0,1],uy:[0,1,0],ax:0,shown:x0===0?T:W-T,opp:x0===0?0:W};   // inside face
@@ -1057,7 +1059,7 @@ function hardware(){
   const sp=0;   // spare hardware is not carried on these jobs
   const nDr=panels.filter(p=>p.name.includes('DRAWER FRONT')).reduce((s,p)=>s+p.qty,0);
   const ovTxt=(()=>{const d=panels.filter(p=>p.overlay);return d.length?(d.every(x=>x.overlay==='full')?'Hinge (full overlay)':'Hinge (half overlay)'):'Hinge';})();
-  const rows=[['A','CAM PIN','Cam Pin',c.pin],['B','CAM NUT','Cam Nut',c.cam],['C','DOWEL','Dowel',c.dowel],['D','GLIDE',sel('glType')==='caster'?'Swivel Caster':'Levelling Glide',c.glide],['E','STICKER','Cam Cover Sticker',c.cam],['F','SLIDE',`Drawer Slide Pair`,nDr],['G','HINGE',ovTxt,c.hinge||0]]
+  const rows=[['A','CAM PIN','Cam Pin',c.pin],['B','CAM NUT','Cam Nut',c.cam],['C','DOWEL','Dowel',c.dowel],['D','GLIDE',sel('glType')==='caster'?'Swivel Caster':sel('glType')==='pin'?'Cam Pin (surface mount)':'Levelling Glide',c.glide],['E','STICKER','Cam Cover Sticker',c.cam],['F','SLIDE',`Drawer Slide Pair`,nDr],['G','HINGE',ovTxt,c.hinge||0]]
     .filter(r=>r[3]>0).map(r=>({letter:r[0],code:r[1],name:r[2],qty:r[3],spare:sp}));
   return rows;
 }
@@ -1383,7 +1385,7 @@ function hardware3D(){ const out=[], tol=0.02, j=joinery(); hardwareMeshes=[];
       else if(h.y>=p.d-tol)   [0,1,2].forEach(i=>n[i]= f.uy[i]);
       else if(h.x<=tol)       [0,1,2].forEach(i=>n[i]=-f.ux[i]);
       else                    [0,1,2].forEach(i=>n[i]= f.ux[i]);
-      if(h.type==='GLIDE'){ const half=[r,r,r]; [0,1,2].forEach(i=>{ if(Math.abs(n[i])>0.5) half[i]=glideOut/2; });
+      if(h.type==='GLIDE'&&sel('glType')!=='pin'){ const half=[r,r,r]; [0,1,2].forEach(i=>{ if(Math.abs(n[i])>0.5) half[i]=glideOut/2; });
         add([0,1,2].map(i=>c[i]+n[i]*glideOut/2),half,'glide'); } }); });
   /* hinges: the supplied models. Stored frame: cup centre at the origin, +X the cup axis (into the door),
      +Y up, +Z the plate's mounting normal (into the side panel). Closed geometry when shut, open when swung. */
