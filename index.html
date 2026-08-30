@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.106 -->
+<!-- BUILD_VERSION: 2026-08-30.3 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -19,7 +19,7 @@ header{display:flex;align-items:center;gap:18px;padding:12px 18px;border-bottom:
 .lockup img{width:186px;display:block;margin-bottom:5px}
 [data-theme="light"] .lockup img{filter:invert(1)}
 .lockup .eyebrow{font-size:10px;letter-spacing:.22em;color:var(--amber);font-weight:700}
-h1{font-size:18px;letter-spacing:.12em;margin:0;font-weight:700}
+h1{font-size:30px;line-height:1;letter-spacing:.14em;margin:0;font-weight:700}
 .sub{font-size:11px;color:var(--mute);letter-spacing:.08em}
 .spacer{flex:1}
 .build{font-size:11px;color:var(--mute);font-family:ui-monospace,Menlo,Consolas,monospace}
@@ -29,9 +29,9 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 button.primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
 main{display:grid;grid-template-columns:410px 1fr;gap:14px;padding:14px;max-width:1700px;margin:0 auto}
 .fullwide{grid-column:1 / -1}
-.fullwide{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
-.fullwide h2{grid-column:1 / -1}
-.fullwide details{min-width:0}
+.narrow .fld{display:flex;align-items:center;gap:8px}
+.narrow .fld input{width:5.2em}
+.narrow .fld .unit.mm{margin:0;white-space:nowrap}
 .fullwide details{padding-bottom:2px}
 .fullwide .row{margin-bottom:0}
 @media(max-width:980px){.fullwide{grid-template-columns:1fr}}
@@ -78,10 +78,9 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 <header>
   <div>
     <h1>CASEMAKER</h1>
-    <div class="sub">CASE GENERATOR WITH CAM AND DOWELS PLUS OTHER FEATURES - WESM</div>
+    <div class="sub" id="build"></div>
   </div>
   <div class="spacer"></div>
-  <span class="build" id="build"></span>
   <button id="saveProjBtn" title="Save this project as a .casemaker file">SAVE</button>
   <button id="loadProjBtn" title="Load a saved .casemaker project">LOAD</button><input id="projFile" type="file" accept=".casemaker,.json" style="display:none">
   <button id="view3dBtn" title="Open the 3D preview">3D VIEW</button>
@@ -94,36 +93,6 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </header>
 
 <main>
-  <section class="fullwide">
-    <h2>OUTPUT</h2>
-    <details open>
-      <summary>CNC</summary>
-      <div class="actions">
-        <button class="primary" id="dlNest">NESTED SHEETS (DXF)</button>
-        <button class="primary" id="dlCNC1">CNC #1 EDGE FILES (.nc)</button>
-        <button id="dlOne">THIS PANEL (DXF)</button>
-        <button id="dlDae">SKETCHUP MODEL (.dae)</button>
-      </div>
-      <div class="row three" style="margin-top:10px">
-        <label>Stock sheet<select id="nestStock"><option value="48,96">4 × 8 ft (48 × 96)</option><option value="60,96" selected>5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
-        <label>Part spacing<input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></label>
-        <label>Sheet margin<input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></label>
-        <label>Grain<select id="nestGrain"><option value="on" selected>Match sheet grain (no 90° turns)</option><option value="off">Ignore grain (rotate to fit)</option></select></label>
-        <label class="chk"><input id="nestBlankHoles" type="checkbox"> Shift holes for drilling before banding</label>
-      </div>
-    </details>
-    <details open>
-      <summary>ASSEMBLY INSTRUCTIONS</summary>
-      <div class="actions">
-        <button class="primary" id="dlInstr">DOWNLOAD ASSEMBLY INSTRUCTIONS (PDF)</button>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <label>Spare hardware per line<input id="aiSpare" type="number" min="0" step="1" value="0"></label>
-        <label>Product name<input id="aiTitle" value="48&quot; Bookcase"></label>
-      </div>
-      <p class="hint">Letter size, hardware table, parts list, completed view and step drawings.</p>
-    </details>
-  </section>
 
 <div>
   <!-- ================= SOURCE ================= -->
@@ -139,20 +108,14 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row">
         <label>Model no. / job name<input id="cJob" value="5CLBK48"></label>
         <label>Preset<select id="cPreset"><option value="">—</option>
-          <optgroup label="CON series (Yasen drawings)">
+          <optgroup label="GATEWAY PRODUCTS">
             <option value='{"cW":34.65,"cH":47.2441,"cD":13.9764,"cT":1.03,"cBackT":1.03,"tkStyle":"board","tkH":2.7559,"cAdj":2,"cDoors":0,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>5CLBK48</option>
-            <option value='{"cW":34.6457,"cH":28.4646,"cD":22.5591,"cT":0.9843,"cBackT":0.7087,"tkStyle":"board","tkH":2.7559,"cAdj":1,"cDoors":2,"cDoorY0":2.7559,"cDoorY1":27.874,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>5CLSC34</option>
-            <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":2,"drFile":1,"drAlign":"case","drSideGap":0.0394,"drHeights":"318mm, 157mm, 157mm","drBoxHeights":"245mm, 90mm, 90mm","drSlideBox":"15.748","drSlideFile":"20.0787"}'>5CLBBF22</option>
-            <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":0,"drFile":2,"drAlign":"case","drSideGap":0.0394,"drHeights":"318mm, 318mm","drBoxHeights":"245mm, 245mm","drSlideFile":"20.0787"}'>5CLFF22</option>
-            <option value='{"cW":15.5118,"cH":20.6693,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"none","cTopOver":0.1181,"cAdj":0,"cDoors":0,"drBox":1,"drFile":1,"drAlign":"top","drSideGap":-0.0394,"drHeights":"318mm, 184mm","drBoxHeights":"245mm, 120mm","drSlideBox":"20.0787","drSlideFile":"20.0787"}'>5CLBFM</option>
-          </optgroup>
-          <optgroup label="Generic">
-            <option value='{"cW":36,"cH":48,"cD":14,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>36 × 48 × 14</option>
-            <option value='{"cW":36,"cH":30,"cD":14,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>36 × 30 × 14</option>
-            <option value='{"cW":36,"cH":72,"cD":14,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>36 × 72 × 14</option>
-            <option value='{"cW":30,"cH":66,"cD":14,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>30 × 66 × 14</option>
-            <option value='{"cW":36,"cH":29,"cD":20,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>36 × 29 × 20 (lateral)</option>
-            <option value='{"cW":24,"cH":36,"cD":12,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>24 × 36 × 12</option>
+            <option value='{"cW":34.6457,"cH":28.4646,"cD":22.5591,"cT":0.9843,"cBackT":0.7087,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"cAdj":1,"cDoors":2,"cDoorY0":3.3465,"cDoorY1":28.4646,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>5CLSC34</option>
+            <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":2,"drFile":1,"drAlign":"bottom","drY0":2.7559,"drSideGap":0.0394,"drHeights":"318mm, 157mm, 157mm","drBoxHeights":"245mm, 90mm, 90mm","drSlideBox":"15.748","drSlideFile":"20.0787"}'>5CLBBF22</option>
+            <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":0,"drFile":2,"drAlign":"bottom","drY0":2.7559,"drSideGap":0.0394,"drHeights":"318mm, 318mm","drBoxHeights":"245mm, 245mm","drSlideFile":"20.0787"}'>5CLFF22</option>
+            <option value='{"cW":34.6457,"cH":36.0236,"cD":14.9606,"cT":0.9843,"cBackT":0.6299,"tkStyle":"none","ptTop":"over","ptTopFit":"flush","cTopFront":0,"cBackFlush":"back","cAdj":2,"cDoors":0,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","glOn":false}'>5CLH72</option>
+            <option value='{"cW":34.6457,"cH":27.9528,"cD":22.5591,"cT":0.9843,"cBackT":0.7087,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":0,"drFile":2,"drAlign":"bottom","drY0":2.7559,"drSideGap":0.0787,"drGap":0.0787,"drHeights":"318mm, 318mm","drBoxHeights":"245mm, 245mm","drSlideFile":"21.1811","drT":0.4724}'>5CLLF34</option>
+            <option value='{"cW":15.5118,"cH":22.8346,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.1654,"tkInset":0.0591,"cTopOver":0.1181,"cTopFront":0.6299,"cAdj":0,"cDoors":0,"drBox":1,"drFile":1,"drAlign":"top","drTopGap":0.1181,"drGap":0.0787,"drSideGap":-0.0394,"drHeights":"318mm, 184mm","drBoxHeights":"245mm, 120mm","drSlideBox":"20.0787","drSlideFile":"20.0787","glOn":true,"glType":"caster","glWhere":"bottom"}'>5CLBFM</option>
           </optgroup></select></label>
       </div>
       <div class="row four">
@@ -210,6 +173,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row three">
         <label>Top<select id="ptTop"><option value="over" selected>Over sides</option><option value="between">Between sides</option><option value="none">None</option></select></label>
         <label id="ptTopFitL">Top over sides<select id="ptTopFit"><option value="flush">Flush with sides</option><option value="wider" selected>Wider (overhang)</option></select></label>
+        <label>Top front overhang<input id="cTopFront" type="number" step="0.0001" value="0" data-mm="1"><span class="unit">reaches out over the faces</span></label>
         <label id="cTopOverL">Overhang per end<input id="cTopOver" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">each end · front and back stay flush</span></label>
         <label>Bottom<select id="ptBottom"><option value="between" selected>Between sides</option><option value="none">None</option></select></label>
         <label id="cBotL" style="display:none">Bottom raised off floor<input id="cBot" type="number" step="0.0625" value="0" data-mm="1"></label>
@@ -246,18 +210,18 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <details open>
       <summary>SHELVES</summary>
       <div class="row">
+        <label>Shelf front gap<input id="cShelfGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 mm back from the front edge</span></label>
         <label>Fixed shelves (qty)<input id="cShelves" type="number" min="0" step="1" value="0"></label>
         <label>Positions (bottom of shelf, from floor)<input id="cShelfPos" placeholder="auto"></label>
       </div>
       <div class="row three">
         <label>Adjustable shelves (qty)<input id="cAdj" type="number" min="0" step="1" value="2"></label>
-        <label>Shelf front gap<input id="cShelfGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 mm back from the front edge</span></label>
-        <label>Adj. shelf depth<input id="cAdjD" type="number" step="0.0001" placeholder="auto" data-mm="1"><span class="unit">blank = back panel to front, less the gap</span></label>
+                <label>Adj. shelf depth<input id="cAdjD" type="number" step="0.0001" placeholder="auto" data-mm="1"><span class="unit">blank = back panel to front, less the gap</span></label>
         <label>Side clearance (each)<input id="cAdjGap" type="number" step="0.0001" value="0.0197" data-mm="1"></label>
       </div>
     </details>
     <details>
-      <summary>DRAWERS</summary>
+      <summary>DRAWERS <span class="unit">faces, boxes and slides</span></summary>
       <div class="row four">
         <label>Box drawers (qty)<input id="drBox" type="number" min="0" step="1" value="0"></label>
         <label>File drawers (qty)<input id="drFile" type="number" min="0" step="1" value="0"></label>
@@ -271,6 +235,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Box front height<input id="drBoxH" type="number" step="0.0001" value="7.2441" data-mm="1"><span class="unit">184 mm per 5CLBFM</span></label>
         <label>File front height<input id="drFileH" type="number" step="0.0001" value="12.5197" data-mm="1"><span class="unit">318 mm</span></label>
         <label>Gap between fronts<input id="drGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 mm, vertical</span></label>
+        <label>Gap under the top<input id="drTopGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">when the stack hangs from the top</span></label>
         <label>Front side reveal<input id="drSideGap" type="number" step="0.0001" value="0.0394" data-mm="1"><span class="unit">per side · negative = face sits proud of the carcass</span></label>
         <label>Slide clearance (each side)<input id="drSlide" type="number" step="0.0001" value="0.5118" data-mm="1"><span class="unit">13 mm</span></label>
       </div>
@@ -278,8 +243,8 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Box drawer box height<input id="drBoxBH" type="number" step="0.0001" value="4.7244" data-mm="1"><span class="unit">120 mm</span></label>
         <label>File drawer box height<input id="drFileBH" type="number" step="0.0001" value="9.6457" data-mm="1"><span class="unit">245 mm</span></label>
         <label>Drawer box sides<input id="drT" type="number" step="0.0001" value="0.4724" data-mm="1"><span class="unit">12 mm</span></label>
-        <label>Box drawer slides<select id="drSlideBox"><option value="15.748" selected>16" (box depth 400 mm)</option><option value="20.0787">20" (box depth 510 mm)</option></select></label>
-        <label>File drawer slides<select id="drSlideFile"><option value="15.748">16" (box depth 400 mm)</option><option value="20.0787" selected>20" (box depth 510 mm)</option></select></label>
+        <label>Box drawer slides<select id="drSlideBox"><option value="15.748" selected>16" (box depth 400 mm)</option><option value="21.1811">18" (box depth 538 mm)</option><option value="20.0787">20" (box depth 510 mm)</option></select></label>
+        <label>File drawer slides<select id="drSlideFile"><option value="15.748">16" (box depth 400 mm)</option><option value="21.1811">18" (box depth 538 mm)</option><option value="20.0787" selected>20" (box depth 510 mm)</option></select></label>
       </div>
       <div class="row four">
         <label class="chk"><input id="drSlot" type="checkbox" checked> Slot the drawer bottom<span class="unit">off: bottom captured under the box</span></label>
@@ -410,8 +375,9 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
     </details>
     <details>
-      <summary><label class="chk"><input type="checkbox" id="glOn" checked>GLIDES</label></summary>
+      <summary><label class="chk"><input type="checkbox" id="glOn" checked>GLIDES / CASTERS</label></summary>
       <div class="row four">
+        <label>Type<select id="glType"><option value="glide" selected>Levelling glide</option><option value="caster">Swivel caster</option></select></label>
         <label>In<select id="glWhere"><option value="sides" selected>Side panel bottom edge</option><option value="bottom">Bottom panel face</option></select></label>
         <label>Ø<input id="glD" type="number" step="0.0001" value="0.3937" data-mm="1"></label>
         <label>Depth<input id="glZ" type="number" step="0.0001" value="0.4724" data-mm="1"></label>
@@ -420,7 +386,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
     </details>
     <details>
-      <summary><label class="chk"><input type="checkbox" id="hgOn">DOOR HINGES</label></summary>
+      <summary><label class="chk"><input type="checkbox" id="hgOn">DOOR HINGES <span class="unit">door sizing and overlay live under PARTS → DOORS</span></label></summary>
       <div class="row four">
         <label>Cup Ø<input id="hgCupD" type="number" step="0.0001" value="1.378" data-mm="1"></label>
         <label>Cup depth<input id="hgCupZ" type="number" step="0.0001" value="0.5118" data-mm="1"></label>
@@ -454,6 +420,39 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 <div>
   <section>
+    <h2>OUTPUT</h2>
+    <details open>
+      <summary>CNC</summary>
+      <div class="actions">
+        <button class="primary" id="dlNest">NEST (DXF)</button>
+        <button class="primary" id="dlCNC1">EDGE FILES (.nc)</button>
+        <button id="dlOne">PANEL (DXF)</button>
+        <button id="dlDae">SKETCHUP (.dae)</button>
+        <button id="dlInstr">ASSEMBLY (PDF)</button>
+      </div>
+      <div class="row three" style="margin-top:10px">
+        <label>Grain<select id="nestGrain"><option value="on" selected>Match sheet grain (no 90° turns)</option><option value="off">Ignore grain (rotate to fit)</option></select></label>
+        <label class="chk"><input id="protoMode" type="checkbox"> Prototype on bare material<span class="unit">every part true to size, no edgeband</span></label>
+        <label id="protoTL" style="display:none">Prototype stock thickness<input id="protoT" type="number" step="0.0001" value="0.75" data-mm="1"><span class="unit">case parts only · drawer boxes keep their own</span></label>
+      </div>
+      <div class="row three">
+        <label>Case sheet<select id="nestStock"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label class="narrow">Case part spacing<span class="fld"><input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">Case sheet margin<span class="fld"><input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
+      </div>
+      <div class="row three">
+        <label>Drawer box sheet<select id="nestStockDwr"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label class="narrow">Drawer box part spacing<span class="fld"><input id="nestGapDwr" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">Drawer box sheet margin<span class="fld"><input id="nestMarginDwr" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
+      </div>
+      <div class="row three">
+        <label>Drawer bottom sheet<select id="nestStockBot"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label class="narrow">Drawer bottom part spacing<span class="fld"><input id="nestGapBot" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">Drawer bottom sheet margin<span class="fld"><input id="nestMarginBot" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
+      </div>
+    </details>
+  </section>
+  <section>
     <h2>PANELS</h2>
     <div class="tabs" id="panelTabs"></div>
     <div class="tabs" style="margin-bottom:6px"><button id="pzBtn" title="Left-drag orbit / rotate · right-drag pan · wheel zoom at the cursor">🖱 PAN/ZOOM: OFF</button><button id="p3Btn" title="Show this panel as a slab with real hole depths">PANEL 3D: OFF</button><label class="chk" style="font-size:11px;margin-left:8px">Grain<select id="pGrain" style="margin-left:4px"><option value="len">along length</option><option value="wid">across (width)</option><option value="none">none / free</option></select></label><button id="pzReset" style="display:none">RECENTER</button></div>
@@ -486,8 +485,8 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.106";
-document.getElementById('build').textContent = "Build " + BUILD_VERSION;
+const BUILD_VERSION = "2026-08-30.3";
+document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
 const num = id => parseFloat($(id).value)||0;
@@ -518,6 +517,8 @@ $('cPreset').onchange=()=>{ const v=sel('cPreset'); if(!v) return;
     if(el.type==='checkbox') el.checked=!!val;
     else if(el.tagName==='SELECT'){ if([...el.options].some(o=>o.value===String(val))) el.value=String(val); }
     else el.value=val; });
+  const label=$('cPreset').selectedOptions[0].textContent.trim();
+  if(/^5CL/.test(label)) $('cJob').value=label;                              // the model number carries through every export
   $('cShelfPos').value=''; build(); };
 const ROLES=[['none','—'],['butt','Butts in (cam locks here)'],['recv','Receives']];
 ['eL','eR','eF','eB'].forEach(id=>{const s=$(id);ROLES.forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;s.appendChild(o);});s.onchange=()=>{$(id+'p').disabled=s.value!=='recv';build();};});
@@ -542,7 +543,7 @@ function syncVisibility(){
   $('cBackFlush').parentElement.style.display=sel('ptBack')==='full'?'':'none';
   $('rDowOffL').style.visibility=sel('rDowPat')==='beside'?'':'hidden';
   $('rDowNRow').style.display=sel('rDowPat')==='between'?'':'none';
-  document.querySelectorAll('input[data-mm]').forEach(el=>{ let u=el.parentElement.querySelector('.unit.mm'); if(!u){ u=document.createElement('span'); u.className='unit mm'; el.parentElement.appendChild(u); } const v=parseFloat(el.value); u.textContent=isNaN(v)?(el.placeholder==='auto'?`auto = ${pinEdgeDepth().toFixed(4)}" (${(pinEdgeDepth()*MM).toFixed(1)} mm)`:''):`= ${(v*MM).toFixed(2)} mm`; });
+  document.querySelectorAll('input[data-mm]').forEach(el=>{ const host=el.closest('.fld')||el.parentElement; let u=host.querySelector('.unit.mm'); if(!u){ u=document.createElement('span'); u.className='unit mm'; host.appendChild(u); } const v=parseFloat(el.value); u.textContent=isNaN(v)?(el.placeholder==='auto'?`auto = ${pinEdgeDepth().toFixed(4)}" (${(pinEdgeDepth()*MM).toFixed(1)} mm)`:''):`= ${(v*MM).toFixed(2)} mm`; });
   $('ebTopTL').style.visibility=sel('ebTop')==='contrast'?'':'hidden';
   $('fBodyCL').style.visibility=sel('fBody')==='custom'?'':'hidden'; $('fEdgeCL').style.visibility=sel('fEdge')==='custom'?'':'hidden'; $('ebTopCL2').style.visibility=sel('ebTopC')==='custom'?'':'hidden';
   { const over=sel('ptTop')==='over'; $('ptTopFitL').style.display=over?'':'none'; $('cTopOverL').style.display=(over&&sel('ptTopFit')==='wider')?'':'none'; }
@@ -552,7 +553,7 @@ function syncVisibility(){
   { const j0=joinery(), t=num('cT'), o=j0.ctr==null?t/2:Math.min(j0.ctr,t/2);
     $('hPinCtr').disabled=$('hPinMid').checked;
     $('hPinCtrNote').textContent=`${$('hPinMid').checked?`centered: ${r4(o)}" · `:''}wall ${r4(o-j0.pinFD/2)}" face hole · ${r4(o-j0.dowD/2)}" edge hole · nut bore ${r4(j0.camZ+Math.max(0,o-j0.slot))}"`; }
-  { $('drY0L').style.display=sel('drAlign')==='top'?'none':''; }
+  { $('drY0L').style.display=sel('drAlign')==='top'?'none':''; $('protoTL').style.display=on('protoMode')?'':'none'; }
   { const cw=sel('cDoorWMode')==='custom'&&parseInt(sel('cDoors'))>0; $('cDoorWL').style.display=cw?'':'none';
     $('dvXL').style.display=on('dvOn')?'':'none'; $('dvShow').style.display=(on('dvOn')||cw)?'':'none'; }
   if(panels[current]) $('pGrain').value=grainOf(panels[current]);
@@ -624,8 +625,10 @@ function hingeCount(h){ const v=sel('hgN'); if(v!=='auto') return parseInt(v); r
 
 /* ================= case builder ================= */
 function buildCase(){
-  const W=num('cW'),H=num('cH'),D=num('cD'),T=num('cT'),j=joinery();
-  const topStyle=sel('ptTop'), hasBottom=sel('ptBottom')!=='none', backStyle=sel('ptBack'), BT=num('cBackT');
+  /* prototype mode swaps the case stock for whatever bare sheet is on hand; drawer boxes keep their own material */
+  const protoT = on('protoMode') ? num('protoT') : null;                     // one bare thickness for every case part, back included
+  const W=num('cW'),H=num('cH'),D=num('cD'),T=protoT??num('cT'),j=joinery();
+  const topStyle=sel('ptTop'), hasBottom=sel('ptBottom')!=='none', backStyle=sel('ptBack'), BT=protoT??num('cBackT');
   const tk=sel('tkStyle'), tkH=num('tkH'), tkIn=num('tkInset'), jd={...j,dowelsOnly:true,dowSp:Math.max(2,num('tkDow'))};   // kick top edge: dowels only
   const bot = tk==='none' ? num('cBot') : tkH;   // with a toe kick, the kick height is how far the bottom sits off the floor
   const inner=r4(W-2*T), sideH=r4(topStyle==='over'?H-T:H), topY0=r4(H-T);
@@ -645,12 +648,14 @@ function buildCase(){
   const topOv = (topStyle==='over'&&sel('ptTopFit')==='wider') ? Math.max(0,num('cTopOver')) : 0;   // top can hang past the sides
   members.forEach(m=>{
     const ov=m.over?topOv:0, w=m.over?r4(W+2*ov):inner, x0=m.over?-ov:T;
-    const dep = m.dep, yOff = m.name.startsWith('SHELF') ? r4(((backStyle==='full'?backY:D))-dep) : 0;   // shelves sit against the back panel
+    const tf = m.name==='TOP' ? Math.max(0,num('cTopFront')) : 0;             // the top can reach out over the drawer faces
+    const dep = r4(m.dep+tf), yOff = m.name.startsWith('SHELF') ? r4(((backStyle==='full'?backY:D))-m.dep) : (m.name==='TOP' ? -tf : 0);
     const p=newPanel(m.name,w,dep,T,`${w}" × ${dep}" × ${T}"  ·  view: ${m.face} (cam lock face), front edge at Y=0`);
     orient(p,m.face,'LEFT END','RIGHT END','FRONT','BACK');
-    if(m.over){ recvLine(p,'x',ov,T,j,undefined,'max'); recvLine(p,'x',r4(W-T+ov),T,j,undefined,'min'); }   // sides' cam nuts on their inside faces (shifted by any overhang)
+    if(m.over){ const r=[tf,r4(tf+m.dep)];                                   // any front overhang shifts this panel's own coordinates
+      recvLine(p,'x',ov,T,j,r,'max'); recvLine(p,'x',r4(W-T+ov),T,j,r,'min'); }   // sides' cam nuts on their inside faces
     else { buttEdge(p,'L',j); buttEdge(p,'R',j); }
-    if(backStyle==='full'&&m.name==='TOP') recvLine(p,'y',backY,BT,j,m.over?[r4(T+bx+ov),r4(W-T-bx+ov)]:[bx,inner-bx],'max');   // back panel's TOP EDGE lands on the top's underside
+    if(backStyle==='full'&&m.name==='TOP') recvLine(p,'y',r4(backY+tf),BT,j,m.over?[r4(T+bx+ov),r4(W-T-bx+ov)]:[bx,inner-bx],'max');   // back panel's TOP EDGE lands on the top's underside
     if(backStyle==='full'&&m.name==='BOTTOM') buttEdge(p,'B',j,[bx,inner-bx]);                                     // bottom's BACK EDGE butts the back panel: cams in the bottom, pins into the back
     if(backStyle==='groove'&&(m.name==='TOP'||m.name==='BOTTOM')&&sel('gWhere')==='all') F.groove(p);
     if(m.name==='BOTTOM'&&tk==='board') recvLine(p,'y',tkIn,T,jd,[0,inner]);   // kick dowels: same underside face as the cams
@@ -741,7 +746,7 @@ function buildCase(){
       const hOf=(kind,i)=>listH[i]!==undefined?listH[i]:(kind==='FILE'?num('drFileH'):num('drBoxH'));
       const total=r4(stack.reduce((a,k,i)=>a+hOf(k,i),0)+gp*(stack.length-1));
       const al=sel('drAlign');
-      const anchor = al==='case' ? H : r4(topY0-gp);                          // faces either cover the top panel or tuck under it
+      const anchor = al==='case' ? H : r4(topY0-num('drTopGap'));             // faces either cover the top panel or tuck under it
       let y = al==='bottom' ? y0 : Math.max(r4(anchor-total),0);              // hang from the top: the leftover shows as kick below
       const sg=num('drSideGap');                                             // side reveal is its own number: 1 mm on the CON drawings
       const frontW = divL===null ? r4(W-2*sg) : (comp===compL ? r4(divC-gp/2-sg) : r4(W-sg-(divC+gp/2)));
@@ -758,10 +763,14 @@ function buildCase(){
         const zBox=r4(Math.max(y,boxFloor)+0.25);
         const sd=newPanel(`${kind} DWR SIDE`,r4(boxDep),r4(bh),dt,`${r4(boxDep)}" × ${r4(bh)}" × ${dt}"  ·  drawer box side, 2 per drawer${slot?` · bottom groove ${grD}" deep, ${grUp}" up`:''}${kind==='FILE'?' · file-hanger slot in the top edge':''}`,2);
         if(slot) addLine(sd,'GROOVE',0,grUp,r4(boxDep),grUp);
-        sd.box={min:[comp.x0+sl,setb,zBox],max:[comp.x0+sl+dt,setb+boxDep,r4(zBox+bh)]};
+        sd.boxes=[{min:[comp.x0+sl,setb,zBox],max:[comp.x0+sl+dt,setb+boxDep,r4(zBox+bh)]},
+                   {min:[r4(comp.x0+sl+dt+boxW),setb,zBox],max:[r4(comp.x0+sl+2*dt+boxW),setb+boxDep,r4(zBox+bh)]}];   // both sides
+        sd.box=sd.boxes[0];
         const fb=newPanel(`${kind} DWR FRONT/BACK`,boxW,r4(bh),dt,`${boxW}" × ${r4(bh)}" × ${dt}"  ·  drawer box front and back, 2 per drawer${slot?' · same bottom groove':''}`,2);
         if(slot) addLine(fb,'GROOVE',0,grUp,boxW,grUp);
-        fb.box={min:[comp.x0+sl+dt,setb,zBox],max:[comp.x0+sl+dt+boxW,setb+dt,r4(zBox+bh)]};
+        fb.boxes=[{min:[comp.x0+sl+dt,setb,zBox],max:[comp.x0+sl+dt+boxW,setb+dt,r4(zBox+bh)]},
+                   {min:[comp.x0+sl+dt,r4(setb+boxDep-dt),zBox],max:[comp.x0+sl+dt+boxW,r4(setb+boxDep),r4(zBox+bh)]}];   // front and back
+        fb.box=fb.boxes[0];
         const btW=slot?r4(boxW+2*grD-0.03):boxW, btD=slot?r4(boxDep-2*dt+2*grD-0.03):r4(boxDep-2*dt);
         const bt=newPanel(`${kind} DWR BOTTOM`,btW,btD,botT,`${btW}" × ${btD}" × ${botT}"  ·  ${slot?'sits in the grooves all round':'captured under the box'}`,1);
         bt.box={min:[comp.x0+sl+dt-(slot?grD:0),setb+dt-(slot?grD:0),r4(zBox+grUp)],max:[comp.x0+sl+dt-(slot?grD:0)+btW,setb+dt-(slot?grD:0)+btD,r4(zBox+grUp+botT)]};
@@ -774,7 +783,7 @@ function buildCase(){
         + ` · stack tops out at ${r4(y-gp)}"`
         + (clampedN? ` · <b>${clampedN} box height${clampedN>1?'s':''} trimmed to clear the front above</b>`:'')
         + (shortDep? ` · <b style="color:#ff6b6b">CASE TOO SHALLOW for the chosen slides — boxes shortened to ${r4(inside-0.25)}"</b>`:'')
-        + (drawerTop>topY0+0.01? ` · <b style="color:#ff6b6b">STACK IS ${r4(drawerTop-topY0)}" TALLER THAN THE OPENING — raise the case, lower the kick, or drop a drawer</b>`:'');
+        + (drawerTop>H+0.01? ` · <b style="color:#ff6b6b">STACK IS ${r4(drawerTop-H)}" TALLER THAN THE CASE — raise the case, lower the kick, or drop a drawer</b>`:'');
     } else $('drNote').textContent='';
   }
   // adjustable shelf positions: evenly in the largest opening
@@ -786,8 +795,10 @@ function buildCase(){
     const p=newPanel(name,sideH,D,T,`${sideH}" × ${D}" × ${T}"  ·  view: INSIDE FACE, floor end at X=0, front edge at Y=0`);
     orient(p,'INSIDE FACE','FLOOR END','TOP END','FRONT','BACK');
     members.forEach(m=>{ if(m.over){ buttEdge(p,'R',j); return; }
-      const yo = m.name.startsWith('SHELF') ? r4(((backStyle==='full'?backY:D))-m.dep) : 0;   // shelves are pushed back to the back panel
-      recvLine(p,'x',m.y0,T,j,[yo,yo+m.dep],'min'); });   // stations run over the member's own depth, so they meet its edge holes
+      const yo = m.name.startsWith('SHELF') ? r4(((backStyle==='full'?backY:D))-m.dep)
+               : m.name==='TOP' ? -Math.max(0,num('cTopFront')) : 0;   // a top that reaches past the front starts there   // shelves are pushed back to the back panel
+      const md = m.name==='TOP' ? r4(m.dep+Math.max(0,num('cTopFront'))) : m.dep;
+      recvLine(p,'x',m.y0,T,j,[yo,yo+md],'min'); });   // stations run over the member's own depth   // stations run over the member's own depth, so they meet its edge holes
     if(backStyle==='full'){ recvLine(p,'y',backY,BT,j,[0,topY0],'max'); }   // back panel runs to the floor
     if(tk==='board') recvLine(p,'y',tkIn,T,j,[0,tkH],'max');   // kick board cams face the back
     if(backStyle==='groove') F.groove(p);
@@ -1021,10 +1032,10 @@ function hardware(){
     if(h.type==='CAM') c.cam+=q; else if(h.type==='PIN'&&!h.edge) c.pin+=q; else if(h.type==='DOWEL'&&!h.edge) c.dowel+=q;
     else if(h.type==='GLIDE') c.glide+=q; else if(h.type==='HINGE') c.hinge+=q; else if(h.type==='SCREW') c.screws+=q; else if(h.type==='SHELFPIN') c.shelfpin+=q; }));
   panels.filter(p=>p.name==='ADJ SHELF'||p.role==='adj').forEach(p=>c.shelfdowel+=4*p.qty);
-  const sp=parseInt($('aiSpare').value)||0;
+  const sp=0;   // spare hardware is not carried on these jobs
   const nDr=panels.filter(p=>p.name.includes('DRAWER FRONT')).reduce((s,p)=>s+p.qty,0);
   const ovTxt=(()=>{const d=panels.filter(p=>p.overlay);return d.length?(d.every(x=>x.overlay==='full')?'Hinge (full overlay)':'Hinge (half overlay)'):'Hinge';})();
-  const rows=[['A','CAM PIN','Cam Pin',c.pin],['B','CAM NUT','Cam Nut',c.cam],['C','DOWEL','Dowel',c.dowel],['D','GLIDE','Glide',c.glide],['E','STICKER','Cam Cover Sticker',c.cam],['F','SLIDE',`Drawer Slide Pair`,nDr],['G','HINGE',ovTxt,c.hinge||0]]
+  const rows=[['A','CAM PIN','Cam Pin',c.pin],['B','CAM NUT','Cam Nut',c.cam],['C','DOWEL','Dowel',c.dowel],['D','GLIDE',sel('glType')==='caster'?'Swivel Caster':'Levelling Glide',c.glide],['E','STICKER','Cam Cover Sticker',c.cam],['F','SLIDE',`Drawer Slide Pair`,nDr],['G','HINGE',ovTxt,c.hinge||0]]
     .filter(r=>r[3]>0).map(r=>({letter:r[0],code:r[1],name:r[2],qty:r[3],spare:sp}));
   return rows;
 }
@@ -1037,7 +1048,10 @@ function build(){
   // edge banding: finished size entered → cut size = finished + (premill − band) per banded edge
   const ebW=sel('ebWhere'), ebt=parseFloat(sel('ebT')), pre=num('ebPre'), topC=sel('ebTop')==='contrast', topT=parseFloat(sel('ebTopT'));
   const kickBand=on('ebKick');
+  const proto=on('protoMode');
   panels.forEach(p=>{ const isSide=p.name.includes('SIDE'), isKick=p.name==='KICK BOARD', isShelf=p.name.includes('SHELF');
+    if(proto||/DWR (SIDE|FRONT\/BACK|BOTTOM)$/.test(p.name)){   // prototyping on bare material: nothing is banded                        // drawer box parts are never banded: cut = finished
+      p.bands={L:0,R:0,F:0,B:0}; p.cutW=p.w; p.cutD=p.d; p.edgeNote='no edge band · cut true to size'; return; }
     const bt = isKick?parseFloat(sel('ebKickT')) : isShelf?parseFloat(sel('ebShelfT')) : ebt;   // shelves and kick carry their own band...
     const pm = isKick?num('ebKickPre') : isShelf?num('ebShelfPre') : pre;                        // ...and their own premill (1 mm band is premilled 1 mm)
     let bL=0,bR=0,bF=0,bB=0;                       // band thickness applied per edge
@@ -1237,15 +1251,22 @@ $('rCustom').addEventListener('change',()=>{ $('rEdge').disabled=!$('rCustom').c
 $('pGrain').onchange=()=>{ const p=panels[current]; if(p){ grainOverride.set(p.name,$('pGrain').value); build(); } };   // rebuild so the nest picks it up
 
 /* ---------- nest all panels onto stock sheets ---------- */
-function nestDXF(){
-  const [SW,SH]=sel('nestStock').split(',').map(Number), gap=num('nestGap'), mar=num('nestMargin');
+const dwrBoxPart=p=>/DWR (SIDE|FRONT\/BACK)$/.test(p.name);       // drawer box sides: their own material, never banded
+const dwrBotPart=p=>/DWR BOTTOM$/.test(p.name);                    // 5 mm bottoms: their own material too
+function nestDXF(which){
+  const cfg = which==='dwr' ? {stock:'nestStockDwr',gap:'nestGapDwr',mar:'nestMarginDwr',pick:dwrBoxPart,tag:'DRAWER BOX'}
+            : which==='bot' ? {stock:'nestStockBot',gap:'nestGapBot',mar:'nestMarginBot',pick:dwrBotPart,tag:'DRAWER BOTTOM'}
+            : {stock:'nestStock',gap:'nestGap',mar:'nestMargin',pick:p=>!dwrBoxPart(p)&&!dwrBotPart(p),tag:'CASE'};
+  const [SW,SH]=sel(cfg.stock).split(',').map(Number), gap=num(cfg.gap), mar=num(cfg.mar);
   const pre=num('ebPre');
   const parts=[];
-  panels.forEach(p=>{ for(let q=0;q<p.qty;q++) parts.push(p); });
+  panels.filter(cfg.pick).forEach(p=>{ for(let q=0;q<p.qty;q++) parts.push(p); });
+  if(!parts.length) return null;
   const grainOn=sel('nestGrain')==='on';
-  const blankHoles=on('nestBlankHoles');
+  const blankHoles=false;   // parts are banded before drilling, so nest holes stay on finished dimensions
+  const raw = which==='dwr'||which==='bot'||on('protoMode');       // these parts are cut true to size: no band, no premill
   const items=parts.map(p=>{ const adj=e=>e>0?pre-e:0; const b=p.bands||{L:0,R:0,F:0,B:0};
-    return {p,w:p.cutW,h:p.cutD,ox:blankHoles?adj(b.L):0,oy:blankHoles?adj(b.F):0,grain:grainOf(p)}; });   // only shift to blank coords when the shop drills before banding
+    return {p,w:raw?p.w:p.cutW,h:raw?p.d:p.cutD,ox:(!raw&&blankHoles)?adj(b.L):0,oy:(!raw&&blankHoles)?adj(b.F):0,grain:raw?'none':grainOf(p)}; });   // only shift to blank coords when the shop drills before banding
   const uw=SW-2*mar, uh=SH-2*mar;
   // sheet grain runs along the sheet LENGTH (the 96/120/144 direction = Y here)
   const allowed=it=>{ if(!grainOn||it.grain==='none') return [false,true];
@@ -1279,8 +1300,8 @@ function nestDXF(){
     pts.forEach(([x,y])=>{ w(0,'VERTEX');w(8,LNAME(L));w(10,x.toFixed(4));w(20,y.toFixed(4));w(30,0); }); w(0,'SEQEND');w(8,LNAME(L)); };
   sheets.forEach((sh,si)=>{ const X0=si*(SW+12);
     pline('SHEET',[[X0,0],[X0+SW,0],[X0+SW,SH],[X0,SH]]);
-    w(0,'TEXT');w(8,'TEXT');w(10,X0.toFixed(4));w(20,(SH+1).toFixed(4));w(30,0);w(40,1);w(1,`SHEET ${si+1} of ${sheets.length}  ${SW} x ${SH}  ${jobName()}${grainOn?'  GRAIN RUNS WITH THE SHEET LENGTH':'  NO GRAIN CONSTRAINT'}`);
-    if(grainOn){ const ax=X0-2.2; line('TEXT',ax,mar,ax,SH-mar); line('TEXT',ax,SH-mar,ax-0.5,SH-mar-1.2); line('TEXT',ax,SH-mar,ax+0.5,SH-mar-1.2);
+    w(0,'TEXT');w(8,'TEXT');w(10,X0.toFixed(4));w(20,(SH+1).toFixed(4));w(30,0);w(40,1);w(1,`${cfg.tag} SHEET ${si+1} of ${sheets.length}  ${SW} x ${SH}  ${jobName()}${grainOn&&!raw?'  GRAIN RUNS WITH THE SHEET LENGTH':'  NO GRAIN CONSTRAINT'}`);
+    if(grainOn&&!raw){ const ax=X0-2.2; line('TEXT',ax,mar,ax,SH-mar); line('TEXT',ax,SH-mar,ax-0.5,SH-mar-1.2); line('TEXT',ax,SH-mar,ax+0.5,SH-mar-1.2);
       w(0,'TEXT');w(8,'TEXT');w(10,(ax-1.6).toFixed(4));w(20,(SH/2).toFixed(4));w(30,0);w(40,0.9);w(50,90);w(1,'GRAIN'); }
     sh.list.forEach(pl=>{ const {it,rot}=pl, p=it.p, X=X0+pl.x, Y=pl.y;
       pline('OUTLINE',[[X,Y],[X+pl.w,Y],[X+pl.w,Y+pl.h],[X,Y+pl.h]]);
@@ -1288,7 +1309,7 @@ function nestDXF(){
         let bx=h.x+it.ox, by=h.y+it.oy, px,py; if(rot){ px=X+(it.h-by); py=Y+bx; } else { px=X+bx; py=Y+by; }
         w(0,'CIRCLE');w(8,LNAME(h.layer));w(10,px.toFixed(4));w(20,py.toFixed(4));w(30,0);w(40,(h.d/2).toFixed(4));
         w(0,'POINT');w(8,LNAME(h.layer+'_PT'));w(10,px.toFixed(4));w(20,py.toFixed(4));w(30,0); });
-      w(0,'TEXT');w(8,'TEXT');w(10,(X+0.3).toFixed(4));w(20,(Y+0.3).toFixed(4));w(30,0);w(40,0.35);if(rot)w(50,0);w(1,`${p.name}${rot?' (ROT 90)':''}${grainOn?'  GRAIN '+(it.grain==='len'?'ALONG PART LENGTH':it.grain==='wid'?'ACROSS PART WIDTH':'FREE'):''}`); }); });
+      w(0,'TEXT');w(8,'TEXT');w(10,(X+0.3).toFixed(4));w(20,(Y+0.3).toFixed(4));w(30,0);w(40,0.35);if(rot)w(50,0);w(1,`${p.name}${rot?' (ROT 90)':''}${grainOn&&!raw?'  GRAIN '+(it.grain==='len'?'ALONG PART LENGTH':it.grain==='wid'?'ACROSS PART WIDTH':'FREE'):''}`); }); });
   w(0,'ENDSEC');w(0,'EOF');
   return {dxf:o,sheets:sheets.length};
 }
@@ -1491,7 +1512,11 @@ function daeExport(){
 function download(name,text,type='application/dxf'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 const stamp=()=>new Date().toISOString().slice(0,10);
 const jobName=()=>mode==='case'?(sel('cJob').trim()||`${num('cW')}x${num('cH')}x${num('cD')}`).replace(/\s+/g,'_'):mode==='obj'&&model?model.file.replace(/\.obj$/i,'').toUpperCase():'PANEL';
-$('dlNest').onclick=()=>{ if(!panels.length) return; const r=nestDXF(); if(r) download(`CASEMAKER_NEST_${jobName()}_${sel('nestStock').replace(',','x')}_${stamp()}.dxf`,r.dxf); };
+$('dlNest').onclick=()=>{ if(!panels.length) return;
+  const runs=[['case','nestStock',''],['dwr','nestStockDwr','_DWRBOX'],['bot','nestStockBot','_DWRBOTTOM']];
+  let i=0;
+  runs.forEach(([which,stockId,suffix])=>{ const r=nestDXF(which); if(!r) return;
+    setTimeout(()=>download(`CASEMAKER_NEST_${jobName()}${suffix}_${sel(stockId).replace(',','x')}_${stamp()}.dxf`,r.dxf), (i++)*400); }); };
 $('dlCNC1').onclick=()=>{ const fs=cnc1Files(); if(!fs.length){ alert('No panels with edge drilling.'); return; } fs.forEach((f,i)=>setTimeout(()=>download(f.name,f.text,'text/plain'),i*400)); };
 $('dlDae').onclick=()=>{ if(panels.length) download(`CASEMAKER_${jobName()}_${stamp()}.dae`, daeExport(), 'model/vnd.collada+xml'); };
 $('dlOne').onclick=()=>{const p=panels[current];if(p)download(`${p.name.replace(/\s+/g,'_')}_${stamp()}.dxf`,dxf([p]));};
@@ -1683,7 +1708,7 @@ function jointDetail(pdf,cx,cy,r,letter,flat,tx){
 }
 async function buildInstructions(){
   if(!panels.length) return;
-  const title=sel('aiTitle')||'Bookcase', modelNo=jobName(), hw=hardware(), logo=await logoCanvas();
+  const title=jobName(), modelNo=jobName(), hw=hardware(), logo=await logoCanvas();
   const pdf=PDFDoc(); const M=36, PW=pdf.PW, PH=pdf.PH, CW=PW-2*M;
   const numbered=panels.map((p,i)=>({p,n:i+1}));
   const boxesOf=item=>{ const p=item.p; const list=p.boxes||(p.box&&p.box.min?[p.box]:[]); return list.map(b=>({min:b.min,max:b.max,label:item.n})); };
