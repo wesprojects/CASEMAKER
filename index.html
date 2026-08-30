@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-22.88 -->
+<!-- BUILD_VERSION: 2026-08-22.106 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -102,6 +102,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <button class="primary" id="dlNest">NESTED SHEETS (DXF)</button>
         <button class="primary" id="dlCNC1">CNC #1 EDGE FILES (.nc)</button>
         <button id="dlOne">THIS PANEL (DXF)</button>
+        <button id="dlDae">SKETCHUP MODEL (.dae)</button>
       </div>
       <div class="row three" style="margin-top:10px">
         <label>Stock sheet<select id="nestStock"><option value="48,96">4 × 8 ft (48 × 96)</option><option value="60,96" selected>5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
@@ -137,7 +138,22 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <div id="caseForm">
       <div class="row">
         <label>Model no. / job name<input id="cJob" value="5CLBK48"></label>
-        <label>Preset<select id="cPreset"><option value="">—</option><option value="34.65,47.24,13.98">5CLBK48 · 880 × 1200 × 355 mm</option><option value="36,48,14">36 × 48 × 14</option><option value="36,30,14">36 × 30 × 14</option><option value="36,72,14">36 × 72 × 14</option><option value="30,66,14">30 × 66 × 14</option><option value="36,29,20">36 × 29 × 20 (lateral)</option><option value="24,36,12">24 × 36 × 12</option></select></label>
+        <label>Preset<select id="cPreset"><option value="">—</option>
+          <optgroup label="CON series (Yasen drawings)">
+            <option value='{"cW":34.65,"cH":47.2441,"cD":13.9764,"cT":1.03,"cBackT":1.03,"tkStyle":"board","tkH":2.7559,"cAdj":2,"cDoors":0,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>5CLBK48</option>
+            <option value='{"cW":34.6457,"cH":28.4646,"cD":22.5591,"cT":0.9843,"cBackT":0.7087,"tkStyle":"board","tkH":2.7559,"cAdj":1,"cDoors":2,"cDoorY0":2.7559,"cDoorY1":27.874,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>5CLSC34</option>
+            <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":2,"drFile":1,"drAlign":"case","drSideGap":0.0394,"drHeights":"318mm, 157mm, 157mm","drBoxHeights":"245mm, 90mm, 90mm","drSlideBox":"15.748","drSlideFile":"20.0787"}'>5CLBBF22</option>
+            <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":0,"drFile":2,"drAlign":"case","drSideGap":0.0394,"drHeights":"318mm, 318mm","drBoxHeights":"245mm, 245mm","drSlideFile":"20.0787"}'>5CLFF22</option>
+            <option value='{"cW":15.5118,"cH":20.6693,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"none","cTopOver":0.1181,"cAdj":0,"cDoors":0,"drBox":1,"drFile":1,"drAlign":"top","drSideGap":-0.0394,"drHeights":"318mm, 184mm","drBoxHeights":"245mm, 120mm","drSlideBox":"20.0787","drSlideFile":"20.0787"}'>5CLBFM</option>
+          </optgroup>
+          <optgroup label="Generic">
+            <option value='{"cW":36,"cH":48,"cD":14,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>36 × 48 × 14</option>
+            <option value='{"cW":36,"cH":30,"cD":14,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>36 × 30 × 14</option>
+            <option value='{"cW":36,"cH":72,"cD":14,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>36 × 72 × 14</option>
+            <option value='{"cW":30,"cH":66,"cD":14,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>30 × 66 × 14</option>
+            <option value='{"cW":36,"cH":29,"cD":20,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>36 × 29 × 20 (lateral)</option>
+            <option value='{"cW":24,"cH":36,"cD":12,"drBox":0,"drFile":0,"cDoors":0,"dvOn":false,"drHeights":"","drBoxHeights":"","drAlign":"case"}'>24 × 36 × 12</option>
+          </optgroup></select></label>
       </div>
       <div class="row four">
         <label>Width<input id="cW" type="number" step="0.0001" value="34.65" data-mm="1"></label>
@@ -215,6 +231,11 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row four">
         <label id="tkDowL">Kick top edge: dowel spacing<input id="tkDow" type="number" step="1" value="12" data-mm="1"></label>
       </div>
+      <div class="row three">
+        <label class="chk"><input id="dvOn" type="checkbox"> Vertical divider<span class="unit">splits the case into two compartments</span></label>
+        <label id="dvXL" style="display:none">Divider left face from inside<input id="dvX" type="number" step="0.0625" placeholder="auto = centre" data-mm="1"></label>
+        <label id="dvShow" style="display:none">Compartments<input id="dvInfo" disabled></label>
+      </div>
       <div class="row four" id="grooveRow" style="display:none">
         <label>Groove width<input id="gW" type="number" step="0.0625" value="0.25" data-mm="1"></label>
         <label>Groove depth<input id="gZ" type="number" step="0.0625" value="0.375" data-mm="1"></label>
@@ -230,9 +251,43 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row three">
         <label>Adjustable shelves (qty)<input id="cAdj" type="number" min="0" step="1" value="2"></label>
-        <label>Adj. shelf depth<input id="cAdjD" type="number" step="0.0001" value="13.15" data-mm="1"></label>
+        <label>Shelf front gap<input id="cShelfGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 mm back from the front edge</span></label>
+        <label>Adj. shelf depth<input id="cAdjD" type="number" step="0.0001" placeholder="auto" data-mm="1"><span class="unit">blank = back panel to front, less the gap</span></label>
         <label>Side clearance (each)<input id="cAdjGap" type="number" step="0.0001" value="0.0197" data-mm="1"></label>
       </div>
+    </details>
+    <details>
+      <summary>DRAWERS</summary>
+      <div class="row four">
+        <label>Box drawers (qty)<input id="drBox" type="number" min="0" step="1" value="0"></label>
+        <label>File drawers (qty)<input id="drFile" type="number" min="0" step="1" value="0"></label>
+        <label>Where<select id="drWhere"><option value="full" selected>Full width</option><option value="left">Left compartment</option><option value="right">Right compartment</option></select></label>
+        <label>Stack hangs from<select id="drAlign"><option value="case" selected>Top of the case (faces cover the top panel)</option><option value="top">Under the top panel</option><option value="bottom">Bottom up</option></select></label>
+        <label id="drY0L">Stack starts (from floor)<input id="drY0" type="number" step="0.0625" value="2.76" data-mm="1"></label>
+        <label>Front heights, bottom → top<input id="drHeights" placeholder="blank = use the type heights"><span class="unit">comma list, in or mm</span></label>
+        <label>Box heights, bottom → top<input id="drBoxHeights" placeholder="blank = use the type heights"><span class="unit">drawer box, not the front</span></label>
+      </div>
+      <div class="row four">
+        <label>Box front height<input id="drBoxH" type="number" step="0.0001" value="7.2441" data-mm="1"><span class="unit">184 mm per 5CLBFM</span></label>
+        <label>File front height<input id="drFileH" type="number" step="0.0001" value="12.5197" data-mm="1"><span class="unit">318 mm</span></label>
+        <label>Gap between fronts<input id="drGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 mm, vertical</span></label>
+        <label>Front side reveal<input id="drSideGap" type="number" step="0.0001" value="0.0394" data-mm="1"><span class="unit">per side · negative = face sits proud of the carcass</span></label>
+        <label>Slide clearance (each side)<input id="drSlide" type="number" step="0.0001" value="0.5118" data-mm="1"><span class="unit">13 mm</span></label>
+      </div>
+      <div class="row four">
+        <label>Box drawer box height<input id="drBoxBH" type="number" step="0.0001" value="4.7244" data-mm="1"><span class="unit">120 mm</span></label>
+        <label>File drawer box height<input id="drFileBH" type="number" step="0.0001" value="9.6457" data-mm="1"><span class="unit">245 mm</span></label>
+        <label>Drawer box sides<input id="drT" type="number" step="0.0001" value="0.4724" data-mm="1"><span class="unit">12 mm</span></label>
+        <label>Box drawer slides<select id="drSlideBox"><option value="15.748" selected>16" (box depth 400 mm)</option><option value="20.0787">20" (box depth 510 mm)</option></select></label>
+        <label>File drawer slides<select id="drSlideFile"><option value="15.748">16" (box depth 400 mm)</option><option value="20.0787" selected>20" (box depth 510 mm)</option></select></label>
+      </div>
+      <div class="row four">
+        <label class="chk"><input id="drSlot" type="checkbox" checked> Slot the drawer bottom<span class="unit">off: bottom captured under the box</span></label>
+        <label>Bottom thickness<input id="drBotT" type="number" step="0.0001" value="0.1969" data-mm="1"><span class="unit">5 mm</span></label>
+        <label>Groove depth<input id="drGrD" type="number" step="0.0001" value="0.2362" data-mm="1"><span class="unit">6 mm</span></label>
+        <label>Groove up from bottom edge<input id="drGrUp" type="number" step="0.0001" value="0.3937" data-mm="1"><span class="unit">10 mm</span></label>
+      </div>
+      <p class="hint" id="drNote"></p>
     </details>
     <details>
       <summary>DOORS</summary>
@@ -241,6 +296,12 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>Style<select id="cDoorStyle"><option value="overlay" selected>Overlay</option><option value="inset">Inset</option></select></label>
         <label>Hinge side (single)<select id="hgSide"><option value="L" selected>Left</option><option value="R">Right</option></select></label>
         <label>Gap / reveal<input id="cDoorGap" type="number" step="0.0625" value="0.125" data-mm="1"></label>
+      </div>
+      <div class="row three">
+        <label>Door width<select id="cDoorWMode"><option value="full" selected>Full opening</option><option value="custom">Custom (adds a divider)</option></select></label>
+        <label id="cDoorWL" style="display:none">Door width (each)<input id="cDoorW" type="number" step="0.0625" value="16" data-mm="1"></label>
+        <label>Hinge on<select id="cDoorHinge"><option value="outer" selected>Outer side panel</option><option value="divider">The divider</option></select></label>
+        <label>Overlay<input id="cDoorOv" disabled><span class="unit">full on an outer side, half on a shared divider</span></label>
       </div>
       <div class="row">
         <label>Door bottom (from floor)<input id="cDoorY0" type="number" step="0.0625" value="2" data-mm="1"></label>
@@ -425,7 +486,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-22.88";
+const BUILD_VERSION = "2026-08-22.106";
 document.getElementById('build').textContent = "Build " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -451,7 +512,13 @@ function setMode(m){ mode=m; document.querySelectorAll('#modeTabs button').forEa
   $('caseForm').style.display=m==='case'?'':'none'; $('partsSec').style.display=m==='case'?'':'none'; $('featSec').style.display=m==='dxf'?'none':'';
   $('objForm').style.display=m==='obj'?'':'none'; $('dxfForm').style.display=m==='dxf'?'':'none'; }
 document.querySelectorAll('#modeTabs button').forEach(b=>b.onclick=()=>{setMode(b.dataset.mode);current=0;build();});
-$('cPreset').onchange=()=>{ const v=sel('cPreset'); if(!v) return; const [w,h,d]=v.split(','); $('cW').value=w;$('cH').value=h;$('cD').value=d;$('cShelfPos').value=''; build(); };
+$('cPreset').onchange=()=>{ const v=sel('cPreset'); if(!v) return;
+  let cfg=null; try{ cfg=JSON.parse(v); }catch(_){ const [w,h,d]=v.split(','); cfg={cW:w,cH:h,cD:d}; }
+  Object.entries(cfg).forEach(([id,val])=>{ const el=document.getElementById(id); if(!el) return;
+    if(el.type==='checkbox') el.checked=!!val;
+    else if(el.tagName==='SELECT'){ if([...el.options].some(o=>o.value===String(val))) el.value=String(val); }
+    else el.value=val; });
+  $('cShelfPos').value=''; build(); };
 const ROLES=[['none','—'],['butt','Butts in (cam locks here)'],['recv','Receives']];
 ['eL','eR','eF','eB'].forEach(id=>{const s=$(id);ROLES.forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;s.appendChild(o);});s.onchange=()=>{$(id+'p').disabled=s.value!=='recv';build();};});
 document.querySelectorAll('main input,main select').forEach(el=>{ if(!['file','fileObj','cPreset','pGrain'].includes(el.id)){ el.addEventListener('input',build); if(el.tagName==='SELECT') el.addEventListener('change',build); } });   // pGrain excluded above: it has its own handler and the generic one would overwrite the pick.   // Safari doesn't fire 'input' on selects
@@ -485,6 +552,9 @@ function syncVisibility(){
   { const j0=joinery(), t=num('cT'), o=j0.ctr==null?t/2:Math.min(j0.ctr,t/2);
     $('hPinCtr').disabled=$('hPinMid').checked;
     $('hPinCtrNote').textContent=`${$('hPinMid').checked?`centered: ${r4(o)}" · `:''}wall ${r4(o-j0.pinFD/2)}" face hole · ${r4(o-j0.dowD/2)}" edge hole · nut bore ${r4(j0.camZ+Math.max(0,o-j0.slot))}"`; }
+  { $('drY0L').style.display=sel('drAlign')==='top'?'none':''; }
+  { const cw=sel('cDoorWMode')==='custom'&&parseInt(sel('cDoors'))>0; $('cDoorWL').style.display=cw?'':'none';
+    $('dvXL').style.display=on('dvOn')?'':'none'; $('dvShow').style.display=(on('dvOn')||cw)?'':'none'; }
   if(panels[current]) $('pGrain').value=grainOf(panels[current]);
   $('hBoltEZ').placeholder='auto';
   $('tkDL').style.visibility=sel('tkStyle')==='notch'?'':'hidden'; $('tkDowL').style.visibility=sel('tkStyle')==='board'?'':'hidden'; $('cBotL').style.display=sel('tkStyle')==='none'?'':'none';
@@ -564,7 +634,8 @@ function buildCase(){
   const n=parseInt($('cShelves').value)||0;
   let shelfPos=$('cShelfPos').value.split(',').map(s=>parseFloat(s)).filter(v=>!isNaN(v));
   if(shelfPos.length!==n){ const clear=topY0-(bot+T)-n*T,gap=clear/(n+1); shelfPos=[]; for(let i=1;i<=n;i++) shelfPos.push(r4(bot+T+gap*i+T*(i-1))); $('cShelfPos').placeholder=shelfPos.join(', ')||'auto'; }
-  const members=[]; const memDep=n=>(backStyle==='full'&&n!=='TOP')?r4(D-backInset-BT):D;   // the back panel passes everything but the top
+  const members=[]; const shelfFG=num('cShelfGap');
+  const memDep=n=>{ const dep=(backStyle==='full'&&n!=='TOP')?r4(D-backInset-BT):D; return n.startsWith('SHELF')?r4(dep-shelfFG):dep; };   // the back panel passes everything but the top; shelves also hold a front gap
   if(hasBottom) members.push({name:'BOTTOM',y0:bot,face:'UNDERSIDE',t:T,dep:memDep('BOTTOM')});
   shelfPos.forEach((y,i)=>members.push({name:`SHELF ${i+1}`,y0:y,face:'UNDERSIDE',t:T,dep:memDep('SHELF')}));
   if(topStyle!=='none') members.push({name:'TOP',y0:topY0,face:'UNDERSIDE',t:T,over:topStyle==='over',dep:memDep('TOP')});
@@ -574,7 +645,7 @@ function buildCase(){
   const topOv = (topStyle==='over'&&sel('ptTopFit')==='wider') ? Math.max(0,num('cTopOver')) : 0;   // top can hang past the sides
   members.forEach(m=>{
     const ov=m.over?topOv:0, w=m.over?r4(W+2*ov):inner, x0=m.over?-ov:T;
-    const dep = m.dep;
+    const dep = m.dep, yOff = m.name.startsWith('SHELF') ? r4(((backStyle==='full'?backY:D))-dep) : 0;   // shelves sit against the back panel
     const p=newPanel(m.name,w,dep,T,`${w}" × ${dep}" × ${T}"  ·  view: ${m.face} (cam lock face), front edge at Y=0`);
     orient(p,m.face,'LEFT END','RIGHT END','FRONT','BACK');
     if(m.over){ recvLine(p,'x',ov,T,j,undefined,'max'); recvLine(p,'x',r4(W-T+ov),T,j,undefined,'min'); }   // sides' cam nuts on their inside faces (shifted by any overhang)
@@ -585,28 +656,138 @@ function buildCase(){
     if(m.name==='BOTTOM'&&tk==='board') recvLine(p,'y',tkIn,T,jd,[0,inner]);   // kick dowels: same underside face as the cams
     if(m.name==='BOTTOM') F.glides(p);
     if(m.name===sel('grWhere')) F.grommet(p);
-    p.box={min:[x0,0,m.y0],max:[x0+w,dep,m.y0+T]};
-    p.frame={o:[x0,0,0],ux:[1,0,0],uy:[0,1,0],ax:2,shown:m.y0,opp:m.y0+T};   // drawn from the underside (cam face)
+    p.box={min:[x0,yOff,m.y0],max:[x0+w,yOff+dep,m.y0+T]};
+    p.frame={o:[x0,yOff,0],ux:[1,0,0],uy:[0,1,0],ax:2,shown:m.y0,opp:m.y0+T};   // drawn from the underside (cam face)
     out.push(p);
   });
+  // ---- vertical divider (splits the case; doors, shelves or drawers can live either side)
+  const nd=parseInt(sel('cDoors')), dWMode=sel('cDoorWMode'), gapD=num('cDoorGap');
+  const wantDiv = on('dvOn') || (nd>0 && dWMode==='custom');
+  let divL=null, divC=null;
+  if(wantDiv && hasBottom && topStyle!=='none'){
+    const manual=parseFloat($('dvX').value);
+    if(nd>0&&dWMode==='custom'&&isNaN(manual)){
+      const dwWant=num('cDoorW');
+      divC = nd===2 ? r4(T+gapD+dwWant+gapD/2) : r4(gapD+dwWant-T/2);   // door edge lands on the divider
+      divL = r4(divC-T/2);
+    } else { divL = isNaN(manual) ? r4(T+(inner-T)/2) : r4(T+manual); divC=r4(divL+T/2); }
+    divL=Math.max(T+2, Math.min(W-2*T-2, divL)); divC=r4(divL+T/2);
+    const dvLo=bot+T, dvHi=topY0, dh=r4(dvHi-dvLo), dep=r4(backStyle==='full'?backY:D);
+    const dv=newPanel('DIVIDER',dh,dep,T,`${dh}" × ${dep}" × ${T}"  ·  view: LEFT FACE, floor end at Y=0, ends butt into the bottom and top`);
+    orient(dv,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
+    buttEdge(dv,'L',j,[bx,dep-bx]); buttEdge(dv,'R',j,[bx,dep-bx]);           // both ends cam into the bottom and top
+    dv.box={min:[divL,0,dvLo],max:[divL+T,dep,dvHi]};
+    dv.frame={o:[divL,0,dvLo],ux:[0,0,1],uy:[0,1,0],ax:0,shown:divL,opp:divL+T};
+    out.push(dv);
+    ['BOTTOM','TOP'].forEach(hn=>{                                            // pins in the bottom's TOP face and the top's underside
+      const host=out.find(q=>q.name===hn); if(!host||!host.frame) return;
+      const hx=r4(divL-host.frame.o[0]);                                       // divider position in the host's own drawing X
+      const before=host.holes.length;
+      recvLine(host,'x',hx,T,j,[bx,dep-bx],'min');                             // cam face of the divider = its LEFT face
+      if(hn==='BOTTOM') host.holes.slice(before).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });   // bottom is drawn from underneath
+    });
+  }
+  const compL = divL!==null ? {x0:T,x1:divL} : {x0:T,x1:W-T};                  // inside openings
+  const compR = divL!==null ? {x0:divL+T,x1:W-T} : null;
+
   // ---- doors (X along width, Y = height, inside face view)
-  const doors=[]; const nd=parseInt(sel('cDoors'));
-  if(nd){ const inset=sel('cDoorStyle')==='inset',gap=num('cDoorGap'),y0=num('cDoorY0'),y1=num('cDoorY1');
-    const totalW=inset?inner-2*gap:W-2*gap, dw=nd===2?(totalW-gap)/2:totalW, dh=y1-y0-(inset?2*gap:0);
-    const sides=nd===2?['L','R']:[sel('hgSide')];
-    sides.forEach(he=>{ const dr=newPanel(nd===2?(he==='L'?'DOOR L':'DOOR R'):'DOOR',r4(dw),r4(dh),T,`${r4(dw)}" × ${r4(dh)}" × ${T}"  ·  view: INSIDE FACE, hinge edge at ${he==='L'?'X=0':'X=width'}, bottom at Y=0`);
-      orient(dr,'INSIDE FACE',he==='L'?'HINGE EDGE':'LATCH EDGE',he==='R'?'HINGE EDGE':'LATCH EDGE','BOTTOM','TOP');
-      dr.hingeEdge=he; dr.y0=y0+(inset?gap:0); dr.ys=F.hingeCups(dr);
-      const x0=inset?T+gap:gap, xs=he==='L'?x0:(nd===2?x0+dw+gap:x0); const yy=inset?0:-T;
-      dr.box={min:[xs,yy,dr.y0],max:[xs+dw,yy+T,dr.y0+dh]}; doors.push(dr); });
+  const drN=(parseInt($('drBox').value)||0)+(parseInt($('drFile').value)||0), drW=sel('drWhere');
+  const doors=[];
+  if(nd){ const inset=sel('cDoorStyle')==='inset',gap=gapD,y0=num('cDoorY0'),y1=num('cDoorY1');
+    const dh=y1-y0-(inset?2*gap:0);
+    /* Frameless overlay rule: a door on an outer side is FULL overlay (covers the side edge);
+       two doors sharing a divider are HALF overlay - each covers half the divider, leaving a gap between them. */
+    const spans=[];
+    if(divL===null){ const totalW=inset?inner-2*gap:W-2*gap;
+      if(nd===2){ const dw=(totalW-gap)/2, x0=inset?T+gap:gap;
+        spans.push({he:'L',x:x0,w:dw,ov:'full'},{he:'R',x:x0+dw+gap,w:dw,ov:'full'}); }
+      else spans.push({he:sel('hgSide'),x:inset?T+gap:gap,w:totalW,ov:'full'});
+    } else if(nd===2){                                                         // one door each side of the divider
+      const onDiv=sel('cDoorHinge')==='divider';
+      /* Overlay follows the HINGE edge: hinged on an outer side the door covers that side fully (full overlay);
+         hinged on the shared divider each door covers half of it, leaving a reveal between them (half overlay). */
+      spans.push({he:onDiv?'R':'L',x:gap,w:r4(divC-gap/2-gap),ov:onDiv?'half':'full'});
+      spans.push({he:onDiv?'L':'R',x:r4(divC+gap/2),w:r4(W-gap-(divC+gap/2)),ov:onDiv?'half':'full'});
+    } else {                                                                   // single door beside a divider
+      const he=sel('hgSide'), onDiv=sel('cDoorHinge')==='divider';
+      const drLeft = drN>0&&drW==='left', drRight = drN>0&&drW==='right';
+      const leftBay = he==='L' ? !drLeft : drRight;                            // which compartment this door fronts
+      const shared = drN>0 || onDiv;                                           // something else fronts the other half of the divider
+      if(leftBay) spans.push({he,x:gap,w:r4((shared?divC-gap/2:divL+T)-gap),ov:onDiv?'half':'full'});
+      else spans.push({he,x:r4(shared?divC+gap/2:divL),w:r4(W-gap-(shared?divC+gap/2:divL)),ov:onDiv?'half':'full'});
+    }
+    spans.forEach((sp,i)=>{ const nm=spans.length===2?(sp.he==='L'?'DOOR L':'DOOR R'):'DOOR';
+      const dr=newPanel(nm,r4(sp.w),r4(dh),T,`${r4(sp.w)}" × ${r4(dh)}" × ${T}"  ·  ${sp.ov==='half'?'HALF':'FULL'} overlay  ·  view: INSIDE FACE, hinge edge at ${sp.he==='L'?'X=0':'X=width'}, bottom at Y=0`);
+      orient(dr,'INSIDE FACE',sp.he==='L'?'HINGE EDGE':'LATCH EDGE',sp.he==='R'?'HINGE EDGE':'LATCH EDGE','BOTTOM','TOP');
+      dr.hingeEdge=sp.he; dr.overlay=sp.ov; dr.y0=y0+(inset?gap:0); dr.ys=F.hingeCups(dr);
+      const yy=inset?0:-T;
+      dr.box={min:[sp.x,yy,dr.y0],max:[sp.x+sp.w,yy+T,dr.y0+dh]}; doors.push(dr); });
+  }
+  $('cDoorOv').value = doors.length ? (doors.every(d=>d.overlay==='full')?'FULL overlay':'HALF overlay (shared divider)') : '—';
+
+  // ---- drawers: box and file, sized to office standards
+  let drawerBay=null, drawerTop=0;
+  { const nb=parseInt($('drBox').value)||0, nf=parseInt($('drFile').value)||0;
+    if(nb+nf){ const where=sel('drWhere'), comp = where==='left'?compL : where==='right'?(compR||compL) : {x0:T,x1:W-T};
+      const opening=r4(comp.x1-comp.x0), gp=num('drGap'), sl=num('drSlide'), dt=num('drT');
+      const depBox=num('drSlideBox'), depFile=num('drSlideFile'), botT=num('drBotT'), slot=on('drSlot'), grD=num('drGrD'), grUp=num('drGrUp');
+      const floorZ=r4(bot), boxFloor=hasBottom?r4(bot+T):0, y0=Math.max(num('drY0'),floorZ);   // fronts overlay the carcass; boxes ride above the bottom panel
+      const inW=r4(opening-2*sl), boxW=r4(inW-2*dt);                        // box outside, then inside clear (letter files need 308 mm)
+      const inside=r4(backStyle==='full'?backY:D), setBack=dep=>r4(Math.max(0,inside-dep-0.25));
+      const parseList=id=>($(id).value||'').split(',').map(t=>t.trim()).filter(Boolean)
+        .map(t=>{ const mm=/mm$/i.test(t), v=parseFloat(t); return isNaN(v)?null:(mm?r4(v/MM):v); }).filter(v=>v);
+      const listH=parseList('drHeights'), listB=parseList('drBoxHeights');
+      const stack=[]; for(let i=0;i<nf;i++) stack.push('FILE'); for(let i=0;i<nb;i++) stack.push('BOX');   // files at the bottom
+      const hOf=(kind,i)=>listH[i]!==undefined?listH[i]:(kind==='FILE'?num('drFileH'):num('drBoxH'));
+      const total=r4(stack.reduce((a,k,i)=>a+hOf(k,i),0)+gp*(stack.length-1));
+      const al=sel('drAlign');
+      const anchor = al==='case' ? H : r4(topY0-gp);                          // faces either cover the top panel or tuck under it
+      let y = al==='bottom' ? y0 : Math.max(r4(anchor-total),0);              // hang from the top: the leftover shows as kick below
+      const sg=num('drSideGap');                                             // side reveal is its own number: 1 mm on the CON drawings
+      const frontW = divL===null ? r4(W-2*sg) : (comp===compL ? r4(divC-gp/2-sg) : r4(W-sg-(divC+gp/2)));
+      const frontX = divL===null ? sg : (comp===compL ? sg : r4(divC+gp/2));
+      let clamped=0, shortDep=false;
+      stack.forEach((kind,si)=>{ const fh=listH[si]!==undefined?listH[si]:(kind==='FILE'?num('drFileH'):num('drBoxH'));   // explicit stack heights win, bottom-up
+        const bhWant=listB[si]!==undefined?listB[si]:(kind==='FILE'?num('drFileBH'):num('drBoxBH')), bh=Math.min(bhWant,r4(fh-0.25));   // the box has to clear the front above it
+        const boxDep=Math.min(kind==='FILE'?depFile:depBox, r4(inside-0.25)), setb=setBack(boxDep);   // 16" slides for box drawers, 20" for files - shortened if the case is shallower
+        if(boxDep<(kind==='FILE'?depFile:depBox)) shortDep=true;
+        if(bh<bhWant) clamped++;
+        const fr=newPanel(`${kind} DRAWER FRONT`,frontW,r4(fh),T,`${frontW}" × ${r4(fh)}" × ${T}"  ·  ${kind==='FILE'?'file':'box'} drawer front${kind==='FILE'?' · grain runs vertically':''}`);
+        orient(fr,'INSIDE FACE','LEFT','RIGHT','BOTTOM','TOP');
+        fr.box={min:[frontX,-T,r4(y)],max:[frontX+frontW,0,r4(y+fh)]}; out.push(fr);
+        const zBox=r4(Math.max(y,boxFloor)+0.25);
+        const sd=newPanel(`${kind} DWR SIDE`,r4(boxDep),r4(bh),dt,`${r4(boxDep)}" × ${r4(bh)}" × ${dt}"  ·  drawer box side, 2 per drawer${slot?` · bottom groove ${grD}" deep, ${grUp}" up`:''}${kind==='FILE'?' · file-hanger slot in the top edge':''}`,2);
+        if(slot) addLine(sd,'GROOVE',0,grUp,r4(boxDep),grUp);
+        sd.box={min:[comp.x0+sl,setb,zBox],max:[comp.x0+sl+dt,setb+boxDep,r4(zBox+bh)]};
+        const fb=newPanel(`${kind} DWR FRONT/BACK`,boxW,r4(bh),dt,`${boxW}" × ${r4(bh)}" × ${dt}"  ·  drawer box front and back, 2 per drawer${slot?' · same bottom groove':''}`,2);
+        if(slot) addLine(fb,'GROOVE',0,grUp,boxW,grUp);
+        fb.box={min:[comp.x0+sl+dt,setb,zBox],max:[comp.x0+sl+dt+boxW,setb+dt,r4(zBox+bh)]};
+        const btW=slot?r4(boxW+2*grD-0.03):boxW, btD=slot?r4(boxDep-2*dt+2*grD-0.03):r4(boxDep-2*dt);
+        const bt=newPanel(`${kind} DWR BOTTOM`,btW,btD,botT,`${btW}" × ${btD}" × ${botT}"  ·  ${slot?'sits in the grooves all round':'captured under the box'}`,1);
+        bt.box={min:[comp.x0+sl+dt-(slot?grD:0),setb+dt-(slot?grD:0),r4(zBox+grUp)],max:[comp.x0+sl+dt-(slot?grD:0)+btW,setb+dt-(slot?grD:0)+btD,r4(zBox+grUp+botT)]};
+        [sd,fb,bt].forEach(q=>out.push(q));
+        y=r4(y+fh+gp); });
+      drawerBay = where; drawerTop = r4(y-gp); var clampedN=clamped;
+      const fileOK = boxW>=12.126;                                             // 308 mm inside clear, per the CON drawings
+      $('drNote').innerHTML = `Opening ${opening}" · box outside ${inW}" (${sl}" slide clearance each side) · inside clear <b>${boxW}"</b> (${(boxW*MM).toFixed(0)} mm) · box depth ${r4(depBox)}" box / ${r4(depFile)}" file`
+        + (nf? (fileOK? ` · letter files fit (needs 12.126" / 308 mm)` : ` · <b style="color:#ff6b6b">TOO NARROW for letter files — needs 12.126" / 308 mm inside, have ${boxW}"</b>`) : '')
+        + ` · stack tops out at ${r4(y-gp)}"`
+        + (clampedN? ` · <b>${clampedN} box height${clampedN>1?'s':''} trimmed to clear the front above</b>`:'')
+        + (shortDep? ` · <b style="color:#ff6b6b">CASE TOO SHALLOW for the chosen slides — boxes shortened to ${r4(inside-0.25)}"</b>`:'')
+        + (drawerTop>topY0+0.01? ` · <b style="color:#ff6b6b">STACK IS ${r4(drawerTop-topY0)}" TALLER THAN THE OPENING — raise the case, lower the kick, or drop a drawer</b>`:'');
+    } else $('drNote').textContent='';
   }
   // adjustable shelf positions: evenly in the largest opening
-  const adjQ=parseInt($('cAdj').value)||0, adjZ=[]; { const ms=[...members].sort((x,y)=>x.y0-y.y0); let best=null; for(let i=0;i<ms.length-1;i++){const o=[ms[i].y0+T,ms[i+1].y0]; if(!best||o[1]-o[0]>best[1]-best[0]) best=o;} if(best) for(let i=1;i<=adjQ;i++) adjZ.push(best[0]+(best[1]-best[0])*i/(adjQ+1)); }
+  const adjQ=parseInt($('cAdj').value)||0, adjZ=[]; { const ms=[...members].sort((x,y)=>x.y0-y.y0); let best=null; for(let i=0;i<ms.length-1;i++){const o=[ms[i].y0+T,ms[i+1].y0]; if(!best||o[1]-o[0]>best[1]-best[0]) best=o;}
+    if(best&&drawerBay==='full') best=[Math.max(best[0],drawerTop+1),best[1]];   // a full-width drawer stack pushes the shelves above it
+    if(best&&best[1]-best[0]>T) for(let i=1;i<=adjQ;i++) adjZ.push(best[0]+(best[1]-best[0])*i/(adjQ+1)); }
   // ---- sides (X = height along length, Y = depth, inside face view)
   const mk=(name,x0)=>{
     const p=newPanel(name,sideH,D,T,`${sideH}" × ${D}" × ${T}"  ·  view: INSIDE FACE, floor end at X=0, front edge at Y=0`);
     orient(p,'INSIDE FACE','FLOOR END','TOP END','FRONT','BACK');
-    members.forEach(m=>{ if(m.over) buttEdge(p,'R',j); else recvLine(p,'x',m.y0,T,j,[0,m.dep],'min'); });   // stations run over the member's own depth, so they meet its edge holes
+    members.forEach(m=>{ if(m.over){ buttEdge(p,'R',j); return; }
+      const yo = m.name.startsWith('SHELF') ? r4(((backStyle==='full'?backY:D))-m.dep) : 0;   // shelves are pushed back to the back panel
+      recvLine(p,'x',m.y0,T,j,[yo,yo+m.dep],'min'); });   // stations run over the member's own depth, so they meet its edge holes
     if(backStyle==='full'){ recvLine(p,'y',backY,BT,j,[0,topY0],'max'); }   // back panel runs to the floor
     if(tk==='board') recvLine(p,'y',tkIn,T,j,[0,tkH],'max');   // kick board cams face the back
     if(backStyle==='groove') F.groove(p);
@@ -623,7 +804,7 @@ function buildCase(){
     const jm={...j,dowMirror:true};   // this panel's drawing X runs opposite the case
     const b=newPanel('BACK PANEL',inner,bh,BT,`${inner}" × ${bh}" × ${BT}"  ·  view: BACK FACE (cam nuts hidden on the outside), floor end at Y=0, ends butt into sides`);
     orient(b,'BACK FACE (cam nut face, hidden)','RIGHT END of case','LEFT END of case','FLOOR END','TOP');
-    buttEdge(b,'L',jm); buttEdge(b,'R',jm);
+    buttEdge(b,'L',j); buttEdge(b,'R',j);     // the ends run along the height - that axis is NOT mirrored, so no dowel flip
     if(topStyle!=='none') buttEdge(b,'B',jm,[bx,inner-bx]);                       // back's TOP EDGE into the top
     if(hasBottom){ const before=b.holes.length; recvLine(b,'y',bot,T,jm,[bx,inner-bx],'min');   // bottom's back edge lands on the FRONT face — pins here, cam nuts in the bottom
       b.holes.slice(before).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; }); }
@@ -639,8 +820,16 @@ function buildCase(){
   out.push(...doors);
   // ---- sized-only parts
   const adj=parseInt($('cAdj').value)||0;
-  if(adj){ const aw=r4(inner-2*num('cAdjGap')), adWant=num('cAdjD'), adMax=backStyle==='full'?r4(backY):D, ad=Math.min(adWant,adMax); const a=newPanel('ADJ SHELF',aw,ad,T,`${aw}" × ${ad}" × ${T}"  ·  sized only, sits on shelf dowels${ad<adWant?`  ·  depth limited by the back panel (asked ${adWant}")`:''}`,adj);
-    a.boxes=adjZ.map(z=>({min:[T+num('cAdjGap'),0,z],max:[T+num('cAdjGap')+aw,ad,z+T]})); a.box=a.boxes[0]||null;
+  if(adj){ const gapA=num('cAdjGap');
+    let bay = divL!==null ? {x0:T,x1:divL} : {x0:T,x1:W-T};                    // a divider narrows the shelf to one compartment
+    if(drawerBay==='left'&&compR) bay={x0:compR.x0,x1:compR.x1};               // drawers on one side: shelves go in the other
+    else if(drawerBay==='right') bay={x0:compL.x0,x1:compL.x1};
+    const aw=r4((bay.x1-bay.x0)-2*gapA);
+    const back=backStyle==='full'?r4(backY):D, fg=num('cShelfGap');            // shelf runs from the back panel forward
+    const adAuto=r4(back-fg), typed=parseFloat($('cAdjD').value), ad=Math.min(isNaN(typed)?adAuto:typed, adAuto);
+    const yFront=r4(back-ad);                                                  // any extra gap shows at the FRONT, not the back
+    const a=newPanel('ADJ SHELF',aw,ad,T,`${aw}" × ${ad}" × ${T}"  ·  sized only, sits on shelf dowels  ·  set back ${yFront}" from the front edge`,adj);
+    a.boxes=adjZ.map(z=>({min:[bay.x0+gapA,yFront,z],max:[bay.x0+gapA+aw,yFront+ad,z+T]})); a.box=a.boxes[0]||null;
     out.push(a); }
   if(tk==='board'){ const k=newPanel('KICK BOARD',inner,tkH,T,`${inner}" × ${tkH}" × ${T}"  ·  view: BACK FACE (cam lock face), bottom at Y=0, ends butt into sides, top edge butts into bottom`);
     orient(k,'BACK FACE','LEFT END','RIGHT END','BOTTOM','TOP'); const jk={...j,dowMirror:true}, jdk={...jd,dowMirror:true};
@@ -833,7 +1022,9 @@ function hardware(){
     else if(h.type==='GLIDE') c.glide+=q; else if(h.type==='HINGE') c.hinge+=q; else if(h.type==='SCREW') c.screws+=q; else if(h.type==='SHELFPIN') c.shelfpin+=q; }));
   panels.filter(p=>p.name==='ADJ SHELF'||p.role==='adj').forEach(p=>c.shelfdowel+=4*p.qty);
   const sp=parseInt($('aiSpare').value)||0;
-  const rows=[['A','CAM PIN','Cam Pin',c.pin],['B','CAM NUT','Cam Nut',c.cam],['C','DOWEL','Dowel',c.dowel],['D','GLIDE','Glide',c.glide],['E','STICKER','Cam Cover Sticker',c.cam]]
+  const nDr=panels.filter(p=>p.name.includes('DRAWER FRONT')).reduce((s,p)=>s+p.qty,0);
+  const ovTxt=(()=>{const d=panels.filter(p=>p.overlay);return d.length?(d.every(x=>x.overlay==='full')?'Hinge (full overlay)':'Hinge (half overlay)'):'Hinge';})();
+  const rows=[['A','CAM PIN','Cam Pin',c.pin],['B','CAM NUT','Cam Nut',c.cam],['C','DOWEL','Dowel',c.dowel],['D','GLIDE','Glide',c.glide],['E','STICKER','Cam Cover Sticker',c.cam],['F','SLIDE',`Drawer Slide Pair`,nDr],['G','HINGE',ovTxt,c.hinge||0]]
     .filter(r=>r[3]>0).map(r=>({letter:r[0],code:r[1],name:r[2],qty:r[3],spare:sp}));
   return rows;
 }
@@ -1193,11 +1384,116 @@ function cnc1Files(){
   });
   return files;
 }
+
+/* ================= SketchUp handoff: COLLADA with the bores really subtracted ================= */
+function daePanelMesh(p){                              // local slab [0..w]x[0..d]x[0..t] minus every bore
+  const w=p.w,d=p.d,t=p.t,N=20,pos=[],tris=[];
+  const push=q=>{ pos.push(q[0],q[1],q[2]); return pos.length/3-1; };
+  const addTri=(A,B,C,out)=>{ const u=[B[0]-A[0],B[1]-A[1],B[2]-A[2]],v=[C[0]-A[0],C[1]-A[1],C[2]-A[2]];
+    const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+    if(n[0]*out[0]+n[1]*out[1]+n[2]*out[2]<0){ const s=B; B=C; C=s; }
+    tris.push(push(A),push(B),push(C)); };
+  const faces={ top:{A:w,B:d,out:[0,0,1], M:(x,y)=>[x,y,t]},   bot:{A:w,B:d,out:[0,0,-1],M:(x,y)=>[x,y,0]},
+    front:{A:w,B:t,out:[0,-1,0],M:(x,y)=>[x,0,y]},  back:{A:w,B:t,out:[0,1,0], M:(x,y)=>[x,d,y]},
+    left:{A:d,B:t,out:[-1,0,0],M:(x,y)=>[0,x,y]},   right:{A:d,B:t,out:[1,0,0],M:(x,y)=>[w,x,y]} };
+  const fh={top:[],bot:[],front:[],back:[],left:[],right:[]}, tol=0.02;
+  p.holes.forEach(h=>{ const r=h.d/2, dep=Math.min(h.z||t/2,t);
+    if(!h.edge){ fh[h.under?'bot':'top'].push({c:[h.x,h.y],r,dep}); return; }
+    const zc=t-(h.zo!==undefined?h.zo:t/2);
+    if(h.y<=tol) fh.front.push({c:[h.x,zc],r,dep}); else if(h.y>=d-tol) fh.back.push({c:[h.x,zc],r,dep});
+    else if(h.x<=tol) fh.left.push({c:[h.y,zc],r,dep}); else if(h.x>=w-tol) fh.right.push({c:[h.y,zc],r,dep}); });
+  for(const k in faces){ const F=faces[k], hl=fh[k].filter(h=>h.c[0]>h.r&&h.c[0]<F.A-h.r&&h.c[1]>h.r&&h.c[1]<F.B-h.r);
+    /* each bore sits in a square collar; the collar meshes to the ring, and the rest of the face is a plain grid */
+    let cells=hl.map(h=>{ let e=h.r*1.06; return {h,x0:h.c[0]-e,x1:h.c[0]+e,y0:h.c[1]-e,y1:h.c[1]+e}; });
+    for(let pass=0;pass<3;pass++){ let shrunk=false;                          // collars must not touch each other or the face edge
+      for(let i=0;i<cells.length;i++) for(let q=i+1;q<cells.length;q++){ const A=cells[i],B=cells[q];
+        if(A.x0<B.x1&&B.x0<A.x1&&A.y0<B.y1&&B.y0<A.y1){ [A,B].forEach(C=>{ const e=(C.x1-C.x0)/2*0.9, r=C.h.r*1.005, ee=Math.max(e,r);
+          C.x0=C.h.c[0]-ee;C.x1=C.h.c[0]+ee;C.y0=C.h.c[1]-ee;C.y1=C.h.c[1]+ee; }); shrunk=true; } }
+      cells.forEach(C=>{ C.x0=Math.max(C.x0,0);C.x1=Math.min(C.x1,F.A);C.y0=Math.max(C.y0,0);C.y1=Math.min(C.y1,F.B); });
+      if(!shrunk) break; }
+    if(!hl.length){ addTri(F.M(0,0),F.M(F.A,0),F.M(F.A,F.B),F.out); addTri(F.M(0,0),F.M(F.A,F.B),F.M(0,F.B),F.out); }
+    else{
+      cells.forEach(C=>{ const h=C.h;
+        /* radial collar: each ring vertex projects straight out to the cell boundary, corners inserted
+           where the projection walks past them - a clean annulus, so the opening is a true circle */
+        const ring=[],proj=[],edge=[];
+        for(let i=0;i<N;i++){ const a=i/N*2*Math.PI, dx=Math.cos(a), dy=Math.sin(a);
+          ring.push([h.c[0]+h.r*dx, h.c[1]+h.r*dy]);
+          const tx=dx>1e-12?(C.x1-h.c[0])/dx:dx<-1e-12?(C.x0-h.c[0])/dx:Infinity;
+          const ty=dy>1e-12?(C.y1-h.c[1])/dy:dy<-1e-12?(C.y0-h.c[1])/dy:Infinity;
+          const t=Math.min(tx,ty);
+          proj.push([h.c[0]+t*dx, h.c[1]+t*dy]); edge.push(tx<ty?(dx>0?'R':'L'):(dy>0?'T':'B')); }
+        const corner={RT:[C.x1,C.y1],TL:[C.x0,C.y1],LB:[C.x0,C.y0],BR:[C.x1,C.y0]};
+        for(let i=0;i<N;i++){ const j=(i+1)%N, outs=[proj[i]];
+          if(edge[j]!==edge[i]) outs.push(corner[edge[i]+edge[j]]||corner[edge[j]+edge[i]]);
+          outs.push(proj[j]);
+          for(let k=0;k<outs.length-1;k++){ addTri(F.M(...ring[i]),F.M(...outs[k]),F.M(...outs[k+1]),F.out); }
+          addTri(F.M(...ring[i]),F.M(...outs[outs.length-1]),F.M(...ring[j]),F.out); } });
+      const xs=[...new Set([0,F.A].concat(cells.flatMap(C=>[C.x0,C.x1])).map(v=>+v.toFixed(6)))].sort((a,b)=>a-b);
+      const ys=[...new Set([0,F.B].concat(cells.flatMap(C=>[C.y0,C.y1])).map(v=>+v.toFixed(6)))].sort((a,b)=>a-b);
+      for(let i=0;i<xs.length-1;i++) for(let q=0;q<ys.length-1;q++){ const cx=(xs[i]+xs[i+1])/2, cy=(ys[q]+ys[q+1])/2;
+        if(cells.some(C=>cx>C.x0&&cx<C.x1&&cy>C.y0&&cy<C.y1)) continue;
+        addTri(F.M(xs[i],ys[q]),F.M(xs[i+1],ys[q]),F.M(xs[i+1],ys[q+1]),F.out);
+        addTri(F.M(xs[i],ys[q]),F.M(xs[i+1],ys[q+1]),F.M(xs[i],ys[q+1]),F.out); } }
+    const m=F.out.map(v=>-v);                          // the bore runs inward
+    hl.forEach(h=>{ const C=F.M(h.c[0],h.c[1]);
+      const ring=[],ring2=[];
+      for(let i=0;i<N;i++){ const a=i/N*2*Math.PI, q=F.M(h.c[0]+h.r*Math.cos(a),h.c[1]+h.r*Math.sin(a));
+        ring.push(q); ring2.push([q[0]+m[0]*h.dep,q[1]+m[1]*h.dep,q[2]+m[2]*h.dep]); }
+      const CB=[C[0]+m[0]*h.dep,C[1]+m[1]*h.dep,C[2]+m[2]*h.dep];
+      for(let i=0;i<N;i++){ const j=(i+1)%N, ax=[(ring[i][0]+ring[j][0])/2-C[0],(ring[i][1]+ring[j][1])/2-C[1],(ring[i][2]+ring[j][2])/2-C[2]];
+        const inw=ax.map(v=>-v);                       // wall shows its inside
+        addTri(ring[i],ring[j],ring2[j],inw); addTri(ring[i],ring2[j],ring2[i],inw); }
+      for(let i=0;i<N;i++){ const j=(i+1)%N; addTri(CB,ring2[i],ring2[j],F.out); } }); }
+  return {pos,tris};
+}
+function daeExport(){
+  const geos=[],nodes=[],libs=[]; let gi=0;
+  panels.forEach(p=>{
+    const boxes=p.boxes||(p.box&&p.box.min?[p.box]:[]); if(!boxes.length) return;
+    const mesh=daePanelMesh(p), id='g'+(gi++);
+    geos.push(`<geometry id="${id}"><mesh><source id="${id}p"><float_array id="${id}a" count="${mesh.pos.length}">${mesh.pos.map(v=>+v.toFixed(5)).join(' ')}</float_array><technique_common><accessor source="#${id}a" count="${mesh.pos.length/3}" stride="3"><param name="X" type="float"/><param name="Y" type="float"/><param name="Z" type="float"/></accessor></technique_common></source><vertices id="${id}v"><input semantic="POSITION" source="#${id}p"/></vertices><triangles count="${mesh.tris.length/3}" material="wood"><input semantic="VERTEX" source="#${id}v" offset="0"/><p>${mesh.tris.join(' ')}</p></triangles></mesh></geometry>`);
+    let axes;
+    if(p.frame){ const f=p.frame, sgn=Math.sign(f.shown-f.opp)||1, n=[0,0,0]; n[f.ax]=sgn;
+      const T0=[f.o[0],f.o[1],f.o[2]]; T0[f.ax]=f.opp;
+      axes={ux:f.ux,uy:f.uy,n,T0};
+    } else {
+      /* no drawing frame (doors, adjustable shelves): derive the placement from the box itself,
+         matching each local dimension to the world axis with that extent - never assume XY */
+      const b0=boxes[0], e=[0,1,2].map(i=>b0.max[i]-b0.min[i]);
+      const nAx=[0,1,2].reduce((best,i)=>Math.abs(e[i]-p.t)<Math.abs(e[best]-p.t)?i:best,0);
+      const rest=[0,1,2].filter(i=>i!==nAx);
+      const wAx = Math.abs(e[rest[0]]-p.w)<=Math.abs(e[rest[1]]-p.w) ? rest[0] : rest[1];
+      const dAx = rest[0]===wAx ? rest[1] : rest[0];
+      const ux=[0,0,0]; ux[wAx]=1; const uy=[0,0,0]; uy[dAx]=1; const n=[0,0,0]; n[nAx]=1;
+      axes={ux,uy,n,T0:[b0.min[0],b0.min[1],b0.min[2]]};
+    }
+    const {ux,uy,n,T0}=axes;
+    boxes.forEach((b,bi)=>{ const dx=[b.min[0]-boxes[0].min[0],b.min[1]-boxes[0].min[1],b.min[2]-boxes[0].min[2]];
+      const T=[T0[0]+dx[0],T0[1]+dx[1],T0[2]+dx[2]];
+      const M=[ux[0],uy[0],n[0],T[0], ux[1],uy[1],n[1],T[1], ux[2],uy[2],n[2],T[2], 0,0,0,1];
+      const nm=`${p.name}${boxes.length>1?' '+(bi+1):''}`;
+      libs.push(`<node id="lib_${id}_${bi}" name="${nm}"><instance_geometry url="#${id}"><bind_material><technique_common><instance_material symbol="wood" target="#matWood"/></technique_common></bind_material></instance_geometry></node>`);
+      nodes.push(`<node id="n${gi}_${bi}" name="${nm}" type="NODE"><matrix sid="transform">${M.map(v=>+v.toFixed(6)).join(' ')}</matrix><instance_node url="#lib_${id}_${bi}"/></node>`); });
+  });
+  return `<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+<asset><contributor><authoring_tool>CASEMAKER ${BUILD_VERSION}</authoring_tool></contributor><unit meter="0.0254" name="inch"/><up_axis>Z_UP</up_axis></asset>
+<library_effects><effect id="fxWood"><profile_COMMON><technique sid="common"><lambert><diffuse><color>0.72 0.55 0.38 1</color></diffuse></lambert></technique></profile_COMMON></effect></library_effects>
+<library_materials><material id="matWood" name="TFL"><instance_effect url="#fxWood"/></material></library_materials>
+<library_geometries>${geos.join('')}</library_geometries>
+<library_nodes>${libs.join('')}</library_nodes>
+<library_visual_scenes><visual_scene id="scene" name="${jobName()}">${nodes.join('')}</visual_scene></library_visual_scenes>
+<scene><instance_visual_scene url="#scene"/></scene>
+</COLLADA>`;
+}
+
 function download(name,text,type='application/dxf'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 const stamp=()=>new Date().toISOString().slice(0,10);
 const jobName=()=>mode==='case'?(sel('cJob').trim()||`${num('cW')}x${num('cH')}x${num('cD')}`).replace(/\s+/g,'_'):mode==='obj'&&model?model.file.replace(/\.obj$/i,'').toUpperCase():'PANEL';
 $('dlNest').onclick=()=>{ if(!panels.length) return; const r=nestDXF(); if(r) download(`CASEMAKER_NEST_${jobName()}_${sel('nestStock').replace(',','x')}_${stamp()}.dxf`,r.dxf); };
 $('dlCNC1').onclick=()=>{ const fs=cnc1Files(); if(!fs.length){ alert('No panels with edge drilling.'); return; } fs.forEach((f,i)=>setTimeout(()=>download(f.name,f.text,'text/plain'),i*400)); };
+$('dlDae').onclick=()=>{ if(panels.length) download(`CASEMAKER_${jobName()}_${stamp()}.dae`, daeExport(), 'model/vnd.collada+xml'); };
 $('dlOne').onclick=()=>{const p=panels[current];if(p)download(`${p.name.replace(/\s+/g,'_')}_${stamp()}.dxf`,dxf([p]));};
 
 /* ================= assembly instruction sheet ================= */
