@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.33 -->
+<!-- BUILD_VERSION: 2026-08-31.35 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -224,6 +224,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label id="tkDL">NOTCH DEPTH<input id="tkD" type="number" step="0.0625" value="2.5" data-mm="1"></label>
       </div>
       <div class="row four">
+        <label class="chk"><input id="bkCam" type="checkbox" checked> CAM LOCK BACK PANEL</label>
         <label class="chk"><input id="dvCam" type="checkbox" checked> CAM LOCK DIVIDERS</label>
         <label>DOWEL SPACING WITHOUT CAMS<input id="camDowSp" type="number" step="0.5" value="8" data-mm="1"></label>
         <label class="chk"><input id="shCam" type="checkbox" checked> CAM LOCK FIXED SHELVES</label>
@@ -563,7 +564,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.33";
+const BUILD_VERSION = "2026-08-31.35";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -589,6 +590,7 @@ function setMode(m){ mode=m; document.querySelectorAll('#modeTabs button').forEa
   $('caseForm').style.display=m==='case'?'':'none'; $('partsSec').style.display=m==='case'?'':'none'; $('featSec').style.display=m==='dxf'?'none':'';
   $('objForm').style.display=m==='obj'?'':'none'; $('dxfForm').style.display=m==='dxf'?'':'none'; }
 document.querySelectorAll('#modeTabs button').forEach(b=>b.onclick=()=>{setMode(b.dataset.mode);current=0;build();});
+$('cBackFlush').addEventListener('change',()=>{ $('bkCam').checked = sel('cBackFlush')==='back'; build(); });   // cams need to be reachable from behind
 $('cPreset').onchange=()=>{ const v=sel('cPreset'); if(!v) return;
   let cfg=null; try{ cfg=JSON.parse(v); }catch(_){ const [w,h,d]=v.split(','); cfg={cW:w,cH:h,cD:d}; }
   Object.entries(cfg).forEach(([id,val])=>{ const el=document.getElementById(id); if(!el) return;
@@ -878,8 +880,8 @@ function buildCase(){
       recvLine(p,'x',ov,T,j,r,'max'); recvLine(p,'x',r4(W-T+ov),T,j,r,'min'); }   // sides' cam nuts on their inside faces
     else { const jm2 = (m.name.startsWith('SHELF') && !on('shCam')) ? {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))} : j;   // fixed shelves: cams, or dowels at this spacing
       buttEdge(p,'L',jm2,[0,dep]); buttEdge(p,'R',jm2,[0,dep]); }
-    if(backStyle==='full'&&sel('cBackFit')!=='over'&&m.name==='TOP') recvLine(p,'y',r4(backY+tf),BT,j,m.over?[r4(T+bx+ov),r4(W-T-bx+ov)]:[bx,inner-bx],'max');   // back panel's TOP EDGE lands on the top's underside
-    if(backStyle==='full'&&m.name==='BOTTOM') buttEdge(p,'B',j,[bx,inner-bx]);                                     // bottom's BACK EDGE butts the back panel: cams in the bottom, pins into the back
+    if(backStyle==='full'&&sel('cBackFit')!=='over'&&m.name==='TOP') recvLine(p,'y',r4(backY+tf),BT,(on('bkCam')?j:{...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))}),m.over?[r4(T+bx+ov),r4(W-T-bx+ov)]:[bx,inner-bx],'max');   // back panel's TOP EDGE lands on the top's underside
+    if(backStyle==='full'&&m.name==='BOTTOM') buttEdge(p,'B',(on('bkCam')?j:{...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))}),[bx,inner-bx]);                                     // bottom's BACK EDGE butts the back panel: cams in the bottom, pins into the back
     if(backStyle==='groove'&&(m.name==='TOP'||m.name==='BOTTOM')&&sel('gWhere')==='all') F.groove(p);
     if(m.name==='BOTTOM'&&tk==='board') recvLine(p,'y',tkIn,T,jd,[0,inner]);   // kick dowels: same underside face as the cams
     if(m.name==='BOTTOM') F.glides(p);
@@ -1064,7 +1066,8 @@ function buildCase(){
       const md = m.name==='TOP' ? r4(m.dep+Math.max(0,num('cTopFront'))) : m.dep;
       const jm3 = (m.name.startsWith('SHELF') && !on('shCam')) ? {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))} : j;
       recvLine(p,'x',m.y0,T,jm3,[yo,yo+md],'min'); });   // stations run over the member's own depth   // stations run over the member's own depth, so they meet its edge holes
-    if(backStyle==='full'&&sel('cBackFit')!=='over'){ recvLine(p,'y',backY,BT,j,[0,topY0],'max'); }   // back between the sides: its ends land on this face
+    if(backStyle==='full'&&sel('cBackFit')!=='over'){ const jb=on('bkCam')?j:{...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))};
+      recvLine(p,'y',backY,BT,jb,[0,topY0],'max'); }   // back between the sides: its ends land on this face
     if(tk==='board') recvLine(p,'y',tkIn,T,j,[0,tkH],'max');   // kick board cams face the back
     if(backStyle==='groove') F.groove(p);
     F.notch(p); F.glidesEdge(p);   // shelf pins are drilled per compartment, only where shelves were asked for
@@ -1081,11 +1084,12 @@ function buildCase(){
     const lo = over ? ((wrapBot||kick)?0:r4(hasBottom?bot+T:0)) : 0;            // over: laps the sides and top; with a toe kick it runs to the floor
     const hi = over ? H : topY0, bw = over ? W : inner, bx0 = over ? 0 : T;
     const bh=r4(hi-lo);
-    const jm={...j,dowMirror:true};   // this panel's drawing X runs opposite the case
+    const jbk = on('bkCam') ? j : {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))};   // cams need a flush back to reach
+    const jm={...jbk,dowMirror:true};   // this panel's drawing X runs opposite the case
     const b=newPanel('BACK PANEL',bw,bh,BT,`${bw}" × ${bh}" × ${BT}"  ·  view: BACK FACE (cam nuts hidden on the outside), floor end at Y=0, ${over?'laps the sides'+(topStyle!=='none'?' and top':'')+((wrapBot||kick)?', runs to the floor':''):'ends butt into sides'}`);
     orient(b,'BACK FACE (cam nut face, hidden)','RIGHT END of case','LEFT END of case','FLOOR END','TOP');
     if(!over){
-      buttEdge(b,'L',j); buttEdge(b,'R',j);     // the ends run along the height - that axis is NOT mirrored, so no dowel flip
+      buttEdge(b,'L',jbk); buttEdge(b,'R',jbk);   // the ends run along the height - that axis is NOT mirrored, so no dowel flip
       if(topStyle!=='none') buttEdge(b,'B',jm,[bx,inner-bx]);                     // back's TOP EDGE into the top
     } else {
       /* lapped back: the sides' and top's BACK EDGES cam into this panel's front face.
@@ -1096,14 +1100,14 @@ function buildCase(){
         /* both parts must station over the same stretch of world Z */
         const zLo=r4(Math.max(bx, lo+bx)), zHi=r4(Math.min(sp.w-bx, hi-bx));
         if(zHi-zLo<1) return;
-        buttEdge(sp,'B',j,[zLo,zHi]);                                           // cams in the side at its back edge
+        buttEdge(sp,'B',jbk,[zLo,zHi]);                                         // cams in the side at its back edge
         const n0=b.holes.length;
-        recvLine(b,'x', dxOf(r4(wx0+T)), T, j, [r4(zLo-lo), r4(zHi-lo)], side);   // this axis runs up the height, so no dowel flip
+        recvLine(b,'x', dxOf(r4(wx0+T)), T, jbk, [r4(zLo-lo), r4(zHi-lo)], side);   // this axis runs up the height, so no dowel flip
         b.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });   // these land on the back's FRONT face
       });
       if(topStyle!=='none'){ const top=out.find(q=>q.name==='TOP');
         if(top){ const o0=top.frame.o[0], sLo=bx, sHi=r4(top.w-bx), n0=b.holes.length;
-          buttEdge(top,'B',j,[sLo,sHi]);
+          buttEdge(top,'B',jbk,[sLo,sHi]);
           recvLine(b,'y', r4(topY0-lo), T, jm, [dxOf(r4(o0+sHi)), dxOf(r4(o0+sLo))], 'min');
           b.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; }); } }
     }
@@ -1633,7 +1637,9 @@ const DOCS=[
   ['BACK FIT','BETWEEN THE SIDES, or OVER them so the back edge shows around the sides and top.'],
   ['SPLIT BACK IN TWO','Two vertical back panels instead of one; holes divide with them.'],
   ['SEAM OFFSET FROM CENTRELINE','Moves the joint between the two back panels off centre.'],
+  ['CAM LOCK BACK PANEL','On with a FLUSH back, where the cams are reachable from behind. Choosing INSET turns it off, and you can set it either way by hand.'],
   ['CAM LOCK DIVIDERS / FIXED SHELVES','On, they cam lock like the rest of the case. Off, they are dowelled only.'],
+  ['DOWEL SPACING WITHOUT CAMS','Spacing used wherever a part is dowelled instead of cam locked.'],
   ['TOE KICK','KICK BOARD adds a recessed board; NOTCH cuts the sides; NONE runs the sides to the floor.'],
   ['DIVIDER 1 / 2','Each divider has its own block: X position, SPAN (full, up to a shelf, shelf to top, custom), and the shelf it meets.']]],
  ['COMPARTMENTS',[
