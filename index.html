@@ -1627,13 +1627,23 @@ function cnc1Files(){
       const zo = h.zo!==undefined ? h.zo : p.t/2, hz = faceDown ? r4(zo) : r4(p.t-zo);
       const o = {p:q.pos}; if(t==='dowel') o.t='dowel'; if(Math.abs(hz-drillZ)>1e-4) o.z=hz;
       holes[q.plane].push(t==='dowel'||o.z!==undefined ? o : q.pos); });
-    if(!Object.values(holes).some(a=>a.length)) return;
+    /* face drilling: 3/8" insert holes and 5/16" dowel holes on whichever face is UP in this setup.
+       CNC #1 runs them first — tool 4 for the cam screw, tool 10 for the dowel pin. */
+    const upIsShown=!faceDown, faceHoles=[];
+    p.holes.filter(h=>!h.edge&&(h.type==='PIN'||h.type==='DOWEL')&&(!!h.under!==upIsShown))
+      .forEach(h=>faceHoles.push({x:r4(p.d-h.y), y:r4(faceDown?p.w-h.x:h.x), t:h.type==='DOWEL'?'dowel':'cam'}));
+    if(!Object.values(holes).some(a=>a.length) && !faceHoles.length) return;
     const pos=v=>typeof v==='object'?v.p:v; Object.values(holes).forEach(a=>a.sort((a,b)=>pos(a)-pos(b)));
+    const pinFD=r4(p.t-j.pinFZ), dowFD=r4(p.t-j.dowFZ);                       // CNC #1 measures face depth from the BOTTOM face
     const params={ jobName:name, jobLocation:'', qty:p.qty,
       toolOffset:3.484252, bitOffset:1.5, slot2Offset:0,                                  // CNC #1 machine defaults
       panelWidth:r4(p.d), panelLength:r4(p.w), thickness:p.t, zOverride:drillZ,   // turned 90° left: long side down Y
       holeDepth:r4(camDepth), holeDepthDowel:r4(dowDepth),
       retract:0.5, safeZ:2, spindle:6000, feedIn:100, feedOut:500, tool:9, origin:9, parkY:75, dropDustHood:false,
+      vacZone1:true, vacZone2:false,
+      faceCam:{tool:'4',rpm:'16000',feed:'210',depth:pinFD},
+      faceDowel:{tool:'10',rpm:'18000',feed:'190',depth:dowFD},
+      faceHoles,
       holes };
     const L=[];
     L.push(';CONKLIN OFFICE PRODUCT DEVELOPMENT');
@@ -1643,6 +1653,7 @@ function cnc1Files(){
     L.push(`;STOCK ${p.t}" - HOLE CENTERLINE ${r4(ctr)}" FROM THE CAM FACE`);
     L.push(`;PANEL LIES CAM FACE ${faceDown?'DOWN':'UP'}: Z DEPTH OVERRIDE ${drillZ}" OFF THE TABLE`);
     L.push(`;LOAD TURNED 90 LEFT FROM THE CASEMAKER DRAWING: ${r4(p.w)}" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ${r4(p.d)}" ACROSS X`);
+    if(faceHoles.length) L.push(`;FACE DRILLING ${faceHoles.filter(h=>h.t==='cam').length}x 3/8" INSERT (T4) + ${faceHoles.filter(h=>h.t==='dowel').length}x 5/16" DOWEL (T10), DEPTH FROM THE BOTTOM FACE`);
     if(note) L.push(';'+note);
     L.push(';LOAD THIS FILE IN THE CNC #1 EDGE DRILLING APP, REVIEW, THEN GENERATE');
     L.push(';PARAMS_BEGIN');
