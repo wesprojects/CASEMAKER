@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.40 -->
+<!-- BUILD_VERSION: 2026-08-31.42 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -565,7 +565,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.40";
+const BUILD_VERSION = "2026-08-31.42";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -830,18 +830,28 @@ function renderCompartments(){
         +'<label>BOX DRAWERS'+num_('nb',o.nb,1)+'</label>'
         +'<label>FILE DRAWERS'+num_('nf',o.nf,1)+'</label>'
         +'<label>FACE HEIGHTS<input data-fh="'+c.key+'" value="'+(o.fh||'')+'" placeholder="GLOBAL"></label></div>' : '';
+    /* a cross or single divider inside this opening, cammed into the back only */
+    const subCfg = '<div class="cfield"><label>SUBDIVIDE'
+        +sel_('sub',o.sub||'none',[['none','NONE'],['vert','VERTICAL'],['horiz','HORIZONTAL'],['cross','CROSS']])+'</label>'
+        +((o.sub&&o.sub!=='none')?'<label>OFFSET ACROSS'+num_('subx',o.subx||0,0.0625)+'</label>'
+          +'<label>OFFSET UP'+num_('subz',o.subz||0,0.0625)+'</label>':'')
+        +'<label>GROMMET'+sel_('gro',o.gro||'none',[['none','NONE'],['left','LEFT'],['centre','CENTRE'],['right','RIGHT']])+'</label>'
+        +((o.gro&&o.gro!=='none')?'<label>GROMMET FROM BACK'+num_('groy',o.groy||'',0.0625)+'</label>':'')
+        +'</div>';
     return '<div class="compblock"><div class="comphead"><span class="cid">'+c.label.toUpperCase()+'</span>'
       +'<span class="csz">'+c.w+'" WIDE \u00d7 '+c.h+'" HIGH</span>'
       +sel_('comp',n,[0,1,2,3,4,5,6].map(v=>[v,v?v+' SHELF'+(v>1?'S':''):'NO SHELVES']))
       +sel_('kind',k,[['none','OPEN'],['door','1 DOOR'],['doors2','2 DOORS'],['drawers','DRAWERS']])
-      +'</div>'+shelfCfg+doorCfg+drawerCfg+'</div>';
+      +'</div>'+shelfCfg+doorCfg+drawerCfg+subCfg+'</div>';
   }).join('');
   host.querySelectorAll('[data-comp]').forEach(el=>el.onchange=()=>{ compAssign.set(el.dataset.comp,parseInt(el.value)||0); build(); });
   host.querySelectorAll('[data-kind]').forEach(el=>el.onchange=()=>{ compContent.set(el.dataset.kind,el.value); build(); });
   host.querySelectorAll('[data-hinge]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.hinge).hinge=el.value; build(); });
   [['rows','rows'],['ov','ov'],['nh','nh'],['fh','fh']].forEach(([attr,prop])=>
     host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; build(); }));
-  [['pitch','pitch'],['pdia','pdia'],['gap','gap']].forEach(([attr,prop])=>
+  [['sub','sub'],['gro','gro']].forEach(([attr,prop])=>
+    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; compSig=''; renderCompartments(); build(); }));
+  [['pitch','pitch'],['pdia','pdia'],['gap','gap'],['subx','subx'],['subz','subz'],['groy','groy']].forEach(([attr,prop])=>
     host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value===''?undefined:parseFloat(el.value); build(); }));
   host.querySelectorAll('[data-ov]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.ov).ov=el.value; build(); });
   host.querySelectorAll('[data-nb]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nb).nb=parseInt(el.value)||0; build(); });
@@ -1183,6 +1193,56 @@ function buildCase(){
         return {c,kind:compContent.get(c.key)||'none',rect:{x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1},
                 hinge:o.hinge,ov:o.ov,nb:o.nb,nf:o.nf,gap:o.gap,nh:o.nh,fh:o.fh}; })
     : seeded;
+  /* subdividers and grommets, per compartment */
+  COMPARTMENTS.forEach(c=>{
+    const o=compOpts.get(c.key); if(!o) return;
+    const dep=r4(backStyle==='full'?backY:D);
+    const back=out.find(q=>q.name.startsWith('BACK PANEL'));
+    const dxOfB=wx=>back?r4(back.frame.o[0]-wx):0;                            // the back is drawn mirrored
+    const lo=back?back.box.min[2]:0;
+    const camBack=(piece,axis,pos,range)=>{                                    // cams in the piece's back edge, pins in the back
+      if(!back||!back.frame||backStyle!=='full') return;
+      buttEdge(piece,'B',j,[bx,r4(piece.w)-bx]);
+      const n0=back.holes.length;
+      const jbm={...j,dowMirror:axis==='y'};
+      recvLine(back,axis,pos,T,jbm,range,axis==='y'?'min':'max');
+      back.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });
+    };
+    if(o.sub&&o.sub!=='none'){
+      const mx=r4((c.x0+c.x1)/2 + (parseFloat(o.subx)||0)), mz=r4((c.z0+c.z1)/2 + (parseFloat(o.subz)||0));
+      if(o.sub==='vert'||o.sub==='cross'){
+        const h=r4(c.z1-c.z0);
+        const v=newPanel('SUB DIVIDER',h,dep,T,h+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  drops into '+c.id+', cams into the back only');
+        orient(v,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
+        v.box={min:[r4(mx-T/2),0,c.z0],max:[r4(mx+T/2),dep,c.z1]};
+        v.frame={o:[r4(mx-T/2),0,c.z0],ux:[0,0,1],uy:[0,1,0],ax:0,shown:r4(mx-T/2),opp:r4(mx+T/2)};
+        camBack(v,'x',dxOfB(r4(mx+T/2)),[r4(c.z0-lo)+bx, r4(c.z1-lo)-bx]);
+        out.push(v);
+      }
+      if(o.sub==='horiz'||o.sub==='cross'){
+        const segs = o.sub==='cross' ? [[c.x0,r4(mx-T/2)],[r4(mx+T/2),c.x1]] : [[c.x0,c.x1]];
+        segs.forEach((seg,i)=>{ const w=r4(seg[1]-seg[0]); if(w<1) return;
+          const nm = o.sub==='cross' ? 'SUB SHELF '+(i+1) : 'SUB SHELF';
+          const sh=newPanel(nm,w,dep,T,w+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  drops into '+c.id+', cams into the back only');
+          orient(sh,'TOP FACE','LEFT END','RIGHT END','FRONT','BACK');
+          sh.box={min:[seg[0],0,r4(mz-T/2)],max:[seg[1],dep,r4(mz+T/2)]};
+          sh.frame={o:[seg[0],0,r4(mz-T/2)],ux:[1,0,0],uy:[0,1,0],ax:2,shown:r4(mz-T/2),opp:r4(mz+T/2)};
+          camBack(sh,'y',r4(mz-T/2-lo),[dxOfB(r4(seg[1]-bx)), dxOfB(r4(seg[0]+bx))]);   // measured from the piece's underside
+          out.push(sh); });
+      }
+    }
+    if(o.gro&&o.gro!=='none'){
+      /* the grommet goes in whatever forms this opening's ceiling */
+      const ceil=out.find(q=>q.box&&q.box.min&&Math.abs(q.box.min[2]-c.z1)<0.02&&
+        q.box.min[0]<=c.x0+0.02&&q.box.max[0]>=c.x1-0.02&&(q.name.startsWith('SHELF')||q.name==='TOP'));
+      if(ceil&&ceil.frame){
+        const gx = o.gro==='left' ? r4(c.x0+4) : o.gro==='right' ? r4(c.x1-4) : r4((c.x0+c.x1)/2);
+        const gy = (o.groy!==undefined&&o.groy!=='') ? parseFloat(o.groy) : 3;      // in from the back edge
+        const lx = r4(gx-ceil.frame.o[0]), ly = r4(Math.max(1, ceil.d-gy));
+        addHole(ceil,'GROMMET',lx,ly,num('grD'),ceil.t,'GROMMET_D'+num('grD'));
+      }
+    }
+  });
   jobs.forEach(job=>{
     const c=job.c, kind=job.kind;
     if(kind==='none') return;
@@ -1689,7 +1749,10 @@ const DOCS=[
   ['HINGES PER DOOR','AUTOMATIC scales with door height (2 to 36", 3 to 60", 4 to 80", else 5).'],
   ['REVEAL','Gap around this door only. Blank follows the DOORS section.'],
   ['BOX / FILE DRAWERS','Counts for this opening. Files stack at the bottom.'],
-  ['FACE HEIGHTS','Comma list, bottom to top, in inches or mm (e.g. 318mm, 184mm). Blank follows the DRAWERS section.']]],
+  ['FACE HEIGHTS','Comma list, bottom to top, in inches or mm (e.g. 318mm, 184mm). Blank follows the DRAWERS section.'],
+  ['SUBDIVIDE','Drops a VERTICAL, HORIZONTAL or CROSS divider into the opening. These cam into the back panel only - slide them in and lock a few cam nuts.'],
+  ['OFFSET ACROSS / UP','Moves the subdivider off centre.'],
+  ['GROMMET','Cuts a grommet in whatever forms this opening\u2019s ceiling, at the left, centre or right, set in from the back by the given amount.']]],
  ['DOORS',[
   ['STYLE','OVERLAY sits in front of the case; INSET sits inside it.'],
   ['INSET CLEARANCE','With inset doors on a divider, the divider is set back by the door thickness plus this amount so the hinge can pull the door flush.'],
