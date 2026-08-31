@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.35 -->
+<!-- BUILD_VERSION: 2026-08-31.40 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -123,7 +123,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 <div>
   <!-- ================= SOURCE ================= -->
-  <section>
+  <section id="srcSec">
     <h2>SOURCE</h2>
     <div class="tabs" id="modeTabs">
       <button class="on" data-mode="case">BUILD A CASE</button>
@@ -135,7 +135,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row">
         <label>MODEL NO.<input id="cJob" value="5CLBK48"></label>
         <label>PRESET<select id="cPreset"><option value="">—</option>
-          <optgroup label="GATEWAY PRODUCTS">
+          <optgroup label="SAMPLE PARTS">
             <option value='{"cW":34.65,"cH":47.2441,"cD":13.9764,"cT":1.03,"cBackT":1.03,"tkStyle":"board","tkH":2.7559,"cAdj":2,"cDoors":0,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case","dvOn":false,"dvSpan":"full","dv2On":false}'>5CLBK48</option>
             <option value='{"cW":34.6457,"cH":28.4646,"cD":22.5591,"cT":0.9843,"cBackT":0.7087,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"cAdj":1,"cDoors":2,"hgOn":true,"cDoorY0":3.3465,"cDoorY1":28.4646,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case","dvOn":false,"dvSpan":"full","dv2On":false}'>5CLSC34</option>
             <option value='{"cW":15.5118,"cH":27.9528,"cD":21.8504,"cT":0.7087,"cBackT":0.6299,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"ptTopFit":"flush","cAdj":0,"cDoors":0,"drBox":2,"drFile":1,"drAlign":"bottom","drY0":2.7559,"drSideGap":0.0394,"drHeights":"318mm, 157mm, 157mm","drBoxHeights":"245mm, 90mm, 90mm","drSlideBox":"15.748","drSlideFile":"20.0787","dvOn":false,"dvSpan":"full","dv2On":false}'>5CLBBF22</option>
@@ -225,6 +225,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row four">
         <label class="chk"><input id="bkCam" type="checkbox" checked> CAM LOCK BACK PANEL</label>
+        <label class="chk"><input id="bkShelf" type="checkbox" checked> JOIN SHELVES AND DIVIDERS TO THE BACK</label>
         <label class="chk"><input id="dvCam" type="checkbox" checked> CAM LOCK DIVIDERS</label>
         <label>DOWEL SPACING WITHOUT CAMS<input id="camDowSp" type="number" step="0.5" value="8" data-mm="1"></label>
         <label class="chk"><input id="shCam" type="checkbox" checked> CAM LOCK FIXED SHELVES</label>
@@ -564,7 +565,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.35";
+const BUILD_VERSION = "2026-08-31.40";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -591,13 +592,24 @@ function setMode(m){ mode=m; document.querySelectorAll('#modeTabs button').forEa
   $('objForm').style.display=m==='obj'?'':'none'; $('dxfForm').style.display=m==='dxf'?'':'none'; }
 document.querySelectorAll('#modeTabs button').forEach(b=>b.onclick=()=>{setMode(b.dataset.mode);current=0;build();});
 $('cBackFlush').addEventListener('change',()=>{ $('bkCam').checked = sel('cBackFlush')==='back'; build(); });   // cams need to be reachable from behind
+/* every control's factory value, captured before anything is touched: a preset restores these
+   first, so settings added later can never carry over from the previous configuration */
+const FACTORY={};
+document.querySelectorAll('#srcSec input[id],#srcSec select[id],#partsSec input[id],#partsSec select[id]').forEach(el=>{
+  if(el.type==='file') return; FACTORY[el.id] = el.type==='checkbox' ? el.checked : el.value; });
+function resetToFactory(){
+  Object.entries(FACTORY).forEach(([id,v])=>{ if(id==='cPreset'||id==='cJob') return;
+    const el=document.getElementById(id); if(!el) return;
+    if(el.type==='checkbox') el.checked=v; else el.value=v; });
+}
 $('cPreset').onchange=()=>{ const v=sel('cPreset'); if(!v) return;
   let cfg=null; try{ cfg=JSON.parse(v); }catch(_){ const [w,h,d]=v.split(','); cfg={cW:w,cH:h,cD:d}; }
+  compAssign.clear(); compContent.clear(); compOpts.clear(); compSeeded=false; compSig='';
+  resetToFactory();                                                          // factory state first, then the preset
   Object.entries(cfg).forEach(([id,val])=>{ const el=document.getElementById(id); if(!el) return;
     if(el.type==='checkbox') el.checked=!!val;
     else if(el.tagName==='SELECT'){ if([...el.options].some(o=>o.value===String(val))) el.value=String(val); }
     else el.value=val; });
-  compAssign.clear(); compContent.clear(); compSeeded=false;                 // a preset starts the compartment list fresh
   const label=$('cPreset').selectedOptions[0].textContent.trim();
   if(/^5CL/.test(label)) $('cJob').value=label;                              // the model number carries through every export
   $('cShelfPos').value=''; build(); };
@@ -1114,6 +1126,29 @@ function buildCase(){
     if(hasBottom){ const before=b.holes.length;
       recvLine(b,'y',r4(bot-lo),T,jm,[r4(bx0+bw-(T+inner-bx)), r4(bx0+bw-(T+bx))],'min');   // bottom's back edge lands on the FRONT face
       b.holes.slice(before).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; }); }
+    /* fixed shelves and dividers also land on the back panel: cams in their back edge,
+       pins in the back's front face - the joint that stops a long shelf bowing */
+    if(on('bkShelf')){
+      const dxOf2=wx=>r4(bx0+bw-wx);
+      members.filter(m=>m.name.startsWith('SHELF')).forEach(m=>{
+        const sh=out.find(q=>q.name===m.name); if(!sh||!sh.frame) return;
+        const jsb = on('shCam') ? j : {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))};
+        const wx0=sh.box.min[0], wx1=sh.box.max[0];
+        const before=sh.holes.length;
+        buttEdge(sh,'B',jsb,[bx,r4(sh.w)-bx]);                                   // cams along the shelf's back edge
+        const n0=b.holes.length;
+        recvLine(b,'y',r4(m.y0-lo),T,{...jsb,dowMirror:true},[dxOf2(r4(wx1-bx)),dxOf2(r4(wx0+bx))],'min');
+        b.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });
+      });
+      out.filter(q=>q.name.startsWith('DIVIDER')).forEach(dv=>{
+        const jdb = on('dvCam') ? j : {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))};
+        const z0=dv.box.min[2], z1=dv.box.max[2];
+        buttEdge(dv,'B',jdb,[bx,r4(dv.w)-bx]);                                   // cams up the divider's back edge
+        const n0=b.holes.length;
+        recvLine(b,'x',dxOf2(r4(dv.box.max[0])),T,jdb,[r4(Math.max(z0,lo)-lo)+bx,r4(Math.min(z1,hi)-lo)-bx],'max');   // the back is drawn mirrored, so the cam face is on its far side
+        b.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });
+      });
+    }
     if(sel('grWhere')==='BACK PANEL') F.grommet(b);
     b.box={min:[bx0,backY,lo],max:[bx0+bw,backY+BT,hi]};
     b.frame={o:[bx0+bw,0,lo],ux:[-1,0,0],uy:[0,0,1],ax:1,shown:backY+BT,opp:backY};   // viewed from the back, mirrored
@@ -1624,7 +1659,7 @@ function buildHwPanel(){
 const DOCS=[
  ['SOURCE',[
   ['MODEL NO.','Names the job. Every export - nest, .nc, .dae, PDF, project file - carries it.'],
-  ['PRESET','Loads a Gateway product: case sizes, materials, kick, contents. Resets the compartment list.'],
+  ['PRESET','Loads a sample part: case sizes, materials, kick, contents. Resets the compartment list.'],
   ['WIDTH / HEIGHT / DEPTH','Outside of the carcass. Faces and lapped backs may sit outside these.'],
   ['STOCK THICKNESS','Case material. Drives every joint position and the cam bore depth.']]],
  ['CARCASS',[
@@ -1638,6 +1673,7 @@ const DOCS=[
   ['SPLIT BACK IN TWO','Two vertical back panels instead of one; holes divide with them.'],
   ['SEAM OFFSET FROM CENTRELINE','Moves the joint between the two back panels off centre.'],
   ['CAM LOCK BACK PANEL','On with a FLUSH back, where the cams are reachable from behind. Choosing INSET turns it off, and you can set it either way by hand.'],
+  ['JOIN SHELVES AND DIVIDERS TO THE BACK','Fixed shelves and dividers also cam into the back panel along their back edges, which stops a long shelf bowing.'],
   ['CAM LOCK DIVIDERS / FIXED SHELVES','On, they cam lock like the rest of the case. Off, they are dowelled only.'],
   ['DOWEL SPACING WITHOUT CAMS','Spacing used wherever a part is dowelled instead of cam locked.'],
   ['TOE KICK','KICK BOARD adds a recessed board; NOTCH cuts the sides; NONE runs the sides to the floor.'],
