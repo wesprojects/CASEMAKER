@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.43 -->
+<!-- BUILD_VERSION: 2026-08-31.50 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -54,11 +54,15 @@ input:focus,select:focus{outline:2px solid var(--amber);border-color:transparent
 .modal{position:fixed !important;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50}
 .modal[hidden]{display:none}
 .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;max-width:min(96vw,760px);max-height:92vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.5)}
-.cfglayout{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
-.cfghead{font-size:10px;letter-spacing:.12em;color:var(--mute);margin-bottom:6px}
+.cfglayout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(420px,1fr);gap:20px;align-items:start}
+.cfgleft #cfgDiagram{max-height:72vh;display:flex;justify-content:center}
+.cfgleft #cfgDiagram svg{max-height:72vh;width:100%;height:auto;margin:0 auto}
+.cfgright{display:flex;flex-direction:column;min-width:0}
+#cfgIso canvas{width:min(430px,100%);height:auto;border:1px solid var(--line);border-radius:6px}
+.cfghead{font-size:9px;letter-spacing:.12em;color:var(--mute);margin-bottom:4px}
 #cfgDiagram svg{width:100%;height:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px}
 #cfgDiagram .bay{cursor:pointer}
-#cfgDetail{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+#cfgDetail .compblock{margin:0}
 #cfgDetail .compblock{border-color:var(--amber)}
 .docs{font-size:11px;line-height:1.55}
 .docs h3{font-size:11px;letter-spacing:.1em;margin:14px 0 4px;color:var(--amber)}
@@ -70,9 +74,9 @@ input:focus,select:focus{outline:2px solid var(--amber);border-color:transparent
 .dvfields{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:6px}
 .dvfields label{font-size:10px}
 .compblock{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0}
-.comphead{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:center;font-size:10px}
+.comphead{display:grid;grid-template-columns:170px 1fr 1fr 1fr;gap:10px;align-items:center;font-size:11px}
 .cfield{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
-.cfield label{display:flex;flex-direction:column;gap:3px;font-size:9px;color:var(--mute)}
+.cfield label{display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--mute)}
 .comprow{display:none}
 .comprow select,.comprow input{width:100%;font-size:10px;padding:3px 4px}
 .comprow .mini{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--mute)}
@@ -543,14 +547,16 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 </div>
 </main>
 <div id="compPanel" class="modal" hidden>
-  <div class="modalbox" style="max-width:min(97vw,1240px)">
+  <div class="modalbox" style="max-width:min(96vw,1720px);max-height:94vh;overflow:hidden">
     <div class="modalhead"><h2 style="margin:0">COMPARTMENT CONFIGURATOR</h2>
       <div class="tabs" style="margin:0"><button id="closeComp">CLOSE</button></div></div>
     <div class="cfglayout">
-      <div><div class="cfghead">PLAN</div><div id="cfgDiagram"></div></div>
-      <div><div class="cfghead">ISO</div><div id="cfgIso"></div></div>
+      <div class="cfgleft"><div class="cfghead">PLAN</div><div id="cfgDiagram"></div></div>
+      <div class="cfgright">
+        <div class="cfghead">COMPARTMENT</div><div id="cfgDetail"></div>
+        <div class="cfghead" style="margin-top:10px">ISO</div><div id="cfgIso"></div>
+      </div>
     </div>
-    <div id="cfgDetail"></div>
   </div>
 </div>
 <div id="docsPanel" class="modal" hidden>
@@ -583,7 +589,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.43";
+const BUILD_VERSION = "2026-08-31.50";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -826,7 +832,7 @@ function wireCompHandlers(host, after){
   host.querySelectorAll('[data-hinge]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.hinge).hinge=el.value; build(); if(after) after(); });
   [['rows','rows'],['ov','ov'],['nh','nh'],['fh','fh']].forEach(([attr,prop])=>
     host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; build(); if(after) after(); }));
-  [['sub','sub'],['gro','gro']].forEach(([attr,prop])=>
+  [['sub','sub'],['gro','gro'],['style','style']].forEach(([attr,prop])=>
     host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; compSig=''; build(); if(after) after(); if(after) after(); }));
   [['pitch','pitch'],['pdia','pdia'],['gap','gap'],['subx','subx'],['subz','subz'],['groy','groy']].forEach(([attr,prop])=>
     host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value===''?undefined:parseFloat(el.value); build(); if(after) after(); }));
@@ -846,6 +852,7 @@ function compBlockHTML(c){
         +'<label>PIN DIAMETER'+num_('pdia',o.pdia||'',0.0001)+'</label></div>' : '';
     /* door block */
     const doorCfg = (k==='door'||k==='doors2') ? '<div class="cfield">'
+        +'<label>DOOR STYLE'+sel_('style',o.style||'auto',[['auto','FOLLOW GLOBAL'],['overlay','OVERLAY'],['inset','INSET']])+'</label>'
         +(k==='door'?'<label>HINGE SIDE'+sel_('hinge',o.hinge,[['L','LEFT'],['R','RIGHT']])+'</label>':'')
         +'<label>OVERLAY'+sel_('ov',o.ov,[['auto','AUTOMATIC'],['full','FULL'],['half','HALF']])+'</label>'
         +'<label>HINGES PER DOOR'+sel_('nh',o.nh||'auto',[['auto','AUTOMATIC'],['2','2'],['3','3'],['4','4'],['5','5']])+'</label>'
@@ -865,7 +872,7 @@ function compBlockHTML(c){
         +'</div>';
     return '<div class="compblock"><div class="comphead"><span class="cid">'+c.label.toUpperCase()+'</span>'
       +'<span class="csz">'+c.w+'" WIDE \u00d7 '+c.h+'" HIGH</span>'
-      +sel_('comp',n,[0,1,2,3,4,5,6].map(v=>[v,v?v+' SHELF'+(v>1?'S':''):'NO SHELVES']))
+      +sel_('comp',n,[0,1,2,3,4,5,6].map(v=>[v,v?(v>1?v+' SHELVES':'1 SHELF'):'NO SHELVES']))
       +sel_('kind',k,[['none','OPEN'],['door','1 DOOR'],['doors2','2 DOORS'],['drawers','DRAWERS']])
       +'</div>'+shelfCfg+doorCfg+drawerCfg+subCfg+'</div>';
 }
@@ -954,8 +961,11 @@ function buildCase(){
     const dv=newPanel(label,dh,dep,T,`${dh}" × ${dep}" × ${T}"  ·  view: LEFT FACE, floor end at Y=0${ends?`, ends butt into the ${[loHost,hiHost].filter(Boolean).join(' and ')}`:', ends are free'}`);
     orient(dv,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
     /* only set a divider back when an inset door will actually hang on it: a small hinge-adjustment clearance */
-    const anyDoors = parseInt(sel('cDoors'))>0 || [...compContent.values()].some(v=>v==='door'||v==='doors2');
-    const setBackFront = (sel('cDoorStyle')==='inset' && anyDoors) ? r4(T+num('cDoorSetback')) : 0;   // door thickness plus the hinge adjustment clearance
+    const globalInset = sel('cDoorStyle')==='inset';
+    const anyInset = [...compContent.entries()].some(([k2,v])=>{ if(v!=='door'&&v!=='doors2') return false;
+      const st=(compOpts.get(k2)||{}).style; return st==='inset' || (st!=='overlay' && globalInset); })
+      || (globalInset && parseInt(sel('cDoors'))>0);
+    const setBackFront = anyInset ? r4(T+num('cDoorSetback')) : 0;   // door thickness plus the hinge adjustment clearance   // door thickness plus the hinge adjustment clearance
     const spanFor=hn=>{ const host=out.find(q=>q.name===hn);
       const w = (!host||!host.frame) ? [bx,dep-bx]
         : [r4(Math.max(bx,host.frame.o[1]+bx)), r4(Math.min(dep-bx,host.frame.o[1]+host.d-bx))];
@@ -1006,8 +1016,9 @@ function buildCase(){
 
   /* build a door (or a pair) into any opening — used by the compartment list and by the
      case-wide settings, which simply pass the whole front as one rectangle */
-  const makeDoorsIn=(rect,count,hingePref,ovPref,gapOv,nHinge)=>{
-    const inset=sel('cDoorStyle')==='inset', gap=(gapOv!==undefined&&gapOv!=='')?gapOv:num('cDoorGap');
+  const makeDoorsIn=(rect,count,hingePref,ovPref,gapOv,nHinge,styleOv)=>{
+    const inset = styleOv==='inset' ? true : styleOv==='overlay' ? false : sel('cDoorStyle')==='inset';
+    const gap=(gapOv!==undefined&&gapOv!=='')?gapOv:num('cDoorGap');
     const made=[];
     const z0=rect.z0, z1=rect.z1, dh=r4(z1-z0-(inset?2*gap:0));
     const touchesL=Math.abs(rect.x0-T)<0.02, touchesR=Math.abs(rect.x1-(W-T))<0.02;
@@ -1215,7 +1226,7 @@ function buildCase(){
   const jobs = compHasContent
     ? COMPARTMENTS.map(c=>{ const o=compOpts.get(c.key)||{};
         return {c,kind:compContent.get(c.key)||'none',rect:{x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1},
-                hinge:o.hinge,ov:o.ov,nb:o.nb,nf:o.nf,gap:o.gap,nh:o.nh,fh:o.fh}; })
+                hinge:o.hinge,ov:o.ov,nb:o.nb,nf:o.nf,gap:o.gap,nh:o.nh,fh:o.fh,style:o.style}; })
     : seeded;
   /* subdividers and grommets, per compartment */
   COMPARTMENTS.forEach(c=>{
@@ -1272,7 +1283,7 @@ function buildCase(){
     if(kind==='none') return;
     const rect=job.rect;
     if(kind==='door'||kind==='doors2'){
-      const made=makeDoorsIn(rect,kind==='doors2'?2:1,job.hinge,job.ov,job.gap,job.nh);
+      const made=makeDoorsIn(rect,kind==='doors2'?2:1,job.hinge,job.ov,job.gap,job.nh,job.style);
       made.forEach(d=>{ out.push(d);
         const hx = d.hingeEdge==='L' ? d.box.min[0] : d.box.max[0];
         const carrier=out.filter(q=>(q.name.includes('SIDE')||q.name.startsWith('DIVIDER'))&&q.box&&q.box.min)
@@ -1745,7 +1756,7 @@ let compSel=null;
 function cfgDiagram(){
   const host=$('cfgDiagram'); if(!host) return;
   if(!COMPARTMENTS.length){ host.innerHTML='<p class="hint">NO COMPARTMENTS</p>'; return; }
-  const W=num('cW'), H=num('cH'), pad=14, sc=Math.min(560/W, 460/H), w=W*sc+pad*2, h=H*sc+pad*2;
+  const W=num('cW'), H=num('cH'), pad=16, sc=Math.min(760/W, 620/H), w=W*sc+pad*2, h=H*sc+pad*2;
   const X=x=>pad+x*sc, Y=z=>pad+(H-z)*sc;
   const parts=[];
   parts.push('<rect x="'+pad+'" y="'+pad+'" width="'+(W*sc)+'" height="'+(H*sc)+'" fill="none" stroke="var(--line)" stroke-width="2"/>');
@@ -1793,8 +1804,10 @@ function cfgIso(){
   const host=$('cfgIso'); if(!host) return;
   host.innerHTML='';
   if(!iso3dBoxes.length) return;
-  host.appendChild(isoCanvas(iso3dBoxes,{w:520,h:430,ss:2,dark:root.dataset.theme==='dark',finish:finish(),
-    yaw:-24,el:14,zoom:1,holes:holes3D()}));
+  const cv=isoCanvas(iso3dBoxes,{w:430,h:330,ss:2,dark:root.dataset.theme==='dark',finish:finish(),
+    yaw:-24,el:14,zoom:1,holes:holes3D()});
+  cv.style.width='min(430px,100%)'; cv.style.height='auto';                              // the canvas is drawn at 2x for sharpness
+  host.appendChild(cv);
 }
 function cfgRender(){ cfgDiagram(); cfgDetail(); cfgIso(); }
 $('compBtn').onclick=()=>{ if(!compSel&&COMPARTMENTS.length) compSel=COMPARTMENTS[0].key;
@@ -1830,6 +1843,7 @@ const DOCS=[
   ['PIN ROWS','FOLLOW GLOBAL uses the HARDWARE setting; FULL LADDER drills the whole height; 3 or 5 drills that many rows each side of every shelf.'],
   ['PIN SPACING / DIAMETER','Override the global pitch and hole size for this opening only. Blank follows HARDWARE.'],
   ['CONTENT','OPEN, 1 DOOR, 2 DOORS or DRAWERS - built into that opening.'],
+  ['DOOR STYLE','FOLLOW GLOBAL uses the DOORS section; OVERLAY or INSET set it for this opening alone. An inset door sets its divider back.'],
   ['HINGE SIDE','Which vertical the door hangs on. Cups, plates and hardware follow it.'],
   ['OVERLAY','AUTOMATIC gives FULL on an outer side and HALF on a divider. Override per door.'],
   ['HINGES PER DOOR','AUTOMATIC scales with door height (2 to 36", 3 to 60", 4 to 80", else 5).'],
