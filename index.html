@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.18 -->
+<!-- BUILD_VERSION: 2026-08-31.27 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -54,7 +54,13 @@ input:focus,select:focus{outline:2px solid var(--amber);border-color:transparent
 .modal{position:fixed !important;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50}
 .modal[hidden]{display:none}
 .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;max-width:min(96vw,760px);max-height:92vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.5)}
-.comprow{display:grid;grid-template-columns:170px 100px 1fr 1fr;gap:10px;align-items:center;padding:5px 0;border-top:1px solid var(--line);font-size:11px}
+.dvblock{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0}
+.dvblock>.chk{font-weight:700;letter-spacing:.06em}
+.dvfields{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:6px}
+.dvfields label{font-size:10px}
+.comprow{display:grid;grid-template-columns:120px 92px 1fr 1fr 1fr 1fr;gap:6px;align-items:center;padding:5px 0;border-top:1px solid var(--line);font-size:10px}
+.comprow select,.comprow input{width:100%;font-size:10px;padding:3px 4px}
+.comprow .mini{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--mute)}
 .comprow .cid{font-weight:700;letter-spacing:.05em}
 .comprow .csz{color:var(--mute)}
 .comprow select{width:100%}
@@ -117,8 +123,8 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
     <div id="caseForm">
       <div class="row">
-        <label>Model no. / job name<input id="cJob" value="5CLBK48"></label>
-        <label>Preset<select id="cPreset"><option value="">—</option>
+        <label>MODEL NO.<input id="cJob" value="5CLBK48"></label>
+        <label>PRESET<select id="cPreset"><option value="">—</option>
           <optgroup label="GATEWAY PRODUCTS">
             <option value='{"cW":34.65,"cH":47.2441,"cD":13.9764,"cT":1.03,"cBackT":1.03,"tkStyle":"board","tkH":2.7559,"cAdj":2,"cDoors":0,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case","dvOn":false,"dvSpan":"full","dv2On":false}'>5CLBK48</option>
             <option value='{"cW":34.6457,"cH":28.4646,"cD":22.5591,"cT":0.9843,"cBackT":0.7087,"tkStyle":"board","tkH":2.7559,"tkInset":0.0591,"cAdj":1,"cDoors":2,"hgOn":true,"cDoorY0":3.3465,"cDoorY1":28.4646,"drBox":0,"drFile":0,"drHeights":"","drBoxHeights":"","drAlign":"case","dvOn":false,"dvSpan":"full","dv2On":false}'>5CLSC34</option>
@@ -130,10 +136,10 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
           </optgroup></select></label>
       </div>
       <div class="row four">
-        <label>Width<input id="cW" type="number" step="0.0001" value="34.65" data-mm="1"></label>
-        <label>Height<input id="cH" type="number" step="0.0001" value="47.24" data-mm="1"></label>
-        <label>Depth<input id="cD" type="number" step="0.0001" value="13.98" data-mm="1"></label>
-        <label>Stock thickness<input id="cT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
+        <label>WIDTH<input id="cW" type="number" step="0.0001" value="34.65" data-mm="1"></label>
+        <label>HEIGHT<input id="cH" type="number" step="0.0001" value="47.24" data-mm="1"></label>
+        <label>DEPTH<input id="cD" type="number" step="0.0001" value="13.98" data-mm="1"></label>
+        <label>STOCK T<input id="cT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
       </div>
     </div>
 
@@ -141,15 +147,15 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="drop" id="dropObj">Drop an OBJ or 3D DXF here, or click to browse<br><span style="font-size:11px"><b>OBJ</b>: SketchUp Pro/Go, each group is a part. <b>3D DXF</b>: AutoCAD, one layer per panel, <span class="mono">CONVTOMESH</span> first.</span> on the solids, then <span class="mono">SAVEAS</span> → AutoCAD DXF. Each layer becomes a part.</span><input id="fileObj" type="file" accept=".obj,.dxf" style="display:none"></div>
       <div class="status" id="objStatus"></div>
       <div class="row three" style="margin-top:8px">
-        <label>File units<select id="oUnits"><option value="1" selected>Inches</option><option value="0.03937">Millimeters</option><option value="0.3937">Centimeters</option><option value="39.37">Meters</option></select></label>
-        <label>Up axis<select id="oUp"><option value="auto" selected>Auto</option><option value="2">Z up</option><option value="1">Y up</option></select></label>
-        <label>Touch tolerance<input id="oTol" type="number" step="0.005" value="0.02"></label>
+        <label>FILE UNITS<select id="oUnits"><option value="1" selected>INCHES</option><option value="0.03937">MILLIMETERS</option><option value="0.3937">CENTIMETERS</option><option value="39.37">METERS</option></select></label>
+        <label>UP AXIS<select id="oUp"><option value="auto" selected>AUTO</option><option value="2">Z UP</option><option value="1">Y UP</option></select></label>
+        <label>TOUCH TOLERANCE<input id="oTol" type="number" step="0.005" value="0.02"></label>
       </div>
       <p class="hint">Parts are read as axis-aligned boxes. A part whose end lands on another part's face gets cam locks; the part it lands on gets the pins and dowels.</p>
       <div class="row three" style="margin-top:8px">
-        <label>Max panel thickness<input id="oMaxT" type="number" step="0.125" value="2"></label>
-        <label>Min panel size (other two dims)<input id="oMinS" type="number" step="0.5" value="2.5"></label>
-        <label>Ignore names containing<input id="oIgnore" placeholder="e.g. edge, hardware, cam"></label>
+        <label>MAX PANEL THICKNESS<input id="oMaxT" type="number" step="0.125" value="2"></label>
+        <label>MIN PANEL SIZE (OTHER TWO DIMS)<input id="oMinS" type="number" step="0.5" value="2.5"></label>
+        <label>IGNORE NAMES CONTAINING<input id="oIgnore" placeholder="e.g. edge, hardware, cam"></label>
       </div>
       <div id="objParts" class="hint"></div>
       <p class="hint"><b>Fixed</b> = cam locked. <b>Adjustable</b> = sits on shelf pins. <b>Loose</b> = sized only.</p>
@@ -160,13 +166,13 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="drop" id="drop">Drop a DXF here or click to browse<br><input id="file" type="file" accept=".dxf" style="display:none"></div>
       <div class="status" id="dxfStatus"></div>
       <div class="row four" style="margin-top:8px">
-        <label>Panel name<input id="pName" value="PANEL"></label>
-        <label>Thickness<input id="pT" type="number" step="0.0625" value="1"></label>
-        <label>Length (X)<input id="pW" type="number" step="0.0625" value="34"></label>
-        <label>Depth (Y)<input id="pD" type="number" step="0.0625" value="14"></label>
+        <label>PANEL NAME<input id="pName" value="PANEL"></label>
+        <label>THICKNESS<input id="pT" type="number" step="0.0625" value="1"></label>
+        <label>LENGTH (X)<input id="pW" type="number" step="0.0625" value="34"></label>
+        <label>DEPTH (Y)<input id="pD" type="number" step="0.0625" value="14"></label>
       </div>
       <div class="edgegrid">
-        <div class="n">EDGE</div><div class="n">ROLE</div><div class="n">MATING LINES (receiving)</div>
+        <div class="n">EDGE</div><div class="n">ROLE</div><div class="n">MATING LINES (RECEIVING)</div>
         <div>LEFT</div><select id="eL"></select><input id="eLp" placeholder="—" disabled>
         <div>RIGHT</div><select id="eR"></select><input id="eRp" placeholder="—" disabled>
         <div>FRONT (Y=0)</div><select id="eF"></select><input id="eFp" placeholder="—" disabled>
@@ -182,124 +188,133 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <details open>
       <summary>CARCASS</summary>
       <div class="row three">
-        <label>Top<select id="ptTop"><option value="over" selected>Over sides</option><option value="between">Between sides</option><option value="none">None</option></select></label>
-        <label id="ptTopFitL">Top over sides<select id="ptTopFit"><option value="flush">Flush with sides</option><option value="wider" selected>Wider (overhang)</option></select></label>
-        <label>Top front overhang<input id="cTopFront" type="number" step="0.0001" value="0" data-mm="1"><span class="unit">reaches out over the faces</span></label>
-        <label id="cTopOverL">Overhang per end<input id="cTopOver" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">each end · front and back stay flush</span></label>
-        <label>Bottom<select id="ptBottom"><option value="between" selected>Between sides</option><option value="none">None</option></select></label>
-        <label id="cBotL" style="display:none">Bottom raised off floor<input id="cBot" type="number" step="0.0625" value="0" data-mm="1"></label>
+        <label>TOP<select id="ptTop"><option value="over" selected>OVER SIDES</option><option value="between">BETWEEN SIDES</option><option value="none">NONE</option></select></label>
+        <label id="ptTopFitL">TOP FIT<select id="ptTopFit"><option value="flush" selected>FLUSH</option><option value="wider">OVERHANG</option></select></label>
+        <label>TOP FRONT<input id="cTopFront" type="number" step="0.0001" value="0" data-mm="1"></label>
+        <label id="cTopOverL">OVERHANG/END<input id="cTopOver" type="number" step="0.0001" value="0.0787" data-mm="1"></label>
+        <label>BOTTOM<select id="ptBottom"><option value="between" selected>BETWEEN SIDES</option><option value="none">NONE</option></select></label>
+        <label id="cBotL" style="display:none">BOTTOM RAISED OFF FLOOR<input id="cBot" type="number" step="0.0625" value="0" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Back panel<select id="ptBack"><option value="full" selected>Full stock, cam locked</option><option value="groove">Thin, in a groove</option><option value="none">None</option></select></label>
-        <label>Back panel thickness<input id="cBackT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
-        <label>Back flush with<select id="cBackFlush"><option value="back">Back edge</option><option value="inset" selected>Inset</option></select></label>
-        <label>Back fit<select id="cBackFit"><option value="between" selected>Between the sides</option><option value="over">Over the sides and top · edge shows</option></select></label>
+        <label>BACK PANEL<select id="ptBack"><option value="full" selected>FULL STOCK, CAM LOCKED</option><option value="groove">THIN, IN A GROOVE</option><option value="none">NONE</option></select></label>
+        <label>BACK T<input id="cBackT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
+        <label>BACK EDGE<select id="cBackFlush"><option value="back" selected>FLUSH</option><option value="inset">INSET</option></select></label>
+        <label>BACK PARTS<input id="cBackParts" type="number" min="1" max="4" step="1" value="1"></label>
+        <label>BACK FIT<select id="cBackFit"><option value="between" selected>BETWEEN THE SIDES</option><option value="over">OVER THE SIDES AND TOP · EDGE SHOWS</option></select></label>
         <label class="chk" id="cBackWrapL" style="display:none"><input id="cBackWrap" type="checkbox"> Wrap the bottom too</label>
       </div>
       <div class="row three" id="backInsetRow" style="display:none">
-        <label>Back inset from back edge<input id="cBackInset" type="number" step="0.0001" value="0.0394" data-mm="1"></label>
+        <label>BACK INSET FROM BACK EDGE<input id="cBackInset" type="number" step="0.0001" value="0.0394" data-mm="1"></label>
       </div>
       <div class="row four">
-        <label>Toe kick<select id="tkStyle"><option value="board" selected>Kick board, cam locked</option><option value="notch">Side notch + loose board</option><option value="none">None</option></select></label>
-        <label>Kick height = bottom off floor<input id="tkH" type="number" step="0.0001" value="2.76" data-mm="1"></label>
-        <label>Kick inset from front<input id="tkInset" type="number" step="0.0001" value="0.0591" data-mm="1"></label>
-        <label id="tkDL">Notch depth from front<input id="tkD" type="number" step="0.0625" value="2.5" data-mm="1"></label>
+        <label>TOE KICK<select id="tkStyle"><option value="board" selected>KICK BOARD, CAM LOCKED</option><option value="notch">SIDE NOTCH + LOOSE BOARD</option><option value="none">NONE</option></select></label>
+        <label>KICK H<input id="tkH" type="number" step="0.0001" value="2.76" data-mm="1"></label>
+        <label>KICK INSET<input id="tkInset" type="number" step="0.0001" value="0.0591" data-mm="1"></label>
+        <label id="tkDL">NOTCH DEPTH<input id="tkD" type="number" step="0.0625" value="2.5" data-mm="1"></label>
       </div>
       <div class="row four">
-        <label id="tkDowL">Kick top edge: dowel spacing<input id="tkDow" type="number" step="1" value="12" data-mm="1"></label>
+        <label id="tkDowL">KICK DOWEL SP<input id="tkDow" type="number" step="1" value="12" data-mm="1"></label>
       </div>
-      <div class="row three">
-        <label class="chk"><input id="dvOn" type="checkbox"> Vertical divider<span class="unit">splits the case into two compartments</span></label>
-        <label id="dvXL" style="display:none">Divider left face from inside<input id="dvX" type="number" step="0.0625" placeholder="auto = centre" data-mm="1"></label>
-        <label id="dvSpanL" style="display:none">Divider runs<select id="dvSpan"><option value="full" selected>Bottom to top</option><option value="below">Bottom up to a fixed shelf</option><option value="above">A fixed shelf up to the top</option><option value="custom">Custom heights</option></select></label>
-        <label id="dvShelfL" style="display:none">At fixed shelf #<input id="dvShelf" type="number" min="1" step="1" value="1"></label>
-        <label id="dvZ0L" style="display:none">From floor<input id="dvZ0" type="number" step="0.0625" value="2.76" data-mm="1"></label>
-        <label id="dvZ1L" style="display:none">To floor<input id="dvZ1" type="number" step="0.0625" value="20" data-mm="1"></label>
-      </div>
-      <div class="row four">
-        <label class="chk"><input id="dv2On" type="checkbox"> Second divider<span class="unit">e.g. one below a shelf and one above</span></label>
-        <label id="dv2SpanL" style="display:none">Second divider runs<select id="dv2Span"><option value="full">Bottom to top</option><option value="below">Bottom up to a fixed shelf</option><option value="above" selected>A fixed shelf up to the top</option><option value="custom">Custom heights</option></select></label>
-        <label id="dv2ShelfL" style="display:none">At fixed shelf #<input id="dv2Shelf" type="number" min="1" step="1" value="1"></label>
-        <label id="dv2XL" style="display:none">Left face from inside<input id="dv2X" type="number" step="0.0625" placeholder="same as the first" data-mm="1"></label>
-        <label id="dv2Z0L" style="display:none">From floor<input id="dv2Z0" type="number" step="0.0625" value="2.76" data-mm="1"></label>
-        <label id="dv2Z1L" style="display:none">To floor<input id="dv2Z1" type="number" step="0.0625" value="40" data-mm="1"></label>
-        <label id="dvShow" style="display:none">Compartments<input id="dvInfo" disabled></label>
+      <div class="row" style="display:block">
+        <div class="dvblock">
+          <label class="chk"><input id="dvOn" type="checkbox"> DIVIDER 1</label>
+          <div class="dvfields" id="dvF1">
+            <label>X<input id="dvX" type="number" step="0.0625" placeholder="CENTRE" data-mm="1"></label>
+            <label>SPAN<select id="dvSpan"><option value="full" selected>FULL</option><option value="below">UP TO SHELF</option><option value="above">SHELF TO TOP</option><option value="custom">CUSTOM</option></select></label>
+            <label id="dvShelfL">SHELF #<input id="dvShelf" type="number" min="1" step="1" value="1"></label>
+            <label id="dvZ0L">FROM<input id="dvZ0" type="number" step="0.0625" value="2.76" data-mm="1"></label>
+            <label id="dvZ1L">TO<input id="dvZ1" type="number" step="0.0625" value="20" data-mm="1"></label>
+            <label>BAYS<input id="dvInfo" disabled></label>
+            <span id="dvShow" hidden></span>
+          </div>
+        </div>
+        <div class="dvblock">
+          <label class="chk"><input id="dv2On" type="checkbox"> DIVIDER 2</label>
+          <div class="dvfields" id="dvF2">
+            <label>X<input id="dv2X" type="number" step="0.0625" placeholder="AS DIVIDER 1" data-mm="1"></label>
+            <label>SPAN<select id="dv2Span"><option value="full">FULL</option><option value="below">UP TO SHELF</option><option value="above" selected>SHELF TO TOP</option><option value="custom">CUSTOM</option></select></label>
+            <label id="dv2ShelfL">SHELF #<input id="dv2Shelf" type="number" min="1" step="1" value="1"></label>
+            <label id="dv2Z0L">FROM<input id="dv2Z0" type="number" step="0.0625" value="2.76" data-mm="1"></label>
+            <label id="dv2Z1L">TO<input id="dv2Z1" type="number" step="0.0625" value="40" data-mm="1"></label>
+          </div>
+        </div>
       </div>
       <div class="row four" id="grooveRow" style="display:none">
-        <label>Groove width<input id="gW" type="number" step="0.0625" value="0.25" data-mm="1"></label>
-        <label>Groove depth<input id="gZ" type="number" step="0.0625" value="0.375" data-mm="1"></label>
-        <label>Groove setback<input id="gSet" type="number" step="0.0625" value="0.5" data-mm="1"></label>
-        <label>Groove in<select id="gWhere"><option value="sides">Sides</option><option value="all" selected>Sides + top + bottom</option></select></label>
+        <label>GROOVE WIDTH<input id="gW" type="number" step="0.0625" value="0.25" data-mm="1"></label>
+        <label>GROOVE DEPTH<input id="gZ" type="number" step="0.0625" value="0.375" data-mm="1"></label>
+        <label>GROOVE SETBACK<input id="gSet" type="number" step="0.0625" value="0.5" data-mm="1"></label>
+        <label>GROOVE IN<select id="gWhere"><option value="sides">SIDES</option><option value="all" selected>SIDES + TOP + BOTTOM</option></select></label>
       </div>
     </details>
     <details open>
-      <summary>SHELVES</summary>
+      <summary>COMPARTMENTS</summary>
       <div class="row">
-        <label>Adjustable shelves per compartment<span class="unit">set a count on any opening; leave them all at zero to use the case-wide quantity</span></label>
+        <label>COMPARTMENTS — SHELVES · DOORS · DRAWERS</label>
       </div>
       <div id="compList" style="margin:4px 0 10px"></div>
       <div class="row">
-        <label>Shelf front gap<input id="cShelfGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 mm back from the front edge</span></label>
-        <label>Fixed shelves (qty)<input id="cShelves" type="number" min="0" step="1" value="0"></label>
-        <label>Positions (bottom of shelf, from floor)<input id="cShelfPos" placeholder="auto"></label>
+        <label>FRONT GAP<input id="cShelfGap" type="number" step="0.0001" value="0.0787" data-mm="1"></label>
+        <label>FIXED SHELVES<input id="cShelves" type="number" min="0" step="1" value="0"></label>
+        <label>POSITIONS<input id="cShelfPos" placeholder="auto"></label>
       </div>
       <div class="row three">
-        <label>Adjustable shelves (qty)<input id="cAdj" type="number" min="0" step="1" value="2"></label>
-                <label>Adj. shelf depth<input id="cAdjD" type="number" step="0.0001" placeholder="auto" data-mm="1"><span class="unit">blank = back panel to front, less the gap</span></label>
-        <label>Side clearance (each)<input id="cAdjGap" type="number" step="0.0001" value="0.0197" data-mm="1"></label>
+        <label>ADJ SHELVES<input id="cAdj" type="number" min="0" step="1" value="2"></label>
+                <label>ADJ DEPTH<input id="cAdjD" type="number" step="0.0001" placeholder="auto" data-mm="1"></label>
+        <label>SIDE CLEAR<input id="cAdjGap" type="number" step="0.0001" value="0.0197" data-mm="1"></label>
       </div>
     </details>
     <details>
-      <summary>DRAWERS <span class="unit">faces, boxes and slides</span></summary>
+      <summary>DRAWERS </summary>
       <div class="row four">
-        <label>Box drawers (qty)<input id="drBox" type="number" min="0" step="1" value="0"></label>
-        <label>File drawers (qty)<input id="drFile" type="number" min="0" step="1" value="0"></label>
-        <label>Where<select id="drWhere"><option value="full" selected>Full width</option><option value="left">Left compartment</option><option value="right">Right compartment</option></select></label>
-        <label>Stack hangs from<select id="drAlign"><option value="case" selected>Top of the case (faces cover the top panel)</option><option value="top">Under the top panel</option><option value="bottom">Bottom up</option></select></label>
-        <label id="drY0L">Stack starts (from floor)<input id="drY0" type="number" step="0.0625" value="2.76" data-mm="1"></label>
-        <label>Front heights, bottom → top<input id="drHeights" placeholder="blank = use the type heights"><span class="unit">comma list, in or mm</span></label>
-        <label>Box heights, bottom → top<input id="drBoxHeights" placeholder="blank = use the type heights"><span class="unit">drawer box, not the front</span></label>
+        <label>BOX DRAWERS<input id="drBox" type="number" min="0" step="1" value="0"></label>
+        <label>FILE DRAWERS<input id="drFile" type="number" min="0" step="1" value="0"></label>
+        <label>WHERE<select id="drWhere"><option value="full" selected>FULL WIDTH</option><option value="left">LEFT COMPARTMENT</option><option value="right">RIGHT COMPARTMENT</option></select></label>
+        <label>STACK FROM<select id="drAlign"><option value="case" selected>TOP OF THE CASE (FACES COVER THE TOP PANEL)</option><option value="top">UNDER THE TOP PANEL</option><option value="bottom">BOTTOM UP</option></select></label>
+        <label id="drY0L">STACK START<input id="drY0" type="number" step="0.0625" value="2.76" data-mm="1"></label>
+        <label>FACE HEIGHTS<input id="drHeights" placeholder="blank = use the type heights"></label>
+        <label>BOX HEIGHTS<input id="drBoxHeights" placeholder="blank = use the type heights"></label>
       </div>
       <div class="row four">
-        <label>Box front height<input id="drBoxH" type="number" step="0.0001" value="7.2441" data-mm="1"><span class="unit">184 mm per 5CLBFM</span></label>
-        <label>File front height<input id="drFileH" type="number" step="0.0001" value="12.5197" data-mm="1"><span class="unit">318 mm</span></label>
-        <label>Gap between fronts<input id="drGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 mm, vertical</span></label>
-        <label>Gap under the top<input id="drTopGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">when the stack hangs from the top</span></label>
-        <label>Front side reveal<input id="drSideGap" type="number" step="0.0001" value="0.0394" data-mm="1"><span class="unit">per side · negative = face sits proud of the carcass</span></label>
-        <label>Slide clearance (each side)<input id="drSlide" type="number" step="0.0001" value="0.5118" data-mm="1"><span class="unit">13 mm</span></label>
+        <label>BOX FACE H<input id="drBoxH" type="number" step="0.0001" value="7.2441" data-mm="1"></label>
+        <label>FILE FACE H<input id="drFileH" type="number" step="0.0001" value="12.5197" data-mm="1"><span class="unit">318 MM</span></label>
+        <label>FACE GAP<input id="drGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 MM, VERTICAL</span></label>
+        <label>TOP GAP<input id="drTopGap" type="number" step="0.0001" value="0.0787" data-mm="1"></label>
+        <label>SIDE REVEAL<input id="drSideGap" type="number" step="0.0001" value="0.0394" data-mm="1"></label>
+        <label>SLIDE CLEAR<input id="drSlide" type="number" step="0.0001" value="0.5118" data-mm="1"><span class="unit">13 MM</span></label>
       </div>
       <div class="row four">
-        <label>Box drawer box height<input id="drBoxBH" type="number" step="0.0001" value="4.7244" data-mm="1"><span class="unit">120 mm</span></label>
-        <label>File drawer box height<input id="drFileBH" type="number" step="0.0001" value="9.6457" data-mm="1"><span class="unit">245 mm</span></label>
-        <label>Drawer box sides<input id="drT" type="number" step="0.0001" value="0.4724" data-mm="1"><span class="unit">12 mm</span></label>
-        <label>Box drawer slides<select id="drSlideBox"><option value="15.748" selected>16" (box depth 400 mm)</option><option value="21.1811">18" (box depth 538 mm)</option><option value="20.0787">20" (box depth 510 mm)</option></select></label>
-        <label>File drawer slides<select id="drSlideFile"><option value="15.748">16" (box depth 400 mm)</option><option value="21.1811">18" (box depth 538 mm)</option><option value="20.0787" selected>20" (box depth 510 mm)</option></select></label>
+        <label>BOX H<input id="drBoxBH" type="number" step="0.0001" value="4.7244" data-mm="1"><span class="unit">120 MM</span></label>
+        <label>FILE BOX H<input id="drFileBH" type="number" step="0.0001" value="9.6457" data-mm="1"><span class="unit">245 MM</span></label>
+        <label>BOX SIDES T<input id="drT" type="number" step="0.0001" value="0.4724" data-mm="1"><span class="unit">12 MM</span></label>
+        <label>BOX SLIDES<select id="drSlideBox"><option value="15.748" selected>16" (box depth 400 mm)</option><option value="21.1811">18" (box depth 538 mm)</option><option value="20.0787">20" (box depth 510 mm)</option></select></label>
+        <label>FILE SLIDES<select id="drSlideFile"><option value="15.748">16" (box depth 400 mm)</option><option value="21.1811">18" (box depth 538 mm)</option><option value="20.0787" selected>20" (box depth 510 mm)</option></select></label>
       </div>
       <div class="row four">
-        <label class="chk"><input id="drSlot" type="checkbox" checked> Slot the drawer bottom<span class="unit">off: bottom captured under the box</span></label>
-        <label>Bottom thickness<input id="drBotT" type="number" step="0.0001" value="0.1969" data-mm="1"><span class="unit">5 mm</span></label>
-        <label>Groove depth<input id="drGrD" type="number" step="0.0001" value="0.2362" data-mm="1"><span class="unit">6 mm</span></label>
-        <label>Groove up from bottom edge<input id="drGrUp" type="number" step="0.0001" value="0.3937" data-mm="1"><span class="unit">10 mm</span></label>
+        <label class="chk"><input id="drSlot" type="checkbox" checked>SLOT THE DRAWER BOTTOM</label>
+        <label>BOTTOM T<input id="drBotT" type="number" step="0.0001" value="0.1969" data-mm="1"><span class="unit">5 MM</span></label>
+        <label>GROOVE DEPTH<input id="drGrD" type="number" step="0.0001" value="0.2362" data-mm="1"><span class="unit">6 MM</span></label>
+        <label>GROOVE UP<input id="drGrUp" type="number" step="0.0001" value="0.3937" data-mm="1"><span class="unit">10 MM</span></label>
       </div>
       <p class="hint" id="drNote"></p>
     </details>
     <details>
       <summary>DOORS</summary>
       <div class="row four">
-        <label>Doors<select id="cDoors"><option value="0" selected>None</option><option value="1">One</option><option value="2">Pair</option></select></label>
-        <label>Style<select id="cDoorStyle"><option value="overlay" selected>Overlay</option><option value="inset">Inset</option></select></label>
-        <label>Hinge side (single)<select id="hgSide"><option value="L" selected>Left</option><option value="R">Right</option></select></label>
-        <label>Gap / reveal<input id="cDoorGap" type="number" step="0.0625" value="0.125" data-mm="1"></label>
+        <label>DOORS<select id="cDoors"><option value="0" selected>NONE</option><option value="1">ONE</option><option value="2">PAIR</option></select></label>
+        <label>STYLE<select id="cDoorStyle"><option value="overlay" selected>OVERLAY</option><option value="inset">INSET</option></select></label>
+        <label>HINGE SIDE (SINGLE)<select id="hgSide"><option value="L" selected>LEFT</option><option value="R">RIGHT</option></select></label>
+        <label>INSET CLEARANCE<input id="cDoorSetback" type="number" step="0.0001" value="0.0787" data-mm="1"></label>
+        <label>REVEAL<input id="cDoorGap" type="number" step="0.0625" value="0.125" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Door width<select id="cDoorWMode"><option value="full" selected>Full opening</option><option value="custom">Custom (adds a divider)</option></select></label>
-        <label id="cDoorWL" style="display:none">Door width (each)<input id="cDoorW" type="number" step="0.0625" value="16" data-mm="1"></label>
-        <label>Hinge on<select id="cDoorHinge"><option value="outer" selected>Outer side panel</option><option value="divider">The divider</option></select></label>
-        <label>Overlay<input id="cDoorOv" disabled><span class="unit">full on an outer side, half on a shared divider</span></label>
+        <label>DOOR WIDTH<select id="cDoorWMode"><option value="full" selected>FULL OPENING</option><option value="custom">CUSTOM (ADDS A DIVIDER)</option></select></label>
+        <label id="cDoorWL" style="display:none">DOOR W<input id="cDoorW" type="number" step="0.0625" value="16" data-mm="1"></label>
+        <label>HINGE ON<select id="cDoorHinge"><option value="outer" selected>OUTER SIDE PANEL</option><option value="divider">THE DIVIDER</option></select></label>
+        <label>OVERLAY<input id="cDoorOv" disabled></label>
       </div>
       <div class="row">
-        <label>Door bottom (from floor)<input id="cDoorY0" type="number" step="0.0625" value="2" data-mm="1"></label>
-        <label>Door top (from floor)<input id="cDoorY1" type="number" step="0.0625" value="24" data-mm="1"></label>
+        <label>DOOR BOTTOM (FROM FLOOR)<input id="cDoorY0" type="number" step="0.0625" value="2" data-mm="1"></label>
+        <label>DOOR TOP (FROM FLOOR)<input id="cDoorY1" type="number" step="0.0625" value="24" data-mm="1"></label>
       </div>
     </details>
   </section>
@@ -310,44 +325,44 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <details>
       <summary>LAYOUT RULE</summary>
       <div class="row three">
-        <label>Max cam lock spacing<input id="rCamSp" type="number" step="0.5" value="20" data-mm="1"></label>
-        <label>Dowel pattern<select id="rDowPat"><option value="beside" selected>One beside each cam</option><option value="between">Spaced between cams</option><option value="none">No dowels</option></select></label>
-        <label id="rDowOffL">Dowel offset from cam<input id="rDowOff" type="number" step="0.0001" value="1.2598" data-mm="1"></label>
+        <label>MAX CAM LOCK SPACING<input id="rCamSp" type="number" step="0.5" value="20" data-mm="1"></label>
+        <label>DOWEL PATTERN<select id="rDowPat"><option value="beside" selected>ONE BESIDE EACH CAM</option><option value="between">SPACED BETWEEN CAMS</option><option value="none">NO DOWELS</option></select></label>
+        <label id="rDowOffL">DOWEL OFFSET FROM CAM<input id="rDowOff" type="number" step="0.0001" value="1.2598" data-mm="1"></label>
       </div>
       <div class="row three" id="rDowNRow" style="display:none">
-        <label>Dowels between each pair of cams<select id="rDowels"><option selected>1</option><option>2</option></select></label>
+        <label>DOWELS BETWEEN EACH PAIR OF CAMS<select id="rDowels"><option selected>1</option><option>2</option></select></label>
       </div>
       <div class="row three">
-        <label>Cam pin length B (usable)<select id="rPin"><option value="0.9449">0.9449" (24 mm)</option><option value="1.0236">1.0236" (26 mm)</option><option value="1.2598" selected>1.2598" (32 mm)</option><option value="1.3386">1.3386" (34 mm)</option><option value="1.378">1.3780" (35 mm)</option><option value="1.7323">1.7323" (44 mm)</option><option value="1.9685">1.9685" (50 mm)</option></select><span class="unit">face of the mating panel to the cam centre</span></label>
-        <label>Cam centre from edge<input id="rEdge" type="number" step="0.0001" value="1.2598" data-mm="1" disabled><span class="chk" style="margin-top:4px"><input id="rCustom" type="checkbox"> Custom value</span></label>
-        <label>Cam hole edge from panel edge<input id="rEdgeShow" disabled><span class="unit">solid material before the bore starts</span></label>
+        <label>CAM PIN LENGTH B (USABLE)<select id="rPin"><option value="0.9449">0.9449" (24 mm)</option><option value="1.0236">1.0236" (26 mm)</option><option value="1.2598">1.2598" (32 MM)</option><option value="1.3386" selected>1.3386" (34 MM)</option><option value="1.378">1.3780" (35 mm)</option><option value="1.7323">1.7323" (44 mm)</option><option value="1.9685">1.9685" (50 mm)</option></select></label>
+        <label>CAM CENTRE FROM EDGE<input id="rEdge" type="number" step="0.0001" value="1.2598" data-mm="1" disabled><span class="chk" style="margin-top:4px"><input id="rCustom" type="checkbox"> Custom value</span></label>
+        <label>CAM HOLE EDGE FROM PANEL EDGE<input id="rEdgeShow" disabled></label>
       </div>
       <div class="row three">
-        <label>Setback from front edge<input id="rFront" type="number" step="0.0625" value="2" data-mm="1"></label>
-        <label>Setback from back edge<input id="rBack" type="number" step="0.0625" value="2" data-mm="1"></label>
+        <label>SETBACK FROM FRONT EDGE<input id="rFront" type="number" step="0.0625" value="2" data-mm="1"></label>
+        <label>SETBACK FROM BACK EDGE<input id="rBack" type="number" step="0.0625" value="2" data-mm="1"></label>
       </div>
       <p class="hint">Cams at each end of a joint, extra cams when the span exceeds the max spacing, one dowel beside each cam.</p>
     </details>
     <details>
-      <summary>HARDWARE (mm)</summary>
+      <summary>HARDWARE (MM)</summary>
       <div class="row three">
-        <label>Cam nut Ø<input id="hCamD" type="number" step="0.0001" value="0.5906" data-mm="1"></label>
-        <label>Cam nut height<input id="hCamZ" type="number" step="0.0001" value="0.5" data-mm="1"></label>
-        <label>Pin edge hole Ø<input id="hBoltED" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
+        <label>CAM NUT Ø<input id="hCamD" type="number" step="0.0001" value="0.5906" data-mm="1"></label>
+        <label>CAM NUT H<input id="hCamZ" type="number" step="0.0001" value="0.5" data-mm="1"></label>
+        <label>PIN EDGE Ø<input id="hBoltED" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Pin edge depth<input id="hBoltEZ" type="number" step="0.0001" value="1.25" placeholder="auto" data-mm="1"><span class="unit">depth drilled into the edge for the cam pin</span></label>
-        <label>Pin face hole Ø (insert)<input id="hBoltFD" type="number" step="0.0001" value="0.375" data-mm="1"></label>
-        <label>Pin face depth<input id="hBoltFZ" type="number" step="0.0001" value="0.4724" data-mm="1"></label>
+        <label>PIN EDGE DEPTH<input id="hBoltEZ" type="number" step="0.0001" value="1.25" placeholder="auto" data-mm="1"></label>
+        <label>PIN FACE Ø<input id="hBoltFD" type="number" step="0.0001" value="0.375" data-mm="1"></label>
+        <label>PIN FACE DEPTH<input id="hBoltFZ" type="number" step="0.0001" value="0.4724" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Dowel Ø<input id="hDowD" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
-        <label>Dowel edge depth<input id="hDowEZ" type="number" step="0.0001" value="0.75" data-mm="1"></label>
-        <label>Dowel face depth<input id="hDowFZ" type="number" step="0.0001" value="0.5118" data-mm="1"></label>
+        <label>DOWEL Ø<input id="hDowD" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
+        <label>DOWEL EDGE DEPTH<input id="hDowEZ" type="number" step="0.0001" value="0.75" data-mm="1"></label>
+        <label>DOWEL FACE DEPTH<input id="hDowFZ" type="number" step="0.0001" value="0.5118" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Nut slot from nut top face<input id="hPinOff" type="number" step="0.0001" value="0.315" data-mm="1"></label>
-        <label>Pin / dowel centerline from cam face<input id="hPinCtr" type="number" step="0.0001" value="0.3875" data-mm="1"><span class="unit" id="hPinCtrNote"></span>
+        <label>NUT SLOT<input id="hPinOff" type="number" step="0.0001" value="0.315" data-mm="1"></label>
+        <label>CENTRELINE<input id="hPinCtr" type="number" step="0.0001" value="0.3875" data-mm="1"><span class="unit" id="hPinCtrNote"></span>
         <span class="chk" style="margin-top:4px"><input id="hPinMid" type="checkbox"> Center in thickness</span></label>
       </div>
       <p class="hint">All hardware fields are inches; the mm equivalent shows under each box. Pins and dowels run at MID-THICKNESS of the joining panel. The cam nut is bored deeper than its height — bore depth = nut height + (t/2 − nut slot distance) — so its slot lines up with the mid-thickness pin. The face hole takes the 3/8" pin insert.</p>
@@ -358,28 +373,28 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
   <section id="edgeSec">
     <h2>EDGE MATERIAL</h2>
     <div class="row three">
-      <label>Band edges<select id="ebWhere"><option value="all" selected>All four edges</option><option value="front">Front edge only</option><option value="none">None</option></select></label>
-      <label>Band thickness<select id="ebT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
-      <label>Premill per edge<input id="ebPre" type="number" step="0.001" value="0.020" data-mm="1"><span class="unit">0.5 mm for 3 mm PVC</span></label>
+      <label>BAND EDGES<select id="ebWhere"><option value="all" selected>ALL FOUR EDGES</option><option value="front">FRONT EDGE ONLY</option><option value="none">NONE</option></select></label>
+      <label>BAND THICKNESS<select id="ebT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
+      <label>PREMILL PER EDGE<input id="ebPre" type="number" step="0.001" value="0.020" data-mm="1"></label>
     </div>
     <div class="row three">
-      <label>Side panel TOP edge<select id="ebTop"><option value="match" selected>Match body</option><option value="contrast">Contrast band</option></select></label>
-      <label id="ebTopTL">Contrast thickness<select id="ebTopT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
-      <label class="chk"><input id="ebKick" type="checkbox" checked> Band the kick plate<span class="unit">off: no band and no premill, so it cuts at finished size</span></label>
-      <label>Shelf band<select id="ebShelfT"><option value="0.0394" selected>1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select><span class="unit">fixed and adjustable shelves</span></label>
-      <label>Shelf premill<input id="ebShelfPre" type="number" step="0.001" value="0.0394" data-mm="1"></label>
-      <label>Kick band<select id="ebKickT"><option value="0.0394" selected>1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select></label>
-      <label>Kick premill<input id="ebKickPre" type="number" step="0.001" value="0.0394" data-mm="1"></label>
+      <label>SIDE PANEL TOP EDGE<select id="ebTop"><option value="match" selected>MATCH BODY</option><option value="contrast">CONTRAST BAND</option></select></label>
+      <label id="ebTopTL">CONTRAST THICKNESS<select id="ebTopT"><option value="0.0394">1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181" selected>3 mm (0.118")</option></select></label>
+      <label class="chk"><input id="ebKick" type="checkbox" checked>BAND THE KICK PLATE</label>
+      <label>SHELF BAND<select id="ebShelfT"><option value="0.0394" selected>1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select></label>
+      <label>SHELF PREMILL<input id="ebShelfPre" type="number" step="0.001" value="0.0394" data-mm="1"></label>
+      <label>KICK BAND<select id="ebKickT"><option value="0.0394" selected>1 mm (0.039")</option><option value="0.0787">2 mm (0.079")</option><option value="0.1181">3 mm (0.118")</option></select></label>
+      <label>KICK PREMILL<input id="ebKickPre" type="number" step="0.001" value="0.0394" data-mm="1"></label>
     </div>
     <div class="row three">
-      <label>Panel finish<select id="fBody"><option value="#b06a3c" selected>Cherry</option><option value="#7a4a2b">Mahogany</option><option value="#6b4a33">Walnut</option><option value="#d9b98c">Maple</option><option value="#3a2e28">Espresso</option><option value="#e8e6e0">Designer White</option><option value="#9a9a98">Folkstone Grey</option><option value="#1d1d1f">Black</option><option value="custom">Custom…</option></select></label>
-      <label>Edge band color<select id="fEdge"><option value="match" selected>Match panel</option><option value="#1d1d1f">Black</option><option value="#e8e6e0">White</option><option value="#b7b9bc">Silver</option><option value="custom">Custom…</option></select></label>
-      <label>Contrast (side top) color<select id="ebTopC"><option value="#1d1d1f" selected>Black</option><option value="#b7b9bc">Silver</option><option value="#e8e6e0">White</option><option value="custom">Custom…</option></select></label>
+      <label>PANEL FINISH<select id="fBody"><option value="#b06a3c" selected>CHERRY</option><option value="#7a4a2b">MAHOGANY</option><option value="#6b4a33">WALNUT</option><option value="#d9b98c">MAPLE</option><option value="#3a2e28">ESPRESSO</option><option value="#e8e6e0">DESIGNER WHITE</option><option value="#9a9a98">FOLKSTONE GREY</option><option value="#1d1d1f">BLACK</option><option value="custom">CUSTOM…</option></select></label>
+      <label>EDGE BAND COLOR<select id="fEdge"><option value="match" selected>MATCH PANEL</option><option value="#1d1d1f">BLACK</option><option value="#e8e6e0">WHITE</option><option value="#b7b9bc">SILVER</option><option value="custom">CUSTOM…</option></select></label>
+      <label>CONTRAST (SIDE TOP) COLOR<select id="ebTopC"><option value="#1d1d1f" selected>BLACK</option><option value="#b7b9bc">SILVER</option><option value="#e8e6e0">WHITE</option><option value="custom">CUSTOM…</option></select></label>
     </div>
     <div class="row three">
-      <label id="fBodyCL" style="visibility:hidden">Custom panel<input id="fBodyC" type="color" value="#b06a3c"></label>
-      <label id="fEdgeCL" style="visibility:hidden">Custom edge<input id="fEdgeC" type="color" value="#1d1d1f"></label>
-      <label id="ebTopCL2" style="visibility:hidden">Custom contrast<input id="ebTopCC" type="color" value="#1d1d1f"></label>
+      <label id="fBodyCL" style="visibility:hidden">CUSTOM PANEL<input id="fBodyC" type="color" value="#b06a3c"></label>
+      <label id="fEdgeCL" style="visibility:hidden">CUSTOM EDGE<input id="fEdgeC" type="color" value="#1d1d1f"></label>
+      <label id="ebTopCL2" style="visibility:hidden">CUSTOM CONTRAST<input id="ebTopCC" type="color" value="#1d1d1f"></label>
     </div>
     <p class="hint">Any dimensional box accepts mm or fractions and converts to inches: type <span class="mono">32mm</span>, <span class="mono">3/4</span> or <span class="mono">1-1/2</span> and tab out. Sizes you enter are FINISHED sizes. Cut size = finished + premill − band on each banded edge, so the case comes out exactly the size entered. The cut list shows both.</p>
   </section>
@@ -390,47 +405,47 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <details>
       <summary><label class="chk"><input type="checkbox" id="pOn" checked>SHELF PIN HOLES</label></summary>
       <div class="row four">
-        <label>Ø<input id="pDia" type="number" step="0.0001" value="0.1969" data-mm="1"></label>
-        <label>Depth<input id="pZ" type="number" step="0.0001" value="0.3937" data-mm="1"></label>
-        <label>Spacing<input id="pPitch" type="number" step="0.0001" value="1.2598" data-mm="1"></label>
-        <label>Positions<select id="pRows"><option value="all" selected>Every pitch in opening</option><option value="3">3 around each adj. shelf</option><option value="5">5 around each adj. shelf</option><option value="7">7 around each adj. shelf</option></select></label>
+        <label>Ø<input id="pDia" type="number" step="0.0001" value="0.25" data-mm="1"></label>
+        <label>DEPTH<input id="pZ" type="number" step="0.0001" value="0.3937" data-mm="1"></label>
+        <label>SPACING<input id="pPitch" type="number" step="0.0001" value="1.2598" data-mm="1"></label>
+        <label>POSITIONS<select id="pRows"><option value="all" selected>EVERY PITCH IN OPENING</option><option value="3">3 around each adj. shelf</option><option value="5">5 around each adj. shelf</option><option value="7">7 around each adj. shelf</option></select></label>
       </div>
       <div class="row four">
-        <label>First hole from bottom of side<input id="pClear" type="number" step="0.0001" value="6.4370" data-mm="1"></label>
-        <label>Clearance at top / fixed shelves<input id="pTop" type="number" step="0.0625" value="3" data-mm="1"></label>
-        <label>Front row from front edge<input id="pFront" type="number" step="0.0001" value="2.0472" data-mm="1"></label>
-        <label>Back row from back edge<input id="pBack" type="number" step="0.0001" value="2.6772" data-mm="1"></label>
-        <label>Skip openings<input id="pSkip" placeholder="e.g. 1"></label>
+        <label>FIRST HOLE FROM BOTTOM OF SIDE<input id="pClear" type="number" step="0.0001" value="6.4370" data-mm="1"></label>
+        <label>CLEARANCE AT TOP / FIXED SHELVES<input id="pTop" type="number" step="0.0625" value="3" data-mm="1"></label>
+        <label>FRONT ROW FROM FRONT EDGE<input id="pFront" type="number" step="0.0001" value="2.0472" data-mm="1"></label>
+        <label>BACK ROW FROM BACK EDGE<input id="pBack" type="number" step="0.0001" value="2.6772" data-mm="1"></label>
+        <label>SKIP OPENINGS<input id="pSkip" placeholder="e.g. 1"></label>
       </div>
     </details>
     <details>
       <summary><label class="chk"><input type="checkbox" id="glOn" checked>GLIDES / CASTERS</label></summary>
       <div class="row four">
-        <label>Type<select id="glType"><option value="glide" selected>Levelling glide</option><option value="caster">Swivel caster</option><option value="pin">Cam pin · fixes down to the surface below</option></select></label>
-        <label>In<select id="glWhere"><option value="sides" selected>Side panel bottom edge</option><option value="bottom">Bottom panel face</option></select></label>
+        <label>TYPE<select id="glType"><option value="glide" selected>LEVELLING GLIDE</option><option value="caster">SWIVEL CASTER</option><option value="pin">CAM PIN · FIXES DOWN TO THE SURFACE BELOW</option></select></label>
+        <label>IN<select id="glWhere"><option value="sides" selected>SIDE PANEL BOTTOM EDGE</option><option value="bottom">BOTTOM PANEL FACE</option></select></label>
         <label>Ø<input id="glD" type="number" step="0.0001" value="0.3937" data-mm="1"></label>
-        <label>Depth<input id="glZ" type="number" step="0.0001" value="0.4724" data-mm="1"></label>
-        <label>Inset from ends (bottom) <input id="glX" type="number" step="0.0625" value="1.5" data-mm="1"></label>
-        <label>Inset from front/back<input id="glY" type="number" step="0.0625" value="1.5" data-mm="1"></label>
+        <label>DEPTH<input id="glZ" type="number" step="0.0001" value="0.4724" data-mm="1"></label>
+        <label>INSET FROM ENDS (BOTTOM) <input id="glX" type="number" step="0.0625" value="1.5" data-mm="1"></label>
+        <label>INSET FRONT/BACK<input id="glY" type="number" step="0.0625" value="1.5" data-mm="1"></label>
       </div>
     </details>
     <details>
-      <summary><label class="chk"><input type="checkbox" id="hgOn">DOOR HINGES <span class="unit">door sizing and overlay live under PARTS → DOORS</span></label></summary>
+      <summary><label class="chk"><input type="checkbox" id="hgOn">DOOR HINGES </label></summary>
       <div class="row four">
-        <label>Cup Ø<input id="hgCupD" type="number" step="0.0001" value="1.378" data-mm="1"></label>
-        <label>Cup depth<input id="hgCupZ" type="number" step="0.0001" value="0.4843" data-mm="1"><span class="unit">12.3 mm</span></label>
-        <label>Cup center from edge (K)<input id="hgK" type="number" step="0.0001" value="1.1024" data-mm="1"><span class="unit">28 mm, per the supplied hinge</span></label>
-        <label>Cup screw spacing<input id="hgCupS" type="number" step="0.0001" value="1.7717" data-mm="1"></label>
+        <label>CUP Ø<input id="hgCupD" type="number" step="0.0001" value="1.378" data-mm="1"></label>
+        <label>CUP DEPTH<input id="hgCupZ" type="number" step="0.0001" value="0.4843" data-mm="1"><span class="unit">12.3 MM</span></label>
+        <label>CUP K<input id="hgK" type="number" step="0.0001" value="1.1024" data-mm="1"></label>
+        <label>CUP SCREW SP<input id="hgCupS" type="number" step="0.0001" value="1.7717" data-mm="1"></label>
       </div>
       <div class="row four">
-        <label>Hinges per door<select id="hgN"><option value="auto" selected>Auto</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-        <label>From door top/bottom<input id="hgEnd" type="number" step="0.0625" value="4" data-mm="1"></label>
-        <label>Plate line from front<input id="hgPlate" type="number" step="0.0001" value="1.4567" data-mm="1"></label>
-        <label>Plate screw spacing<input id="hgPlateS" type="number" step="0.0001" value="1.2598" data-mm="1"></label>
+        <label>HINGES/DOOR<select id="hgN"><option value="auto" selected>AUTO</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+        <label>END INSET<input id="hgEnd" type="number" step="0.0625" value="4" data-mm="1"></label>
+        <label>PLATE LINE<input id="hgPlate" type="number" step="0.0001" value="1.4567" data-mm="1"></label>
+        <label>PLATE SCREW SP<input id="hgPlateS" type="number" step="0.0001" value="1.2598" data-mm="1"></label>
       </div>
       <div class="row">
-        <label>Screw Ø<input id="hgScrD" type="number" step="0.0001" value="0.1969" data-mm="1"></label>
-        <label>Screw depth<input id="hgScrZ" type="number" step="0.0001" value="0.4331" data-mm="1"></label>
+        <label>SCREW Ø<input id="hgScrD" type="number" step="0.0001" value="0.1969" data-mm="1"></label>
+        <label>SCREW DEPTH<input id="hgScrZ" type="number" step="0.0001" value="0.4331" data-mm="1"></label>
       </div>
       <p class="hint">Auto: 2 hinges to 36", 3 to 60", 4 to 80", 5 above.</p>
     </details>
@@ -438,9 +453,9 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <summary><label class="chk"><input type="checkbox" id="grOn">GROMMET</label></summary>
       <div class="row four">
         <label>Ø<input id="grD" type="number" step="0.0625" value="2.375" data-mm="1"></label>
-        <label>In<select id="grWhere"><option value="TOP" selected>Top</option><option value="BACK PANEL">Back panel</option><option value="BOTTOM">Bottom</option></select></label>
-        <label>X from left<input id="grX" type="number" step="0.0625" value="17" data-mm="1"></label>
-        <label>Y from front / bottom<input id="grY" type="number" step="0.0625" value="11" data-mm="1"></label>
+        <label>IN<select id="grWhere"><option value="TOP" selected>TOP</option><option value="BACK PANEL">BACK PANEL</option><option value="BOTTOM">BOTTOM</option></select></label>
+        <label>X FROM LEFT<input id="grX" type="number" step="0.0625" value="17" data-mm="1"></label>
+        <label>Y FROM FRONT / BOTTOM<input id="grY" type="number" step="0.0625" value="11" data-mm="1"></label>
       </div>
     </details>
   </section>
@@ -454,38 +469,38 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <summary>CNC</summary>
       <div class="actions">
         <button class="primary" id="dlNest">NEST (DXF)</button>
-        <button class="primary" id="dlCNC1">EDGE FILES (.nc)</button>
+        <button class="primary" id="dlCNC1">EDGE FILES (.NC)</button>
         <button id="dlOne">PANEL (DXF)</button>
-        <button id="dlDae">SKETCHUP (.dae)</button>
+        <button id="dlDae">SKETCHUP (.DAE)</button>
         <button id="dlInstr">ASSEMBLY (PDF)</button>
       </div>
       <div class="row three" style="margin-top:10px">
-        <label>Grain<select id="nestGrain"><option value="on" selected>Match sheet grain (no 90° turns)</option><option value="off">Ignore grain (rotate to fit)</option></select></label>
-        <label class="chk"><input id="protoMode" type="checkbox"> Prototype on bare material<span class="unit">every part true to size, no edgeband</span></label>
-        <label class="chk"><input id="daeHw" type="checkbox" checked> Hardware in the SketchUp model<span class="unit">cams, hinges, glides, slides and pins</span></label>
-        <label id="protoTL" style="display:none">Prototype stock thickness<input id="protoT" type="number" step="0.0001" value="0.75" data-mm="1"><span class="unit">case parts only · drawer boxes keep their own</span></label>
+        <label>GRAIN<select id="nestGrain"><option value="on" selected>MATCH GRAIN</option><option value="off">IGNORE GRAIN</option></select></label>
+        <label class="chk"><input id="protoMode" type="checkbox">PROTOTYPE ON BARE MATERIAL</label>
+        <label class="chk"><input id="daeHw" type="checkbox" checked>HARDWARE IN THE SKETCHUP MODEL</label>
+        <label id="protoTL" style="display:none">PROTO T<input id="protoT" type="number" step="0.0001" value="0.75" data-mm="1"></label>
       </div>
       <div class="row three">
-        <label>Case sheet<select id="nestStock"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
-        <label class="narrow">Case part spacing<span class="fld"><input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
-        <label class="narrow">Case sheet margin<span class="fld"><input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
+        <label>CASE SHEET<select id="nestStock"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label class="narrow">CASE SPACING<span class="fld"><input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">CASE MARGIN<span class="fld"><input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
       </div>
       <div class="row three">
-        <label>Drawer box sheet<select id="nestStockDwr"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
-        <label class="narrow">Drawer box part spacing<span class="fld"><input id="nestGapDwr" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
-        <label class="narrow">Drawer box sheet margin<span class="fld"><input id="nestMarginDwr" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
+        <label>BOX SHEET<select id="nestStockDwr"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label class="narrow">BOX SPACING<span class="fld"><input id="nestGapDwr" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">BOX MARGIN<span class="fld"><input id="nestMarginDwr" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
       </div>
       <div class="row three">
-        <label>Drawer bottom sheet<select id="nestStockBot"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
-        <label class="narrow">Drawer bottom part spacing<span class="fld"><input id="nestGapBot" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
-        <label class="narrow">Drawer bottom sheet margin<span class="fld"><input id="nestMarginBot" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
+        <label>BOTTOM SHEET<select id="nestStockBot"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
+        <label class="narrow">BOTTOM SPACING<span class="fld"><input id="nestGapBot" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">BOTTOM MARGIN<span class="fld"><input id="nestMarginBot" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
       </div>
     </details>
   </section>
   <section>
     <h2>PANELS</h2>
     <div class="tabs" id="panelTabs"></div>
-    <div class="tabs" style="margin-bottom:6px"><button id="pzBtn" title="Left-drag orbit / rotate · right-drag pan · wheel zoom at the cursor">🖱 PAN/ZOOM: OFF</button><button id="p3Btn" title="Show this panel as a slab with real hole depths">PANEL 3D: OFF</button><label class="chk" style="font-size:11px;margin-left:8px">Grain<select id="pGrain" style="margin-left:4px"><option value="len">along length</option><option value="wid">across (width)</option><option value="none">none / free</option></select></label><button id="pzReset" style="display:none">RECENTER</button></div>
+    <div class="tabs" style="margin-bottom:6px"><button id="pzBtn" title="Left-drag orbit / rotate · right-drag pan · wheel zoom at the cursor">🖱 PAN/ZOOM: OFF</button><button id="p3Btn" title="Show this panel as a slab with real hole depths">PANEL 3D: OFF</button><label class="chk" style="font-size:11px;margin-left:8px">GRAIN<select id="pGrain" style="margin-left:4px"><option value="len">ALONG LENGTH</option><option value="wid">ACROSS (WIDTH)</option><option value="none">NONE / FREE</option></select></label><button id="pzReset" style="display:none">RECENTER</button></div>
     <div class="canvaswrap"><canvas id="cv" width="1200" height="600"></canvas></div>
     <div class="legend"><span class="c">Cam lock (face)</span><span class="b">Cam pin</span><span class="d">Dowel</span><span class="p">Shelf pin / screw / glide</span><span class="h">Hinge cup</span><span class="g">Groove / notch</span><span style="color:var(--mute)">Hollow = edge hole, on the edge</span></div>
     <div id="viewNote" class="hint"></div>
@@ -496,7 +511,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
     <div style="overflow:auto;max-height:300px"><table id="tbl"><thead><tr><th>#</th><th>TYPE</th><th>X in</th><th>Y in</th><th>Ø in (mm)</th><th>DEPTH in (mm)</th><th>LAYER</th></tr></thead><tbody></tbody></table></div>
   </section>
   <section>
-    <h2>CUT LIST &amp; HARDWARE</h2>
+    <h2>CUT LIST &AMP; HARDWARE</h2>
     <div class="row" style="align-items:start">
       <div style="overflow:auto"><table id="cut"><thead><tr><th>#</th><th>QTY</th><th>PART</th><th>FINISHED L×W</th><th>CUT L×W</th><th>T</th><th>FACE UP ON CNC</th><th>EDGE</th></tr></thead><tbody></tbody></table></div>
       <div style="overflow:auto"><table id="hwt"><thead><tr><th></th><th>HARDWARE</th><th>QTY</th></tr></thead><tbody></tbody></table></div>
@@ -527,7 +542,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.18";
+const BUILD_VERSION = "2026-08-31.27";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -590,14 +605,14 @@ function syncVisibility(){
   $('ebTopTL').style.visibility=sel('ebTop')==='contrast'?'':'hidden';
   $('fBodyCL').style.visibility=sel('fBody')==='custom'?'':'hidden'; $('fEdgeCL').style.visibility=sel('fEdge')==='custom'?'':'hidden'; $('ebTopCL2').style.visibility=sel('ebTopC')==='custom'?'':'hidden';
   { $('cBackWrapL').style.display=sel('cBackFit')==='over'?'':'none'; }
-  { const on2=on('dv2On'), sp2=sel('dv2Span');
-    $('dv2SpanL').style.display=$('dv2XL').style.display=on2?'':'none';
-    $('dv2ShelfL').style.display=(on2&&(sp2==='below'||sp2==='above'))?'':'none';
-    $('dv2Z0L').style.display=$('dv2Z1L').style.display=(on2&&sp2==='custom')?'':'none'; }
-  { const dvon=on('dvOn')||(sel('cDoorWMode')==='custom'&&parseInt(sel('cDoors'))>0), sp=sel('dvSpan');
-    $('dvSpanL').style.display=dvon?'':'none';
-    $('dvShelfL').style.display=(dvon&&(sp==='below'||sp==='above'))?'':'none';
-    $('dvZ0L').style.display=$('dvZ1L').style.display=(dvon&&sp==='custom')?'':'none'; }
+  { const s1=sel('dvSpan'), s2=sel('dv2Span');
+    $('dvF1').style.display=on('dvOn')?'':'none';
+    $('dvF2').style.display=on('dv2On')?'':'none';
+    $('dvShelfL').style.display=(s1==='below'||s1==='above')?'':'none';
+    $('dvZ0L').style.display=$('dvZ1L').style.display=(s1==='custom')?'':'none';
+    $('dv2ShelfL').style.display=(s2==='below'||s2==='above')?'':'none';
+    $('dv2Z0L').style.display=$('dv2Z1L').style.display=(s2==='custom')?'':'none'; }
+
   { const over=sel('ptTop')==='over'; $('ptTopFitL').style.display=over?'':'none'; $('cTopOverL').style.display=(over&&sel('ptTopFit')==='wider')?'':'none'; }
   { const ci=camInset(), edge=r4(ci-num('hCamD')/2);
     $('rEdge').disabled=!$('rCustom').checked; if(!$('rCustom').checked) $('rEdge').value=num('rPin');
@@ -607,7 +622,7 @@ function syncVisibility(){
     $('hPinCtrNote').textContent=`${$('hPinMid').checked?`centered: ${r4(o)}" · `:''}wall ${r4(o-j0.pinFD/2)}" face hole · ${r4(o-j0.dowD/2)}" edge hole · nut bore ${r4(j0.camZ+Math.max(0,o-j0.slot))}"`; }
   { $('drY0L').style.display=sel('drAlign')==='top'?'none':''; $('protoTL').style.display=on('protoMode')?'':'none'; }
   { const cw=sel('cDoorWMode')==='custom'&&parseInt(sel('cDoors'))>0; $('cDoorWL').style.display=cw?'':'none';
-    $('dvXL').style.display=on('dvOn')?'':'none'; $('dvShow').style.display=(on('dvOn')||cw)?'':'none'; }
+  }
   if(panels[current]) $('pGrain').value=grainOf(panels[current]);
   $('hBoltEZ').placeholder='auto';
   $('tkDL').style.visibility=sel('tkStyle')==='notch'?'':'hidden'; $('tkDowL').style.visibility=sel('tkStyle')==='board'?'':'hidden'; $('cBotL').style.display=sel('tkStyle')==='none'?'':'none';
@@ -687,7 +702,9 @@ function hingeCount(h){ const v=sel('hgN'); if(v!=='auto') return parseInt(v); r
    dividers that span it split the width. Keys are positional, so an assignment survives a rebuild. */
 let COMPARTMENTS=[];
 const compAssign=new Map();
-const compContent=new Map();                                                   // key → 'none' | 'door' | 'doors2' | 'drawers'
+const compContent=new Map();
+const compOpts=new Map();      // key -> {hinge:'L'|'R', ov:'full'|'half', nb, nf}
+const optsFor=k=>{ if(!compOpts.has(k)) compOpts.set(k,{hinge:'L',ov:'auto',nb:2,nf:0}); return compOpts.get(k); };                                                   // key → 'none' | 'door' | 'doors2' | 'drawers'
 let compSeeded=false;                                                          // the case-wide shelf count seeds the list once
 function seedCompartments(adj){
   if(compSeeded||!COMPARTMENTS.length) return;
@@ -749,15 +766,29 @@ function renderCompartments(){
   const host=$('compList'); if(!host) return;
   if(!COMPARTMENTS.length){ host.innerHTML='<p class="hint">No compartments — the case needs a bottom and a top.</p>'; return; }
   host.innerHTML=COMPARTMENTS.map(c=>{
-    const n=compAssign.get(c.key)||0, k=compContent.get(c.key)||'none';
-    const opts=[0,1,2,3,4,5,6].map(v=>'<option value="'+v+'"'+(v===n?' selected':'')+'>'+(v?v+' shelf'+(v>1?'s':''):'\u2014 no shelves \u2014')+'</option>').join('');
-    const kinds=[['none','\u2014 open \u2014'],['door','1 door'],['doors2','2 doors'],['drawers','drawers']]
+    const n=compAssign.get(c.key)||0, k=compContent.get(c.key)||'none', o=optsFor(c.key);
+    const sh=[0,1,2,3,4,5,6].map(v=>'<option value="'+v+'"'+(v===n?' selected':'')+'>'+(v?v+' SHELF'+(v>1?'S':''):'NO SHELVES')+'</option>').join('');
+    const kinds=[['none','OPEN'],['door','1 DOOR'],['doors2','2 DOORS'],['drawers','DRAWERS']]
       .map(([v,t])=>'<option value="'+v+'"'+(v===k?' selected':'')+'>'+t+'</option>').join('');
-    return '<label class="comprow"><span class="cid">'+c.label+'</span><span class="csz">'+c.w+'" \u00d7 '+c.h+'"</span>'
-      +'<select data-comp="'+c.key+'">'+opts+'</select><select data-kind="'+c.key+'">'+kinds+'</select></label>';
+    const hinge=[['L','HINGE LEFT'],['R','HINGE RIGHT']]
+      .map(([v,t])=>'<option value="'+v+'"'+(v===o.hinge?' selected':'')+'>'+t+'</option>').join('');
+    const ov=[['auto','OVERLAY AUTO'],['full','FULL OVERLAY'],['half','HALF OVERLAY']]
+      .map(([v,t])=>'<option value="'+v+'"'+(v===o.ov?' selected':'')+'>'+t+'</option>').join('');
+    const doorBits = (k==='door'||k==='doors2')
+      ? '<select data-hinge="'+c.key+'"'+(k==='doors2'?' disabled':'')+'>'+hinge+'</select><select data-ov="'+c.key+'">'+ov+'</select>'
+      : (k==='drawers'
+         ? '<label class="mini">BOX<input type="number" min="0" step="1" data-nb="'+c.key+'" value="'+o.nb+'"></label>'
+          +'<label class="mini">FILE<input type="number" min="0" step="1" data-nf="'+c.key+'" value="'+o.nf+'"></label>'
+         : '<span class="csz">\u2014</span><span class="csz">\u2014</span>');
+    return '<div class="comprow"><span class="cid">'+c.label.toUpperCase()+'</span><span class="csz">'+c.w+'" \u00d7 '+c.h+'"</span>'
+      +'<select data-comp="'+c.key+'">'+sh+'</select><select data-kind="'+c.key+'">'+kinds+'</select>'+doorBits+'</div>';
   }).join('');
   host.querySelectorAll('[data-comp]').forEach(el=>el.onchange=()=>{ compAssign.set(el.dataset.comp,parseInt(el.value)||0); build(); });
   host.querySelectorAll('[data-kind]').forEach(el=>el.onchange=()=>{ compContent.set(el.dataset.kind,el.value); build(); });
+  host.querySelectorAll('[data-hinge]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.hinge).hinge=el.value; build(); });
+  host.querySelectorAll('[data-ov]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.ov).ov=el.value; build(); });
+  host.querySelectorAll('[data-nb]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nb).nb=parseInt(el.value)||0; build(); });
+  host.querySelectorAll('[data-nf]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nf).nf=parseInt(el.value)||0; build(); });
 }
 function buildCase(){
   /* prototype mode swaps the case stock for whatever bare sheet is on hand; drawer boxes keep their own material */
@@ -830,12 +861,19 @@ function buildCase(){
     const ends=[loHost,hiHost].filter(Boolean).length;
     const dv=newPanel(label,dh,dep,T,`${dh}" × ${dep}" × ${T}"  ·  view: LEFT FACE, floor end at Y=0${ends?`, ends butt into the ${[loHost,hiHost].filter(Boolean).join(' and ')}`:', ends are free'}`);
     orient(dv,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
-    const spanFor=hn=>{ const host=out.find(q=>q.name===hn); if(!host||!host.frame) return [bx,dep-bx];
-      const yo=host.frame.o[1]; return [r4(Math.max(bx,yo+bx)), r4(Math.min(dep-bx,yo+host.d-bx))]; };
+    /* only set a divider back when an inset door will actually hang on it: a small hinge-adjustment clearance */
+    const anyDoors = parseInt(sel('cDoors'))>0 || [...compContent.values()].some(v=>v==='door'||v==='doors2');
+    const setBackFront = (sel('cDoorStyle')==='inset' && anyDoors) ? r4(T+num('cDoorSetback')) : 0;   // door thickness plus the hinge adjustment clearance
+    const spanFor=hn=>{ const host=out.find(q=>q.name===hn);
+      const w = (!host||!host.frame) ? [bx,dep-bx]
+        : [r4(Math.max(bx,host.frame.o[1]+bx)), r4(Math.min(dep-bx,host.frame.o[1]+host.d-bx))];
+      return [r4(w[0]-setBackFront), r4(w[1]-setBackFront)];   // into the divider's own coordinates
+    };
     if(loHost) buttEdge(dv,'L',j,spanFor(loHost));
     if(hiHost) buttEdge(dv,'R',j,spanFor(hiHost));
-    dv.box={min:[dx,0,dvLo],max:[dx+T,dep,dvHi]};
-    dv.frame={o:[dx,0,dvLo],ux:[0,0,1],uy:[0,1,0],ax:0,shown:dx,opp:dx+T};
+    dv.d=r4(dep-setBackFront); dv.cutD=dv.d;
+    dv.box={min:[dx,setBackFront,dvLo],max:[dx+T,dep,dvHi]};
+    dv.frame={o:[dx,setBackFront,dvLo],ux:[0,0,1],uy:[0,1,0],ax:0,shown:dx,opp:dx+T};
     out.push(dv);
     if(isMain) $('dvInfo').value=`${dh}" tall · ${r4(dx-T)}" | ${r4(W-T-(dx+T))}" bays`;
     if(isMain&&divFull) members.filter(m=>m.name.startsWith('SHELF')).forEach(m=>{      // bay shelves cam into the divider's left face
@@ -874,7 +912,7 @@ function buildCase(){
 
   /* build a door (or a pair) into any opening — used by the compartment list and by the
      case-wide settings, which simply pass the whole front as one rectangle */
-  const makeDoorsIn=(rect,count,hingePref)=>{
+  const makeDoorsIn=(rect,count,hingePref,ovPref)=>{
     const inset=sel('cDoorStyle')==='inset', gap=num('cDoorGap');
     const made=[];
     const z0=rect.z0, z1=rect.z1, dh=r4(z1-z0-(inset?2*gap:0));
@@ -883,9 +921,12 @@ function buildCase(){
     const xR = touchesR&&!inset ? r4(W-gap) : r4(rect.x1- (inset?gap:-(T-gap)/2));
     const spans=[];
     if(count===2){ const w=r4(((xR-xL)-gap)/2);
-      spans.push({he:'L',x:xL,w,ov:'full'},{he:'R',x:r4(xL+w+gap),w,ov:'full'}); }
+      const ovv = (ovPref&&ovPref!=='auto') ? ovPref : 'full';
+      spans.push({he:'L',x:xL,w,ov:ovv},{he:'R',x:r4(xL+w+gap),w,ov:ovv}); }
     else { const he = hingePref || (touchesL?'L':(touchesR?'R':sel('hgSide')));
-      spans.push({he,x:xL,w:r4(xR-xL),ov: (touchesL&&he==='L')||(touchesR&&he==='R') ? 'full':'half'}); }
+      /* a door hung on an outer side is full overlay; one hung on a divider is half — override per door */
+      const autoOv = (touchesL&&he==='L')||(touchesR&&he==='R') ? 'full' : 'half';
+      spans.push({he,x:xL,w:r4(xR-xL),ov: (ovPref&&ovPref!=='auto') ? ovPref : autoOv}); }
     spans.forEach(sp=>{ const nm = made.length||count===2 ? (sp.he==='L'?'DOOR L':'DOOR R') : 'DOOR';
       const dr=newPanel(nm,r4(sp.w),dh,T,r4(sp.w)+'" \u00d7 '+dh+'" \u00d7 '+T+'"  \u00b7  '+(sp.ov==='half'?'HALF':'FULL')+' overlay  \u00b7  view: INSIDE FACE, hinge edge at '+(sp.he==='L'?'X=0':'X=width')+', bottom at Y=0');
       orient(dr,'INSIDE FACE',sp.he==='L'?'HINGE EDGE':'LATCH EDGE',sp.he==='R'?'HINGE EDGE':'LATCH EDGE','BOTTOM','TOP');
@@ -917,6 +958,11 @@ function buildCase(){
       .map(t=>{ const mm=/mm$/i.test(t), v=parseFloat(t); return isNaN(v)?null:(mm?r4(v/MM):v); }).filter(v=>v);
     const hOf=(kind,i)=>listH[i]!==undefined?listH[i]:(kind==='FILE'?num('drFileH'):num('drBoxH'));
     const total=r4(stack.reduce((a,k,i)=>a+hOf(k,i),0)+gp*(stack.length-1));
+    /* never run the stack through a fixed shelf or the bottom */
+    const blockers=panels.concat(out).filter(p=>p.name && (p.name.startsWith('SHELF')||p.name==='BOTTOM') && p.box && p.box.min);
+    blockers.forEach(bk=>{ if(bk.box.max[0]<=rect.x0+0.01||bk.box.min[0]>=rect.x1-0.01) return;
+      if(bk.box.max[2]>rect.z0&&bk.box.max[2]<=rect.z1) rect={...rect,z0:Math.max(rect.z0,bk.box.max[2])}; });
+    const boxCeiling = topStyle!=='none' ? topY0 : rect.z1;                    // boxes stop under the top panel
     const al=sel('drAlign');
     const topUnder = topStyle!=='none' ? topY0 : rect.z1;
     const anchor = al==='case' ? rect.z1 : r4(topUnder-num('drTopGap'));        // cover the top panel, or tuck under it
@@ -935,7 +981,7 @@ function buildCase(){
       const fr=newPanel(kind+' DRAWER FRONT',frontW,r4(fh),T,frontW+'" \u00d7 '+r4(fh)+'" \u00d7 '+T+'"  \u00b7  '+(kind==='FILE'?'file':'box')+' drawer front');
       orient(fr,'INSIDE FACE','LEFT','RIGHT','BOTTOM','TOP');
       fr.box={min:[frontX,-T,r4(y)],max:[r4(frontX+frontW),0,r4(y+fh)]}; out.push(fr);
-      const zBox=r4(Math.max(y,boxFloor)+0.25);
+      const zBox=r4(Math.min(Math.max(y,boxFloor)+0.25, boxCeiling-bh-0.1));   // keep the box clear of the top
       const sd=newPanel(kind+' DWR SIDE',r4(boxDep),r4(bh),dt,r4(boxDep)+'" \u00d7 '+r4(bh)+'" \u00d7 '+dt+'"  \u00b7  drawer box side, 2 per drawer'+(slot?' \u00b7 bottom groove':''),2);
       if(slot) addLine(sd,'GROOVE',0,grUp,r4(boxDep),grUp);
       sd.boxes=[{min:[r4(rect.x0+sl),setb,zBox],max:[r4(rect.x0+sl+dt),r4(setb+boxDep),r4(zBox+bh)]},
@@ -1020,7 +1066,20 @@ function buildCase(){
     if(sel('grWhere')==='BACK PANEL') F.grommet(b);
     b.box={min:[bx0,backY,lo],max:[bx0+bw,backY+BT,hi]};
     b.frame={o:[bx0+bw,0,lo],ux:[-1,0,0],uy:[0,0,1],ax:1,shown:backY+BT,opp:backY};   // viewed from the back, mirrored
-    out.push(b);
+    const nParts=Math.max(1,Math.min(4,parseInt($('cBackParts').value)||1));
+    if(nParts>1){
+      /* split into equal vertical panels: each keeps the holes that fall inside it */
+      const pw=r4(bw/nParts);
+      for(let i=0;i<nParts;i++){
+        const x0=r4(i*pw), x1=r4((i+1)*pw);                                    // in the back's own drawing X
+        const q=newPanel('BACK PANEL '+(i+1),pw,bh,BT,pw+'" \u00d7 '+bh+'" \u00d7 '+BT+'"  \u00b7  view: BACK FACE, part '+(i+1)+' of '+nParts+', floor end at Y=0');
+        orient(q,'BACK FACE (cam nut face, hidden)','RIGHT END of case','LEFT END of case','FLOOR END','TOP');
+        q.holes=b.holes.filter(h=>h.x>=x0-1e-6&&h.x<=x1+1e-6).map(h=>({...h,x:r4(h.x-x0)}));
+        q.lines=b.lines.filter(l=>l.x1>=x0-1e-6&&l.x2<=x1+1e-6).map(l=>({...l,x1:r4(l.x1-x0),x2:r4(l.x2-x0)}));
+        q.box={min:[r4(bx0+bw-x1),backY,lo],max:[r4(bx0+bw-x0),backY+BT,hi]};
+        q.frame={o:[r4(bx0+bw-x0),0,lo],ux:[-1,0,0],uy:[0,0,1],ax:1,shown:backY+BT,opp:backY};
+        out.push(q); }
+    } else out.push(b);
   } else if(backStyle==='groove'){
     const gz=num('gZ'), bw=r4(inner+2*gz-0.0625), bh=r4(sel('gWhere')==='all'?(H-bot)-2*T+2*gz-0.0625:H-bot-T);
     const b=newPanel('BACK PANEL',bw,bh,BT,`${bw}" × ${bh}" × ${BT}"  ·  sized to groove, 1/16 clearance`);
@@ -1034,20 +1093,22 @@ function buildCase(){
     doorZ:{z0:num('cDoorY0'), z1:num('cDoorY1')},                              // the DOORS section sets its own height
     stackZ:{z0:r4(bot), z1:H} });                                              // the stack hangs off the case, not the opening
   const jobs = compHasContent
-    ? COMPARTMENTS.map(c=>({c,kind:compContent.get(c.key)||'none',rect:{x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1}}))
+    ? COMPARTMENTS.map(c=>{ const o=compOpts.get(c.key)||{};
+        return {c,kind:compContent.get(c.key)||'none',rect:{x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1},
+                hinge:o.hinge,ov:o.ov,nb:o.nb,nf:o.nf}; })
     : seeded;
   jobs.forEach(job=>{
     const c=job.c, kind=job.kind;
     if(kind==='none') return;
     const rect=job.rect;
     if(kind==='door'||kind==='doors2'){
-      const made=makeDoorsIn(rect,kind==='doors2'?2:1,job.hinge);
+      const made=makeDoorsIn(rect,kind==='doors2'?2:1,job.hinge,job.ov);
       made.forEach(d=>{ out.push(d);
         const hx = d.hingeEdge==='L' ? d.box.min[0] : d.box.max[0];
         const carrier=out.filter(q=>(q.name.includes('SIDE')||q.name.startsWith('DIVIDER'))&&q.box&&q.box.min)
           .map(q=>({q,gap:Math.min(Math.abs(q.box.min[0]-hx),Math.abs(q.box.max[0]-hx))}))
           .sort((a,b)=>a.gap-b.gap)[0];
-        if(carrier&&carrier.gap<2&&carrier.q.frame) F.hingePlates(carrier.q,d,d.ys); });
+        if(carrier&&carrier.gap<2.2&&carrier.q.frame) F.hingePlates(carrier.q,d,d.ys); });
     } else if(kind==='drawers'){
       makeDrawersIn(rect, job.nb!==undefined?job.nb:(parseInt($('drBox').value)||0),
                           job.nf!==undefined?job.nf:(parseInt($('drFile').value)||0));
@@ -1623,8 +1684,7 @@ function hardware3D(){ const out=[], tol=0.02, j=joinery(); hardwareMeshes=[];
     dr.holes.filter(h=>h.type==='HINGE').forEach(h=>{
       const z=wp(h)[2];
       let o=[hx,b.max[1],z], ex=[L?1:-1,0,0], ey=[0,0,1], ez=[0,-1,0];         // +X into the case · +Z into the door
-      if(show3d.doors){ const s2=L?1:-1, rot=v=>[-s2*v[1], s2*v[0], v[2]];     // swing 90° about the hinge line
-        ex=rot(ex); ez=rot(ez); }
+      /* the open model already carries the open geometry, so only the mesh swaps - no rotation */
       const A=HW_ORIGIN[mkey]||{dx:0,dy:0,dz:0,spin:0};                      // library nudge, per part
       if(A.spin){ const t=A.spin*Math.PI/180, c=Math.cos(t), s3=Math.sin(t);   // spin about the mounting axis
         const nx=ex.map((v,i)=>v*c+ey[i]*s3), ny=ex.map((v,i)=>-v*s3+ey[i]*c); ex=nx; ey=ny; }
@@ -1637,10 +1697,25 @@ function hardware3D(){ const out=[], tol=0.02, j=joinery(); hardwareMeshes=[];
     const onLeft = b.min[0] < (panels.find(q=>q.name==='RIGHT SIDE')||{box:{min:[1e9]}}).box.min[0]/2;
     out.push({min:[b.min[0]-0.5,b.min[1]-trav,z-0.6],max:[b.min[0],b.max[1]-trav,z+0.6],hw:'slide'});     // drawer member
     out.push({min:[b.max[0],b.min[1]-trav,z-0.6],max:[b.max[0]+0.5,b.max[1]-trav,z+0.6],hw:'slide'}); }); });
-  /* pins under each adjustable shelf */
-  const adj=panels.find(p=>p.name==='ADJ SHELF');
-  if(adj&&adj.boxes) adj.boxes.forEach(b=>{ [[b.min[0],b.min[1]+1.5],[b.max[0],b.min[1]+1.5],[b.min[0],b.max[1]-1.5],[b.max[0],b.max[1]-1.5]].forEach(([x,y])=>{
-    out.push({min:[x-0.2,y-0.1,b.min[2]-0.2],max:[x+0.2,y+0.1,b.min[2]],hw:'pin'}); }); });
+  /* shelf pins: the four holes each shelf actually rests in */
+  panels.filter(p=>p.name.startsWith('ADJ SHELF')).forEach(sh=>(sh.boxes||[]).forEach(box=>{
+    [box.min[0],box.max[0]].forEach(wx=>{
+      const host=panels.find(p=>(p.name.includes('SIDE')||p.name.startsWith('DIVIDER'))&&p.frame&&p.box&&p.box.min&&
+        (Math.abs(p.box.min[0]-wx)<1.3||Math.abs(p.box.max[0]-wx)<1.3));
+      if(!host) return;
+      const f=host.frame, r=num('pDia')/2;
+      const world=h=>{ const pl=h.under?f.opp:f.shown;
+        return [0,1,2].map(i=> i===f.ax?pl : f.o[i]+h.x*f.ux[i]+h.y*f.uy[i]); };
+      const pins=host.holes.filter(h=>h.type==='SHELFPIN').map(h=>({h,c:world(h)}));
+      if(!pins.length) return;
+      const zs=[...new Set(pins.map(q=>+q.c[2].toFixed(3)))];
+      const zNear=zs.reduce((best,z)=>Math.abs(z-box.min[2])<Math.abs(best-box.min[2])?z:best,zs[0]);
+      pins.filter(q=>Math.abs(q.c[2]-zNear)<0.01).forEach(q=>{
+        const n=[0,0,0]; n[f.ax]= q.h.under?1:-1;
+        const half=[r,r,r]; half[f.ax]=0.3;
+        const o=[0,1,2].map(i=>q.c[i]+n[i]*0.3);
+        out.push({min:[0,1,2].map(i=>o[i]-half[i]),max:[0,1,2].map(i=>o[i]+half[i]),hw:'pin'}); });
+    }); }));
   return out; }
 /* ---------- 3D preview orbit ---------- */
 let iso3dBoxes=[], orbit={on:false,yaw:-20,el:24,zoom:1};
