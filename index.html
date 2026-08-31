@@ -1640,7 +1640,7 @@ function cnc1Files(){
       panelWidth:r4(p.d), panelLength:r4(p.w), thickness:p.t, zOverride:drillZ,   // turned 90° left: long side down Y
       holeDepth:r4(camDepth), holeDepthDowel:r4(dowDepth),
       retract:0.5, safeZ:2, spindle:6000, feedIn:100, feedOut:500, tool:9, origin:9, parkY:75, dropDustHood:false,
-      vacZone1:true, vacZone2:false,
+      vacZone1:true, vacZone2:r4(p.d)>24,                                     // anything past 24" across X has to sit on zone 2 as well (M606)
       faceCam:{tool:'4',rpm:'16000',feed:'210',depth:pinFD},
       faceDowel:{tool:'10',rpm:'18000',feed:'190',depth:dowFD},
       faceHoles,
@@ -1653,6 +1653,7 @@ function cnc1Files(){
     L.push(`;STOCK ${p.t}" - HOLE CENTERLINE ${r4(ctr)}" FROM THE CAM FACE`);
     L.push(`;PANEL LIES CAM FACE ${faceDown?'DOWN':'UP'}: Z DEPTH OVERRIDE ${drillZ}" OFF THE TABLE`);
     L.push(`;LOAD TURNED 90 LEFT FROM THE CASEMAKER DRAWING: ${r4(p.w)}" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ${r4(p.d)}" ACROSS X`);
+    L.push(`;VACUUM: ZONE 1 (M604)${r4(p.d)>24?' + ZONE 2 (M606) - PANEL IS '+r4(p.d)+'" ACROSS X, PAST 24"':' ONLY'}`);
     if(faceHoles.length) L.push(`;FACE DRILLING ${faceHoles.filter(h=>h.t==='cam').length}x 3/8" INSERT (T4) + ${faceHoles.filter(h=>h.t==='dowel').length}x 5/16" DOWEL (T10), DEPTH FROM THE BOTTOM FACE`);
     if(note) L.push(';'+note);
     L.push(';LOAD THIS FILE IN THE CNC #1 EDGE DRILLING APP, REVIEW, THEN GENERATE');
