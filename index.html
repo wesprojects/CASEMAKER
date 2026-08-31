@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.27 -->
+<!-- BUILD_VERSION: 2026-08-31.33 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -54,11 +54,20 @@ input:focus,select:focus{outline:2px solid var(--amber);border-color:transparent
 .modal{position:fixed !important;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50}
 .modal[hidden]{display:none}
 .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;max-width:min(96vw,760px);max-height:92vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.docs{font-size:11px;line-height:1.55}
+.docs h3{font-size:11px;letter-spacing:.1em;margin:14px 0 4px;color:var(--amber)}
+.docs table{width:100%;border-collapse:collapse;margin:4px 0 10px}
+.docs td{padding:3px 8px 3px 0;vertical-align:top;border-top:1px solid var(--line)}
+.docs td:first-child{width:210px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
 .dvblock{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0}
 .dvblock>.chk{font-weight:700;letter-spacing:.06em}
 .dvfields{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:6px}
 .dvfields label{font-size:10px}
-.comprow{display:grid;grid-template-columns:120px 92px 1fr 1fr 1fr 1fr;gap:6px;align-items:center;padding:5px 0;border-top:1px solid var(--line);font-size:10px}
+.compblock{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0}
+.comphead{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:center;font-size:10px}
+.cfield{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.cfield label{display:flex;flex-direction:column;gap:3px;font-size:9px;color:var(--mute)}
+.comprow{display:none}
 .comprow select,.comprow input{width:100%;font-size:10px;padding:3px 4px}
 .comprow .mini{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--mute)}
 .comprow .cid{font-weight:700;letter-spacing:.05em}
@@ -99,6 +108,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
   <div class="spacer"></div>
   <button id="saveProjBtn" title="Save this project as a .casemaker file">SAVE</button>
   <button id="loadProjBtn" title="Load a saved .casemaker project">LOAD</button><input id="projFile" type="file" accept=".casemaker,.json" style="display:none">
+  <button id="docsBtn" title="What every setting does">DOCS</button>
   <button id="hwBtn" title="Hardware sizes and the model library">HARDWARE</button>
   <button id="view3dBtn" title="Open the 3D preview">3D VIEW</button>
   <button id="homeBtn" title="Clear every field back to the prototype bookcase defaults">RESET</button>
@@ -139,7 +149,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>WIDTH<input id="cW" type="number" step="0.0001" value="34.65" data-mm="1"></label>
         <label>HEIGHT<input id="cH" type="number" step="0.0001" value="47.24" data-mm="1"></label>
         <label>DEPTH<input id="cD" type="number" step="0.0001" value="13.98" data-mm="1"></label>
-        <label>STOCK T<input id="cT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
+        <label>STOCK THICKNESS<input id="cT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
       </div>
     </div>
 
@@ -197,9 +207,10 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row three">
         <label>BACK PANEL<select id="ptBack"><option value="full" selected>FULL STOCK, CAM LOCKED</option><option value="groove">THIN, IN A GROOVE</option><option value="none">NONE</option></select></label>
-        <label>BACK T<input id="cBackT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
+        <label>BACK THICKNESS<input id="cBackT" type="number" step="0.0001" value="1.03" data-mm="1"></label>
         <label>BACK EDGE<select id="cBackFlush"><option value="back" selected>FLUSH</option><option value="inset">INSET</option></select></label>
-        <label>BACK PARTS<input id="cBackParts" type="number" min="1" max="4" step="1" value="1"></label>
+        <label class="chk"><input id="cBackSplit" type="checkbox"> SPLIT BACK IN TWO</label>
+        <label id="cBackOffL">SEAM OFFSET FROM CENTRELINE<input id="cBackOff" type="number" step="0.0625" value="0" data-mm="1"></label>
         <label>BACK FIT<select id="cBackFit"><option value="between" selected>BETWEEN THE SIDES</option><option value="over">OVER THE SIDES AND TOP · EDGE SHOWS</option></select></label>
         <label class="chk" id="cBackWrapL" style="display:none"><input id="cBackWrap" type="checkbox"> Wrap the bottom too</label>
       </div>
@@ -208,12 +219,15 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row four">
         <label>TOE KICK<select id="tkStyle"><option value="board" selected>KICK BOARD, CAM LOCKED</option><option value="notch">SIDE NOTCH + LOOSE BOARD</option><option value="none">NONE</option></select></label>
-        <label>KICK H<input id="tkH" type="number" step="0.0001" value="2.76" data-mm="1"></label>
+        <label>KICK HEIGHT<input id="tkH" type="number" step="0.0001" value="2.76" data-mm="1"></label>
         <label>KICK INSET<input id="tkInset" type="number" step="0.0001" value="0.0591" data-mm="1"></label>
         <label id="tkDL">NOTCH DEPTH<input id="tkD" type="number" step="0.0625" value="2.5" data-mm="1"></label>
       </div>
       <div class="row four">
-        <label id="tkDowL">KICK DOWEL SP<input id="tkDow" type="number" step="1" value="12" data-mm="1"></label>
+        <label class="chk"><input id="dvCam" type="checkbox" checked> CAM LOCK DIVIDERS</label>
+        <label>DOWEL SPACING WITHOUT CAMS<input id="camDowSp" type="number" step="0.5" value="8" data-mm="1"></label>
+        <label class="chk"><input id="shCam" type="checkbox" checked> CAM LOCK FIXED SHELVES</label>
+        <label id="tkDowL">KICK DOWEL SPACING<input id="tkDow" type="number" step="1" value="12" data-mm="1"></label>
       </div>
       <div class="row" style="display:block">
         <div class="dvblock">
@@ -258,9 +272,9 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>POSITIONS<input id="cShelfPos" placeholder="auto"></label>
       </div>
       <div class="row three">
-        <label>ADJ SHELVES<input id="cAdj" type="number" min="0" step="1" value="2"></label>
-                <label>ADJ DEPTH<input id="cAdjD" type="number" step="0.0001" placeholder="auto" data-mm="1"></label>
-        <label>SIDE CLEAR<input id="cAdjGap" type="number" step="0.0001" value="0.0197" data-mm="1"></label>
+        <label>ADJUSTABLE SHELVES<input id="cAdj" type="number" min="0" step="1" value="2"></label>
+                <label>ADJUSTABLE SHELF DEPTH<input id="cAdjD" type="number" step="0.0001" placeholder="auto" data-mm="1"></label>
+        <label>SIDE CLEARANCE<input id="cAdjGap" type="number" step="0.0001" value="0.0197" data-mm="1"></label>
       </div>
     </details>
     <details>
@@ -275,23 +289,23 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>BOX HEIGHTS<input id="drBoxHeights" placeholder="blank = use the type heights"></label>
       </div>
       <div class="row four">
-        <label>BOX FACE H<input id="drBoxH" type="number" step="0.0001" value="7.2441" data-mm="1"></label>
-        <label>FILE FACE H<input id="drFileH" type="number" step="0.0001" value="12.5197" data-mm="1"><span class="unit">318 MM</span></label>
-        <label>FACE GAP<input id="drGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 MM, VERTICAL</span></label>
-        <label>TOP GAP<input id="drTopGap" type="number" step="0.0001" value="0.0787" data-mm="1"></label>
+        <label>BOX FACE HEIGHT<input id="drBoxH" type="number" step="0.0001" value="7.2441" data-mm="1"></label>
+        <label>FILE FACE HEIGHT<input id="drFileH" type="number" step="0.0001" value="12.5197" data-mm="1"><span class="unit">318 MM</span></label>
+        <label>GAP BETWEEN FACES<input id="drGap" type="number" step="0.0001" value="0.0787" data-mm="1"><span class="unit">2 MM, VERTICAL</span></label>
+        <label>GAP UNDER TOP<input id="drTopGap" type="number" step="0.0001" value="0.0787" data-mm="1"></label>
         <label>SIDE REVEAL<input id="drSideGap" type="number" step="0.0001" value="0.0394" data-mm="1"></label>
-        <label>SLIDE CLEAR<input id="drSlide" type="number" step="0.0001" value="0.5118" data-mm="1"><span class="unit">13 MM</span></label>
+        <label>SLIDE CLEARANCE<input id="drSlide" type="number" step="0.0001" value="0.5118" data-mm="1"><span class="unit">13 MM</span></label>
       </div>
       <div class="row four">
-        <label>BOX H<input id="drBoxBH" type="number" step="0.0001" value="4.7244" data-mm="1"><span class="unit">120 MM</span></label>
-        <label>FILE BOX H<input id="drFileBH" type="number" step="0.0001" value="9.6457" data-mm="1"><span class="unit">245 MM</span></label>
-        <label>BOX SIDES T<input id="drT" type="number" step="0.0001" value="0.4724" data-mm="1"><span class="unit">12 MM</span></label>
+        <label>BOX HEIGHT<input id="drBoxBH" type="number" step="0.0001" value="4.7244" data-mm="1"><span class="unit">120 MM</span></label>
+        <label>FILE BOX HEIGHT<input id="drFileBH" type="number" step="0.0001" value="9.6457" data-mm="1"><span class="unit">245 MM</span></label>
+        <label>BOX SIDES THICKNESS<input id="drT" type="number" step="0.0001" value="0.4724" data-mm="1"><span class="unit">12 MM</span></label>
         <label>BOX SLIDES<select id="drSlideBox"><option value="15.748" selected>16" (box depth 400 mm)</option><option value="21.1811">18" (box depth 538 mm)</option><option value="20.0787">20" (box depth 510 mm)</option></select></label>
         <label>FILE SLIDES<select id="drSlideFile"><option value="15.748">16" (box depth 400 mm)</option><option value="21.1811">18" (box depth 538 mm)</option><option value="20.0787" selected>20" (box depth 510 mm)</option></select></label>
       </div>
       <div class="row four">
         <label class="chk"><input id="drSlot" type="checkbox" checked>SLOT THE DRAWER BOTTOM</label>
-        <label>BOTTOM T<input id="drBotT" type="number" step="0.0001" value="0.1969" data-mm="1"><span class="unit">5 MM</span></label>
+        <label>BOTTOM THICKNESS<input id="drBotT" type="number" step="0.0001" value="0.1969" data-mm="1"><span class="unit">5 MM</span></label>
         <label>GROOVE DEPTH<input id="drGrD" type="number" step="0.0001" value="0.2362" data-mm="1"><span class="unit">6 MM</span></label>
         <label>GROOVE UP<input id="drGrUp" type="number" step="0.0001" value="0.3937" data-mm="1"><span class="unit">10 MM</span></label>
       </div>
@@ -308,7 +322,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row three">
         <label>DOOR WIDTH<select id="cDoorWMode"><option value="full" selected>FULL OPENING</option><option value="custom">CUSTOM (ADDS A DIVIDER)</option></select></label>
-        <label id="cDoorWL" style="display:none">DOOR W<input id="cDoorW" type="number" step="0.0625" value="16" data-mm="1"></label>
+        <label id="cDoorWL" style="display:none">DOOR WIDTH<input id="cDoorW" type="number" step="0.0625" value="16" data-mm="1"></label>
         <label>HINGE ON<select id="cDoorHinge"><option value="outer" selected>OUTER SIDE PANEL</option><option value="divider">THE DIVIDER</option></select></label>
         <label>OVERLAY<input id="cDoorOv" disabled></label>
       </div>
@@ -347,7 +361,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <summary>HARDWARE (MM)</summary>
       <div class="row three">
         <label>CAM NUT Ø<input id="hCamD" type="number" step="0.0001" value="0.5906" data-mm="1"></label>
-        <label>CAM NUT H<input id="hCamZ" type="number" step="0.0001" value="0.5" data-mm="1"></label>
+        <label>CAM NUT HEIGHT<input id="hCamZ" type="number" step="0.0001" value="0.5" data-mm="1"></label>
         <label>PIN EDGE Ø<input id="hBoltED" type="number" step="0.0001" value="0.3125" data-mm="1"></label>
       </div>
       <div class="row three">
@@ -435,13 +449,13 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>CUP Ø<input id="hgCupD" type="number" step="0.0001" value="1.378" data-mm="1"></label>
         <label>CUP DEPTH<input id="hgCupZ" type="number" step="0.0001" value="0.4843" data-mm="1"><span class="unit">12.3 MM</span></label>
         <label>CUP K<input id="hgK" type="number" step="0.0001" value="1.1024" data-mm="1"></label>
-        <label>CUP SCREW SP<input id="hgCupS" type="number" step="0.0001" value="1.7717" data-mm="1"></label>
+        <label>CUP SCREW SPACING<input id="hgCupS" type="number" step="0.0001" value="1.7717" data-mm="1"></label>
       </div>
       <div class="row four">
         <label>HINGES/DOOR<select id="hgN"><option value="auto" selected>AUTO</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-        <label>END INSET<input id="hgEnd" type="number" step="0.0625" value="4" data-mm="1"></label>
+        <label>INSET FROM ENDS<input id="hgEnd" type="number" step="0.0625" value="4" data-mm="1"></label>
         <label>PLATE LINE<input id="hgPlate" type="number" step="0.0001" value="1.4567" data-mm="1"></label>
-        <label>PLATE SCREW SP<input id="hgPlateS" type="number" step="0.0001" value="1.2598" data-mm="1"></label>
+        <label>PLATE SCREW SPACING<input id="hgPlateS" type="number" step="0.0001" value="1.2598" data-mm="1"></label>
       </div>
       <div class="row">
         <label>SCREW Ø<input id="hgScrD" type="number" step="0.0001" value="0.1969" data-mm="1"></label>
@@ -478,21 +492,21 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
         <label>GRAIN<select id="nestGrain"><option value="on" selected>MATCH GRAIN</option><option value="off">IGNORE GRAIN</option></select></label>
         <label class="chk"><input id="protoMode" type="checkbox">PROTOTYPE ON BARE MATERIAL</label>
         <label class="chk"><input id="daeHw" type="checkbox" checked>HARDWARE IN THE SKETCHUP MODEL</label>
-        <label id="protoTL" style="display:none">PROTO T<input id="protoT" type="number" step="0.0001" value="0.75" data-mm="1"></label>
+        <label id="protoTL" style="display:none">PROTOTYPE THICKNESS<input id="protoT" type="number" step="0.0001" value="0.75" data-mm="1"></label>
       </div>
       <div class="row three">
         <label>CASE SHEET<select id="nestStock"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
-        <label class="narrow">CASE SPACING<span class="fld"><input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">CASE PART SPACING<span class="fld"><input id="nestGap" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
         <label class="narrow">CASE MARGIN<span class="fld"><input id="nestMargin" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
       </div>
       <div class="row three">
         <label>BOX SHEET<select id="nestStockDwr"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
-        <label class="narrow">BOX SPACING<span class="fld"><input id="nestGapDwr" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">BOX PART SPACING<span class="fld"><input id="nestGapDwr" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
         <label class="narrow">BOX MARGIN<span class="fld"><input id="nestMarginDwr" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
       </div>
       <div class="row three">
         <label>BOTTOM SHEET<select id="nestStockBot"><option value="48,96" selected>4 × 8 ft (48 × 96)</option><option value="60,96">5 × 8 ft (60 × 96)</option><option value="60,120">5 × 10 ft (60 × 120)</option><option value="60,144">5 × 12 ft (60 × 144)</option></select></label>
-        <label class="narrow">BOTTOM SPACING<span class="fld"><input id="nestGapBot" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
+        <label class="narrow">BOTTOM PART SPACING<span class="fld"><input id="nestGapBot" type="number" step="0.0625" value="0.5" data-mm="1"></span></label>
         <label class="narrow">BOTTOM MARGIN<span class="fld"><input id="nestMarginBot" type="number" step="0.0625" value="0.25" data-mm="1"></span></label>
       </div>
     </details>
@@ -519,6 +533,13 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
   </section>
 </div>
 </main>
+<div id="docsPanel" class="modal" hidden>
+  <div class="modalbox" style="max-width:min(96vw,980px)">
+    <div class="modalhead"><h2 style="margin:0">DOCUMENTATION</h2>
+      <div class="tabs" style="margin:0"><button id="closeDocs">CLOSE</button></div></div>
+    <div id="docsBody" class="docs"></div>
+  </div>
+</div>
 <div id="hwPanel" class="modal" hidden>
   <div class="modalbox" style="max-width:min(96vw,1100px)">
     <div class="modalhead"><h2 style="margin:0">HARDWARE</h2>
@@ -542,7 +563,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.27";
+const BUILD_VERSION = "2026-08-31.33";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -604,7 +625,8 @@ function syncVisibility(){
   document.querySelectorAll('input[data-mm]').forEach(el=>{ const host=el.closest('.fld')||el.parentElement; let u=host.querySelector('.unit.mm'); if(!u){ u=document.createElement('span'); u.className='unit mm'; host.appendChild(u); } const v=parseFloat(el.value); u.textContent=isNaN(v)?(el.placeholder==='auto'?`auto = ${pinEdgeDepth().toFixed(4)}" (${(pinEdgeDepth()*MM).toFixed(1)} mm)`:''):`= ${(v*MM).toFixed(2)} mm`; });
   $('ebTopTL').style.visibility=sel('ebTop')==='contrast'?'':'hidden';
   $('fBodyCL').style.visibility=sel('fBody')==='custom'?'':'hidden'; $('fEdgeCL').style.visibility=sel('fEdge')==='custom'?'':'hidden'; $('ebTopCL2').style.visibility=sel('ebTopC')==='custom'?'':'hidden';
-  { $('cBackWrapL').style.display=sel('cBackFit')==='over'?'':'none'; }
+  { $('cBackWrapL').style.display=sel('cBackFit')==='over'?'':'none';
+    $('cBackOffL').style.display=on('cBackSplit')?'':'none'; }
   { const s1=sel('dvSpan'), s2=sel('dv2Span');
     $('dvF1').style.display=on('dvOn')?'':'none';
     $('dvF2').style.display=on('dv2On')?'':'none';
@@ -665,7 +687,7 @@ function buttEdge(p,edge,j,r){
 }
 /* camSide: which face of the butting panel carries the cam nuts — 'min' (at pos) or 'max' (at pos+mt); pins sit pinOff from that face. Undefined = mid-thickness (dowel-only joints). */
 function recvLine(p,axis,pos,mt,j,r,camSide){
-  const off=j.ctr==null?mt/2:Math.min(j.ctr,mt/2), L=axis==='x'?p.d:p.w, st=stations(L,j,r),
+  const off=j.dowelsOnly?mt/2:(j.ctr==null?mt/2:Math.min(j.ctr,mt/2)), L=axis==='x'?p.d:p.w, st=stations(L,j,r),   // dowel-only joints run down the middle of the panel
         c=r4(camSide==='min'?pos+off:camSide==='max'?pos+mt-off:pos+mt/2), pt=s=>axis==='x'?[c,s]:[s,c];   // pin line measured from the butting panel's cam face
   st.cams.forEach(s=>{const [x,y]=pt(s);addHole(p,'PIN',x,y,j.pinFD,j.pinFZ,lay('PIN',j.pinFD,j.pinFZ));});
   st.dow.forEach(s=>{const [x,y]=pt(s);addHole(p,'DOWEL',x,y,j.dowD,j.dowFZ,lay('DOWEL',j.dowD,j.dowFZ));});
@@ -674,8 +696,11 @@ function recvLine(p,axis,pos,mt,j,r,camSide){
 /* ================= features ================= */
 const F={
   groove(p,{stop=0}={}){ const gw=num('gW'),gz=num('gZ'),y=p.d-num('gSet'),L=`GROOVE_W${gw}_Z${gz}`; addLine(p,L,stop,y-gw,p.w-stop,y-gw); addLine(p,L,stop,y,p.w-stop,y); },
-  pins(p,members,shelfZ,far){ if(!on('pOn')) return;   // far: drill the opposite face (a divider's right-hand bay)
-    const dia=num('pDia'),z=num('pZ'),pitch=num('pPitch'),cl=num('pClear'),clTop=num('pTop'),rowsN=sel('pRows');
+  pins(p,members,shelfZ,far,ov){ if(!on('pOn')) return;   // far: opposite face · ov: per-compartment overrides
+    const o=ov||{};
+    const dia=o.pdia||num('pDia'), z=num('pZ'), pitch=o.pitch||num('pPitch'),
+          cl=num('pClear'), clTop=num('pTop'),
+          rowsN=(o.rows&&o.rows!=='auto')?o.rows:sel('pRows');
     const skip=$('pSkip').value.split(',').map(s=>parseInt(s)).filter(v=>!isNaN(v)); const rows=[num('pFront'),p.d-num('pBack')],L=lay('SHELFPIN',dia,z); const m=[...members].sort((a,b)=>a.y0-b.y0);   // front row from the FRONT edge, back row from the BACK edge
     const seen=new Set();
     for(let i=0;i<m.length-1;i++){ if(skip.includes(i+1)) continue; const a=m[i].y0+m[i].t+(i===0?0:clTop),b=m[i+1].y0-clTop; if(b<=a) continue;
@@ -686,7 +711,7 @@ const F={
   glidesEdge(side){ if(!on('glOn')||sel('glWhere')!=='sides') return; const j0=joinery(), pin=sel('glType')==='pin';
     const d=pin?j0.pinED:num('glD'), z=pin?j0.pinEZ:num('glZ'), iy=num('glY'), L=lay(pin?'EDGE_PIN_MOUNT':'EDGE_GLIDE',d,z);
     [iy,side.d-iy].forEach(y=>addHole(side,'GLIDE',0,y,d,z,L,true,r4(side.t/2))); },   // glides are the one edge hole that stays centred in the thickness
-  hingeCups(door){ if(!on('hgOn')) return []; const n=hingeCount(door.d),e=num('hgEnd'),ys=[]; for(let i=0;i<n;i++) ys.push(n===1?door.d/2:e+(door.d-2*e)*i/(n-1));
+  hingeCups(door,nOv){ if(!on('hgOn')) return []; const n=(nOv&&nOv!=='auto')?parseInt(nOv):hingeCount(door.d),e=num('hgEnd'),ys=[]; for(let i=0;i<n;i++) ys.push(n===1?door.d/2:e+(door.d-2*e)*i/(n-1));
     const k=num('hgK'),x=door.hingeEdge==='L'?k:door.w-k,cd=num('hgCupD'),cz=num('hgCupZ'),ss=num('hgCupS')/2,sd=num('hgScrD'),sz=num('hgScrZ');
     ys.forEach(y=>{ addHole(door,'HINGE',x,y,cd,cz,lay('HINGE_CUP',cd,cz)); const sx=door.hingeEdge==='L'?x+9.5/MM:x-9.5/MM; [y-ss,y+ss].forEach(yy=>addHole(door,'SCREW',sx,yy,sd,sz,lay('HINGE_SCREW',sd,sz))); }); return ys; },
   hingePlates(side,door,ys){ const yl=num('hgPlate'),ps=num('hgPlateS')/2,d=num('hgScrD'),z=num('hgScrZ'),L=lay('HINGE_PLATE_SCREW',d,z); ys.forEach(y=>{const x=door.y0+y;addHole(side,'SCREW',x-ps,yl,d,z,L);addHole(side,'SCREW',x+ps,yl,d,z,L);}); },
@@ -762,30 +787,48 @@ function deriveCompartments(o){
   });
   return res;
 }
+let compSig='';
 function renderCompartments(){
   const host=$('compList'); if(!host) return;
+  /* only rebuild when the list itself changes: replacing it under a focused field kills the edit */
+  const sig=JSON.stringify([COMPARTMENTS.map(c=>[c.key,c.label,c.w,c.h]),
+    COMPARTMENTS.map(c=>[compAssign.get(c.key)||0, compContent.get(c.key)||'none'])]);
+  if(sig===compSig) return;
+  compSig=sig;
   if(!COMPARTMENTS.length){ host.innerHTML='<p class="hint">No compartments — the case needs a bottom and a top.</p>'; return; }
   host.innerHTML=COMPARTMENTS.map(c=>{
     const n=compAssign.get(c.key)||0, k=compContent.get(c.key)||'none', o=optsFor(c.key);
-    const sh=[0,1,2,3,4,5,6].map(v=>'<option value="'+v+'"'+(v===n?' selected':'')+'>'+(v?v+' SHELF'+(v>1?'S':''):'NO SHELVES')+'</option>').join('');
-    const kinds=[['none','OPEN'],['door','1 DOOR'],['doors2','2 DOORS'],['drawers','DRAWERS']]
-      .map(([v,t])=>'<option value="'+v+'"'+(v===k?' selected':'')+'>'+t+'</option>').join('');
-    const hinge=[['L','HINGE LEFT'],['R','HINGE RIGHT']]
-      .map(([v,t])=>'<option value="'+v+'"'+(v===o.hinge?' selected':'')+'>'+t+'</option>').join('');
-    const ov=[['auto','OVERLAY AUTO'],['full','FULL OVERLAY'],['half','HALF OVERLAY']]
-      .map(([v,t])=>'<option value="'+v+'"'+(v===o.ov?' selected':'')+'>'+t+'</option>').join('');
-    const doorBits = (k==='door'||k==='doors2')
-      ? '<select data-hinge="'+c.key+'"'+(k==='doors2'?' disabled':'')+'>'+hinge+'</select><select data-ov="'+c.key+'">'+ov+'</select>'
-      : (k==='drawers'
-         ? '<label class="mini">BOX<input type="number" min="0" step="1" data-nb="'+c.key+'" value="'+o.nb+'"></label>'
-          +'<label class="mini">FILE<input type="number" min="0" step="1" data-nf="'+c.key+'" value="'+o.nf+'"></label>'
-         : '<span class="csz">\u2014</span><span class="csz">\u2014</span>');
-    return '<div class="comprow"><span class="cid">'+c.label.toUpperCase()+'</span><span class="csz">'+c.w+'" \u00d7 '+c.h+'"</span>'
-      +'<select data-comp="'+c.key+'">'+sh+'</select><select data-kind="'+c.key+'">'+kinds+'</select>'+doorBits+'</div>';
+    const sel_=(name,val,list)=>'<select data-'+name+'="'+c.key+'">'+list.map(([v,t])=>
+      '<option value="'+v+'"'+(String(v)===String(val)?' selected':'')+'>'+t+'</option>').join('')+'</select>';
+    const num_=(name,val,step)=>'<input type="number" step="'+(step||1)+'" data-'+name+'="'+c.key+'" value="'+val+'">';
+    /* shelf block: only when shelves are asked for */
+    const shelfCfg = n>0 ? '<div class="cfield"><label>PIN ROWS'+sel_('rows',o.rows||'auto',[['auto','FOLLOW GLOBAL'],['all','FULL LADDER'],['3','3 EACH SIDE'],['5','5 EACH SIDE']])+'</label>'
+        +'<label>PIN SPACING'+num_('pitch',o.pitch||'',0.0625)+'</label>'
+        +'<label>PIN DIAMETER'+num_('pdia',o.pdia||'',0.0001)+'</label></div>' : '';
+    /* door block */
+    const doorCfg = (k==='door'||k==='doors2') ? '<div class="cfield">'
+        +(k==='door'?'<label>HINGE SIDE'+sel_('hinge',o.hinge,[['L','LEFT'],['R','RIGHT']])+'</label>':'')
+        +'<label>OVERLAY'+sel_('ov',o.ov,[['auto','AUTOMATIC'],['full','FULL'],['half','HALF']])+'</label>'
+        +'<label>HINGES PER DOOR'+sel_('nh',o.nh||'auto',[['auto','AUTOMATIC'],['2','2'],['3','3'],['4','4'],['5','5']])+'</label>'
+        +'<label>REVEAL'+num_('gap',o.gap||'',0.0001)+'</label></div>' : '';
+    /* drawer block */
+    const drawerCfg = k==='drawers' ? '<div class="cfield">'
+        +'<label>BOX DRAWERS'+num_('nb',o.nb,1)+'</label>'
+        +'<label>FILE DRAWERS'+num_('nf',o.nf,1)+'</label>'
+        +'<label>FACE HEIGHTS<input data-fh="'+c.key+'" value="'+(o.fh||'')+'" placeholder="GLOBAL"></label></div>' : '';
+    return '<div class="compblock"><div class="comphead"><span class="cid">'+c.label.toUpperCase()+'</span>'
+      +'<span class="csz">'+c.w+'" WIDE \u00d7 '+c.h+'" HIGH</span>'
+      +sel_('comp',n,[0,1,2,3,4,5,6].map(v=>[v,v?v+' SHELF'+(v>1?'S':''):'NO SHELVES']))
+      +sel_('kind',k,[['none','OPEN'],['door','1 DOOR'],['doors2','2 DOORS'],['drawers','DRAWERS']])
+      +'</div>'+shelfCfg+doorCfg+drawerCfg+'</div>';
   }).join('');
   host.querySelectorAll('[data-comp]').forEach(el=>el.onchange=()=>{ compAssign.set(el.dataset.comp,parseInt(el.value)||0); build(); });
   host.querySelectorAll('[data-kind]').forEach(el=>el.onchange=()=>{ compContent.set(el.dataset.kind,el.value); build(); });
   host.querySelectorAll('[data-hinge]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.hinge).hinge=el.value; build(); });
+  [['rows','rows'],['ov','ov'],['nh','nh'],['fh','fh']].forEach(([attr,prop])=>
+    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; build(); }));
+  [['pitch','pitch'],['pdia','pdia'],['gap','gap']].forEach(([attr,prop])=>
+    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value===''?undefined:parseFloat(el.value); build(); }));
   host.querySelectorAll('[data-ov]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.ov).ov=el.value; build(); });
   host.querySelectorAll('[data-nb]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nb).nb=parseInt(el.value)||0; build(); });
   host.querySelectorAll('[data-nf]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nf).nf=parseInt(el.value)||0; build(); });
@@ -833,7 +876,8 @@ function buildCase(){
     orient(p,m.face,'LEFT END','RIGHT END','FRONT','BACK');
     if(m.over){ const r=[tf,r4(tf+m.dep)];                                   // any front overhang shifts this panel's own coordinates
       recvLine(p,'x',ov,T,j,r,'max'); recvLine(p,'x',r4(W-T+ov),T,j,r,'min'); }   // sides' cam nuts on their inside faces
-    else { buttEdge(p,'L',j,[0,dep]); buttEdge(p,'R',j,[0,dep]); }
+    else { const jm2 = (m.name.startsWith('SHELF') && !on('shCam')) ? {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))} : j;   // fixed shelves: cams, or dowels at this spacing
+      buttEdge(p,'L',jm2,[0,dep]); buttEdge(p,'R',jm2,[0,dep]); }
     if(backStyle==='full'&&sel('cBackFit')!=='over'&&m.name==='TOP') recvLine(p,'y',r4(backY+tf),BT,j,m.over?[r4(T+bx+ov),r4(W-T-bx+ov)]:[bx,inner-bx],'max');   // back panel's TOP EDGE lands on the top's underside
     if(backStyle==='full'&&m.name==='BOTTOM') buttEdge(p,'B',j,[bx,inner-bx]);                                     // bottom's BACK EDGE butts the back panel: cams in the bottom, pins into the back
     if(backStyle==='groove'&&(m.name==='TOP'||m.name==='BOTTOM')&&sel('gWhere')==='all') F.groove(p);
@@ -869,8 +913,9 @@ function buildCase(){
         : [r4(Math.max(bx,host.frame.o[1]+bx)), r4(Math.min(dep-bx,host.frame.o[1]+host.d-bx))];
       return [r4(w[0]-setBackFront), r4(w[1]-setBackFront)];   // into the divider's own coordinates
     };
-    if(loHost) buttEdge(dv,'L',j,spanFor(loHost));
-    if(hiHost) buttEdge(dv,'R',j,spanFor(hiHost));
+    const jdv = on('dvCam') ? j : {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))};   // dividers: cams, or dowels at this spacing
+    if(loHost) buttEdge(dv,'L',jdv,spanFor(loHost));
+    if(hiHost) buttEdge(dv,'R',jdv,spanFor(hiHost));
     dv.d=r4(dep-setBackFront); dv.cutD=dv.d;
     dv.box={min:[dx,setBackFront,dvLo],max:[dx+T,dep,dvHi]};
     dv.frame={o:[dx,setBackFront,dvLo],ux:[0,0,1],uy:[0,1,0],ax:0,shown:dx,opp:dx+T};
@@ -878,7 +923,8 @@ function buildCase(){
     if(isMain) $('dvInfo').value=`${dh}" tall · ${r4(dx-T)}" | ${r4(W-T-(dx+T))}" bays`;
     if(isMain&&divFull) members.filter(m=>m.name.startsWith('SHELF')).forEach(m=>{      // bay shelves cam into the divider's left face
       const yo=r4(((backStyle==='full'?backY:D))-m.dep);
-      recvLine(dv,'x',r4(m.y0-dvLo),T,j,[yo,r4(yo+m.dep)],'min'); });
+      const jsh = on('shCam') ? j : {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))};   // match the shelf's own joinery
+      recvLine(dv,'x',r4(m.y0-dvLo),T,jsh,[yo,r4(yo+m.dep)],'min'); });
     const dvStations=[bx,dep-bx];                                             // the divider's own station span, in world Y
     [loHost,hiHost].filter(Boolean).forEach(hn=>{                              // pins in the face the divider lands on
       const host=out.find(q=>q.name===hn); if(!host||!host.frame) return;
@@ -887,7 +933,7 @@ function buildCase(){
       const lo=r4(Math.max(dvStations[0],yo+bx)-yo), hi=r4(Math.min(dvStations[1],yo+host.d-bx)-yo);
       if(hi-lo<1) return;
       const before=host.holes.length;
-      recvLine(host,'x',hx,T,j,[lo,hi],'min');
+      recvLine(host,'x',hx,T,jdv,[lo,hi],'min');
       const fromBelow = hn===hiHost;                                           // meeting a top or shelf from underneath
       if(!fromBelow) host.holes.slice(before).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });
     });
@@ -912,8 +958,8 @@ function buildCase(){
 
   /* build a door (or a pair) into any opening — used by the compartment list and by the
      case-wide settings, which simply pass the whole front as one rectangle */
-  const makeDoorsIn=(rect,count,hingePref,ovPref)=>{
-    const inset=sel('cDoorStyle')==='inset', gap=num('cDoorGap');
+  const makeDoorsIn=(rect,count,hingePref,ovPref,gapOv,nHinge)=>{
+    const inset=sel('cDoorStyle')==='inset', gap=(gapOv!==undefined&&gapOv!=='')?gapOv:num('cDoorGap');
     const made=[];
     const z0=rect.z0, z1=rect.z1, dh=r4(z1-z0-(inset?2*gap:0));
     const touchesL=Math.abs(rect.x0-T)<0.02, touchesR=Math.abs(rect.x1-(W-T))<0.02;
@@ -930,7 +976,7 @@ function buildCase(){
     spans.forEach(sp=>{ const nm = made.length||count===2 ? (sp.he==='L'?'DOOR L':'DOOR R') : 'DOOR';
       const dr=newPanel(nm,r4(sp.w),dh,T,r4(sp.w)+'" \u00d7 '+dh+'" \u00d7 '+T+'"  \u00b7  '+(sp.ov==='half'?'HALF':'FULL')+' overlay  \u00b7  view: INSIDE FACE, hinge edge at '+(sp.he==='L'?'X=0':'X=width')+', bottom at Y=0');
       orient(dr,'INSIDE FACE',sp.he==='L'?'HINGE EDGE':'LATCH EDGE',sp.he==='R'?'HINGE EDGE':'LATCH EDGE','BOTTOM','TOP');
-      dr.hingeEdge=sp.he; dr.overlay=sp.ov; dr.y0=r4(z0+(inset?gap:0)); dr.ys=F.hingeCups(dr);
+      dr.hingeEdge=sp.he; dr.overlay=sp.ov; dr.y0=r4(z0+(inset?gap:0)); dr.ys=F.hingeCups(dr,nHinge);
       const yy=inset?0:-T;
       dr.box={min:[sp.x,yy,dr.y0],max:[r4(sp.x+sp.w),r4(yy+T),r4(dr.y0+dh)]};
       dr.frame={o:[sp.x,0,dr.y0],ux:[1,0,0],uy:[0,0,1],ax:1,shown:r4(yy+T),opp:yy};
@@ -944,7 +990,7 @@ function buildCase(){
   $('cDoorOv').value = doors.length ? (doors.every(d=>d.overlay==='full')?'FULL overlay':'HALF overlay (shared divider)') : '—';
 
   /* a drawer stack built into any opening; the case-wide settings pass the whole front */
-  const makeDrawersIn=(rect,nb,nf)=>{
+  const makeDrawersIn=(rect,nb,nf,fhOv)=>{
     if(!(nb+nf)) return;
     const gp=num('drGap'), sg=num('drSideGap'), sl=num('drSlide'), dt=num('drT');
     const depBox=num('drSlideBox'), depFile=num('drSlideFile'), botT=num('drBotT');
@@ -952,7 +998,7 @@ function buildCase(){
     const inside=r4(backStyle==='full'?backY:D);
     const opening=r4(rect.x1-rect.x0), inW=r4(opening-2*sl), boxW=r4(inW-2*dt);
     const stack=[]; for(let i=0;i<nf;i++) stack.push('FILE'); for(let i=0;i<nb;i++) stack.push('BOX');
-    const listH=($('drHeights').value||'').split(',').map(t=>t.trim()).filter(Boolean)
+    const listH=((fhOv&&fhOv.trim())||$('drHeights').value||'').split(',').map(t=>t.trim()).filter(Boolean)
       .map(t=>{ const mm=/mm$/i.test(t), v=parseFloat(t); return isNaN(v)?null:(mm?r4(v/MM):v); }).filter(v=>v);
     const listB=($('drBoxHeights').value||'').split(',').map(t=>t.trim()).filter(Boolean)
       .map(t=>{ const mm=/mm$/i.test(t), v=parseFloat(t); return isNaN(v)?null:(mm?r4(v/MM):v); }).filter(v=>v);
@@ -1016,7 +1062,8 @@ function buildCase(){
       const yo = m.name.startsWith('SHELF') ? r4(((backStyle==='full'?backY:D))-m.dep)
                : m.name==='TOP' ? -Math.max(0,num('cTopFront')) : 0;   // a top that reaches past the front starts there   // shelves are pushed back to the back panel
       const md = m.name==='TOP' ? r4(m.dep+Math.max(0,num('cTopFront'))) : m.dep;
-      recvLine(p,'x',m.y0,T,j,[yo,yo+md],'min'); });   // stations run over the member's own depth   // stations run over the member's own depth, so they meet its edge holes
+      const jm3 = (m.name.startsWith('SHELF') && !on('shCam')) ? {...j,dowelsOnly:true,dowSp:Math.max(2,num('camDowSp'))} : j;
+      recvLine(p,'x',m.y0,T,jm3,[yo,yo+md],'min'); });   // stations run over the member's own depth   // stations run over the member's own depth, so they meet its edge holes
     if(backStyle==='full'&&sel('cBackFit')!=='over'){ recvLine(p,'y',backY,BT,j,[0,topY0],'max'); }   // back between the sides: its ends land on this face
     if(tk==='board') recvLine(p,'y',tkIn,T,j,[0,tkH],'max');   // kick board cams face the back
     if(backStyle==='groove') F.groove(p);
@@ -1066,19 +1113,19 @@ function buildCase(){
     if(sel('grWhere')==='BACK PANEL') F.grommet(b);
     b.box={min:[bx0,backY,lo],max:[bx0+bw,backY+BT,hi]};
     b.frame={o:[bx0+bw,0,lo],ux:[-1,0,0],uy:[0,0,1],ax:1,shown:backY+BT,opp:backY};   // viewed from the back, mirrored
-    const nParts=Math.max(1,Math.min(4,parseInt($('cBackParts').value)||1));
-    if(nParts>1){
-      /* split into equal vertical panels: each keeps the holes that fall inside it */
-      const pw=r4(bw/nParts);
-      for(let i=0;i<nParts;i++){
-        const x0=r4(i*pw), x1=r4((i+1)*pw);                                    // in the back's own drawing X
-        const q=newPanel('BACK PANEL '+(i+1),pw,bh,BT,pw+'" \u00d7 '+bh+'" \u00d7 '+BT+'"  \u00b7  view: BACK FACE, part '+(i+1)+' of '+nParts+', floor end at Y=0');
+    if(on('cBackSplit')){
+      /* two vertical panels; the seam sits on the centreline plus the offset */
+      const seam=Math.max(2,Math.min(bw-2, r4(bw/2 + (num('cBackOff')||0))));
+      const cuts=[[0,seam],[seam,bw]];
+      cuts.forEach(([x0,x1],i)=>{
+        const pw=r4(x1-x0);
+        const q=newPanel('BACK PANEL '+(i+1),pw,bh,BT,pw+'" \u00d7 '+bh+'" \u00d7 '+BT+'"  \u00b7  view: BACK FACE, part '+(i+1)+' of 2, floor end at Y=0');
         orient(q,'BACK FACE (cam nut face, hidden)','RIGHT END of case','LEFT END of case','FLOOR END','TOP');
         q.holes=b.holes.filter(h=>h.x>=x0-1e-6&&h.x<=x1+1e-6).map(h=>({...h,x:r4(h.x-x0)}));
         q.lines=b.lines.filter(l=>l.x1>=x0-1e-6&&l.x2<=x1+1e-6).map(l=>({...l,x1:r4(l.x1-x0),x2:r4(l.x2-x0)}));
         q.box={min:[r4(bx0+bw-x1),backY,lo],max:[r4(bx0+bw-x0),backY+BT,hi]};
         q.frame={o:[r4(bx0+bw-x0),0,lo],ux:[-1,0,0],uy:[0,0,1],ax:1,shown:backY+BT,opp:backY};
-        out.push(q); }
+        out.push(q); });
     } else out.push(b);
   } else if(backStyle==='groove'){
     const gz=num('gZ'), bw=r4(inner+2*gz-0.0625), bh=r4(sel('gWhere')==='all'?(H-bot)-2*T+2*gz-0.0625:H-bot-T);
@@ -1095,14 +1142,14 @@ function buildCase(){
   const jobs = compHasContent
     ? COMPARTMENTS.map(c=>{ const o=compOpts.get(c.key)||{};
         return {c,kind:compContent.get(c.key)||'none',rect:{x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1},
-                hinge:o.hinge,ov:o.ov,nb:o.nb,nf:o.nf}; })
+                hinge:o.hinge,ov:o.ov,nb:o.nb,nf:o.nf,gap:o.gap,nh:o.nh,fh:o.fh}; })
     : seeded;
   jobs.forEach(job=>{
     const c=job.c, kind=job.kind;
     if(kind==='none') return;
     const rect=job.rect;
     if(kind==='door'||kind==='doors2'){
-      const made=makeDoorsIn(rect,kind==='doors2'?2:1,job.hinge,job.ov);
+      const made=makeDoorsIn(rect,kind==='doors2'?2:1,job.hinge,job.ov,job.gap,job.nh);
       made.forEach(d=>{ out.push(d);
         const hx = d.hingeEdge==='L' ? d.box.min[0] : d.box.max[0];
         const carrier=out.filter(q=>(q.name.includes('SIDE')||q.name.startsWith('DIVIDER'))&&q.box&&q.box.min)
@@ -1111,7 +1158,7 @@ function buildCase(){
         if(carrier&&carrier.gap<2.2&&carrier.q.frame) F.hingePlates(carrier.q,d,d.ys); });
     } else if(kind==='drawers'){
       makeDrawersIn(rect, job.nb!==undefined?job.nb:(parseInt($('drBox').value)||0),
-                          job.nf!==undefined?job.nf:(parseInt($('drFile').value)||0));
+                          job.nf!==undefined?job.nf:(parseInt($('drFile').value)||0), job.fh);
     }
   });
   // ---- sized-only parts
@@ -1145,7 +1192,7 @@ function buildCase(){
           if(!host||!host.frame) return;
           const far=Math.abs(host.frame.shown-wx)>0.01;                        // the ladder goes on the face looking into this bay
           const zLo=host.box.min[2];
-          F.pins(host,[{y0:r4(c.z0-zLo-T),t:T},{y0:r4(c.z1-zLo),t:T}],zs.map(z=>r4(z-zLo)),far);
+          F.pins(host,[{y0:r4(c.z0-zLo-T),t:T},{y0:r4(c.z1-zLo),t:T}],zs.map(z=>r4(z-zLo)),far,compOpts.get(c.key));
         }); });
     });
   }
@@ -1568,6 +1615,69 @@ function buildHwPanel(){
   lib.querySelectorAll('[data-o]').forEach(i=>i.onchange=()=>{ HW_ORIGIN[i.dataset.o][i.dataset.f]=parseFloat(i.value)||0; build(); });
 }
 
+
+/* ---------- in-app documentation ---------- */
+const DOCS=[
+ ['SOURCE',[
+  ['MODEL NO.','Names the job. Every export - nest, .nc, .dae, PDF, project file - carries it.'],
+  ['PRESET','Loads a Gateway product: case sizes, materials, kick, contents. Resets the compartment list.'],
+  ['WIDTH / HEIGHT / DEPTH','Outside of the carcass. Faces and lapped backs may sit outside these.'],
+  ['STOCK THICKNESS','Case material. Drives every joint position and the cam bore depth.']]],
+ ['CARCASS',[
+  ['TOP','OVER SIDES caps the sides; BETWEEN SIDES lands inside them; NONE leaves it off.'],
+  ['TOP FIT','FLUSH keeps the top level with the sides; OVERHANG adds the per-end amount.'],
+  ['TOP FRONT','Extends the top forward, e.g. over drawer faces.'],
+  ['BOTTOM','BETWEEN SIDES for a normal case; NONE for a hutch that stands on a worksurface.'],
+  ['BACK PANEL','FULL STOCK is a structural back; GROOVE runs a thin panel in a groove; NONE omits it.'],
+  ['BACK EDGE','FLUSH sets the back level with the rear edges; INSET holds it forward by the inset amount.'],
+  ['BACK FIT','BETWEEN THE SIDES, or OVER them so the back edge shows around the sides and top.'],
+  ['SPLIT BACK IN TWO','Two vertical back panels instead of one; holes divide with them.'],
+  ['SEAM OFFSET FROM CENTRELINE','Moves the joint between the two back panels off centre.'],
+  ['CAM LOCK DIVIDERS / FIXED SHELVES','On, they cam lock like the rest of the case. Off, they are dowelled only.'],
+  ['TOE KICK','KICK BOARD adds a recessed board; NOTCH cuts the sides; NONE runs the sides to the floor.'],
+  ['DIVIDER 1 / 2','Each divider has its own block: X position, SPAN (full, up to a shelf, shelf to top, custom), and the shelf it meets.']]],
+ ['COMPARTMENTS',[
+  ['WHAT THEY ARE','Openings derived from the carcass after the dividers are built. Ids are positional, so an assignment stays with its opening.'],
+  ['SHELF COUNT','Adjustable shelves in that opening, evenly spaced. Pin ladders are drilled only on the faces that carry them.'],
+  ['PIN ROWS','FOLLOW GLOBAL uses the HARDWARE setting; FULL LADDER drills the whole height; 3 or 5 drills that many rows each side of every shelf.'],
+  ['PIN SPACING / DIAMETER','Override the global pitch and hole size for this opening only. Blank follows HARDWARE.'],
+  ['CONTENT','OPEN, 1 DOOR, 2 DOORS or DRAWERS - built into that opening.'],
+  ['HINGE SIDE','Which vertical the door hangs on. Cups, plates and hardware follow it.'],
+  ['OVERLAY','AUTOMATIC gives FULL on an outer side and HALF on a divider. Override per door.'],
+  ['HINGES PER DOOR','AUTOMATIC scales with door height (2 to 36", 3 to 60", 4 to 80", else 5).'],
+  ['REVEAL','Gap around this door only. Blank follows the DOORS section.'],
+  ['BOX / FILE DRAWERS','Counts for this opening. Files stack at the bottom.'],
+  ['FACE HEIGHTS','Comma list, bottom to top, in inches or mm (e.g. 318mm, 184mm). Blank follows the DRAWERS section.']]],
+ ['DOORS',[
+  ['STYLE','OVERLAY sits in front of the case; INSET sits inside it.'],
+  ['INSET CLEARANCE','With inset doors on a divider, the divider is set back by the door thickness plus this amount so the hinge can pull the door flush.'],
+  ['REVEAL','Default gap around doors; a compartment can override it.'],
+  ['DOOR WIDTH','FULL OPENING, or CUSTOM which places a divider at the door edge.']]],
+ ['DRAWERS',[
+  ['FACE HEIGHTS / BOX HEIGHTS','Comma lists, bottom to top. Blank uses the type heights.'],
+  ['STACK FROM','TOP OF THE CASE covers the top panel; UNDER THE TOP PANEL tucks below it; BOTTOM UP starts at the given height.'],
+  ['SLIDE CLEARANCE','Per side, between the opening and the drawer box. 13 mm on the Gateway drawings.'],
+  ['SLOT BOTTOM','Grooves the box sides and front/back for the bottom; off captures it underneath.']]],
+ ['HARDWARE',[
+  ['CAM PIN LENGTH B','The usable pin: the cam centre sits exactly that far in from the butting edge.'],
+  ['CENTRELINE','Distance from the cam face to the pin and dowel centreline. Drives the cam bore depth.'],
+  ['CUP K','Cup centre from the door edge. Comes from the hinge you use - 28 mm on the supplied model.'],
+  ['MODEL LIBRARY','Upload an OBJ per part, download what is loaded, and nudge its origin. SAVE LIBRARY writes sizes, models and offsets to one .casehw file.']]],
+ ['OUTPUT',[
+  ['NEST (DXF)','Sheet layouts - one file for the case, one for drawer box parts, one for bottoms, each on its own stock.'],
+  ['EDGE FILES (.nc)','CNC #1 programs: edge holes plus 3/8" and 5/16" face holes. Nothing over 1/2" is programmed; anything left is listed in the file header.'],
+  ['PANEL (DXF)','The panel on screen, at finished size with its holes.'],
+  ['SKETCHUP (.dae)','The assembled case with real hardware geometry, named components, inch units.'],
+  ['ASSEMBLY (PDF)','Hardware table, parts list and step drawings.'],
+  ['PROTOTYPE','Every part true to size with no edgeband, at one bare thickness. Drawer box material is unaffected.']]]
+];
+function renderDocs(){
+  $('docsBody').innerHTML = DOCS.map(([sec,rows])=>'<h3>'+sec+'</h3><table>'
+    + rows.map(([k,v])=>'<tr><td>'+k+'</td><td>'+v+'</td></tr>').join('') + '</table>').join('');
+}
+$('docsBtn').onclick=()=>{ renderDocs(); $('docsPanel').hidden=false; };
+$('closeDocs').onclick=()=>{ $('docsPanel').hidden=true; };
+$('docsPanel').addEventListener('click',e=>{ if(e.target===$('docsPanel')) $('closeDocs').click(); });
 /* ---------- the whole hardware set as one file: sizes, models, offsets ---------- */
 const HW_FORMAT='CASEMAKER_HARDWARE', HW_VERSION=1;
 const HW_FIELD_IDS=()=>[...$('hwSpecs').querySelectorAll('input[id],select[id]')].map(el=>el.id);
