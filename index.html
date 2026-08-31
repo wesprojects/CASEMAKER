@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.42 -->
+<!-- BUILD_VERSION: 2026-08-31.43 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -54,6 +54,12 @@ input:focus,select:focus{outline:2px solid var(--amber);border-color:transparent
 .modal{position:fixed !important;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50}
 .modal[hidden]{display:none}
 .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;max-width:min(96vw,760px);max-height:92vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.cfglayout{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.cfghead{font-size:10px;letter-spacing:.12em;color:var(--mute);margin-bottom:6px}
+#cfgDiagram svg{width:100%;height:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+#cfgDiagram .bay{cursor:pointer}
+#cfgDetail{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+#cfgDetail .compblock{border-color:var(--amber)}
 .docs{font-size:11px;line-height:1.55}
 .docs h3{font-size:11px;letter-spacing:.1em;margin:14px 0 4px;color:var(--amber)}
 .docs table{width:100%;border-collapse:collapse;margin:4px 0 10px}
@@ -266,6 +272,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <summary>COMPARTMENTS</summary>
       <div class="row">
         <label>COMPARTMENTS — SHELVES · DOORS · DRAWERS</label>
+        <button id="compBtn" type="button">OPEN CONFIGURATOR</button>
       </div>
       <div id="compList" style="margin:4px 0 10px"></div>
       <div class="row">
@@ -535,6 +542,17 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
   </section>
 </div>
 </main>
+<div id="compPanel" class="modal" hidden>
+  <div class="modalbox" style="max-width:min(97vw,1240px)">
+    <div class="modalhead"><h2 style="margin:0">COMPARTMENT CONFIGURATOR</h2>
+      <div class="tabs" style="margin:0"><button id="closeComp">CLOSE</button></div></div>
+    <div class="cfglayout">
+      <div><div class="cfghead">PLAN</div><div id="cfgDiagram"></div></div>
+      <div><div class="cfghead">ISO</div><div id="cfgIso"></div></div>
+    </div>
+    <div id="cfgDetail"></div>
+  </div>
+</div>
 <div id="docsPanel" class="modal" hidden>
   <div class="modalbox" style="max-width:min(96vw,980px)">
     <div class="modalhead"><h2 style="margin:0">DOCUMENTATION</h2>
@@ -565,7 +583,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.42";
+const BUILD_VERSION = "2026-08-31.43";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -802,15 +820,22 @@ function deriveCompartments(o){
   return res;
 }
 let compSig='';
-function renderCompartments(){
-  const host=$('compList'); if(!host) return;
-  /* only rebuild when the list itself changes: replacing it under a focused field kills the edit */
-  const sig=JSON.stringify([COMPARTMENTS.map(c=>[c.key,c.label,c.w,c.h]),
-    COMPARTMENTS.map(c=>[compAssign.get(c.key)||0, compContent.get(c.key)||'none'])]);
-  if(sig===compSig) return;
-  compSig=sig;
-  if(!COMPARTMENTS.length){ host.innerHTML='<p class="hint">No compartments — the case needs a bottom and a top.</p>'; return; }
-  host.innerHTML=COMPARTMENTS.map(c=>{
+function wireCompHandlers(host, after){
+  host.querySelectorAll('[data-comp]').forEach(el=>el.onchange=()=>{ compAssign.set(el.dataset.comp,parseInt(el.value)||0); build(); if(after) after(); });
+  host.querySelectorAll('[data-kind]').forEach(el=>el.onchange=()=>{ compContent.set(el.dataset.kind,el.value); build(); if(after) after(); });
+  host.querySelectorAll('[data-hinge]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.hinge).hinge=el.value; build(); if(after) after(); });
+  [['rows','rows'],['ov','ov'],['nh','nh'],['fh','fh']].forEach(([attr,prop])=>
+    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; build(); if(after) after(); }));
+  [['sub','sub'],['gro','gro']].forEach(([attr,prop])=>
+    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; compSig=''; build(); if(after) after(); if(after) after(); }));
+  [['pitch','pitch'],['pdia','pdia'],['gap','gap'],['subx','subx'],['subz','subz'],['groy','groy']].forEach(([attr,prop])=>
+    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value===''?undefined:parseFloat(el.value); build(); if(after) after(); }));
+  host.querySelectorAll('[data-ov]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.ov).ov=el.value; build(); if(after) after(); });
+  host.querySelectorAll('[data-nb]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nb).nb=parseInt(el.value)||0; build(); if(after) after(); });
+  host.querySelectorAll('[data-nf]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nf).nf=parseInt(el.value)||0; build(); if(after) after(); });
+}
+function compBlockHTML(c){
+
     const n=compAssign.get(c.key)||0, k=compContent.get(c.key)||'none', o=optsFor(c.key);
     const sel_=(name,val,list)=>'<select data-'+name+'="'+c.key+'">'+list.map(([v,t])=>
       '<option value="'+v+'"'+(String(v)===String(val)?' selected':'')+'>'+t+'</option>').join('')+'</select>';
@@ -843,19 +868,18 @@ function renderCompartments(){
       +sel_('comp',n,[0,1,2,3,4,5,6].map(v=>[v,v?v+' SHELF'+(v>1?'S':''):'NO SHELVES']))
       +sel_('kind',k,[['none','OPEN'],['door','1 DOOR'],['doors2','2 DOORS'],['drawers','DRAWERS']])
       +'</div>'+shelfCfg+doorCfg+drawerCfg+subCfg+'</div>';
-  }).join('');
-  host.querySelectorAll('[data-comp]').forEach(el=>el.onchange=()=>{ compAssign.set(el.dataset.comp,parseInt(el.value)||0); build(); });
-  host.querySelectorAll('[data-kind]').forEach(el=>el.onchange=()=>{ compContent.set(el.dataset.kind,el.value); build(); });
-  host.querySelectorAll('[data-hinge]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.hinge).hinge=el.value; build(); });
-  [['rows','rows'],['ov','ov'],['nh','nh'],['fh','fh']].forEach(([attr,prop])=>
-    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; build(); }));
-  [['sub','sub'],['gro','gro']].forEach(([attr,prop])=>
-    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; compSig=''; renderCompartments(); build(); }));
-  [['pitch','pitch'],['pdia','pdia'],['gap','gap'],['subx','subx'],['subz','subz'],['groy','groy']].forEach(([attr,prop])=>
-    host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value===''?undefined:parseFloat(el.value); build(); }));
-  host.querySelectorAll('[data-ov]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.ov).ov=el.value; build(); });
-  host.querySelectorAll('[data-nb]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nb).nb=parseInt(el.value)||0; build(); });
-  host.querySelectorAll('[data-nf]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nf).nf=parseInt(el.value)||0; build(); });
+}
+function renderCompartments(){
+  const host=$('compList'); if(!host) return;
+  /* only rebuild when the list itself changes: replacing it under a focused field kills the edit */
+  const sig=JSON.stringify([COMPARTMENTS.map(c=>[c.key,c.label,c.w,c.h]),
+    COMPARTMENTS.map(c=>[compAssign.get(c.key)||0, compContent.get(c.key)||'none'])]);
+  if(sig===compSig) return;
+  compSig=sig;
+  if(!COMPARTMENTS.length){ host.innerHTML='<p class="hint">No compartments — the case needs a bottom and a top.</p>'; return; }
+  host.innerHTML=COMPARTMENTS.map(c=>compBlockHTML(c)).join('');
+
+  wireCompHandlers(host, renderCompartments);
 }
 function buildCase(){
   /* prototype mode swaps the case stock for whatever bare sheet is on hand; drawer boxes keep their own material */
@@ -1715,6 +1739,68 @@ function buildHwPanel(){
 }
 
 
+
+/* ---------- pop-out compartment configurator ---------- */
+let compSel=null;
+function cfgDiagram(){
+  const host=$('cfgDiagram'); if(!host) return;
+  if(!COMPARTMENTS.length){ host.innerHTML='<p class="hint">NO COMPARTMENTS</p>'; return; }
+  const W=num('cW'), H=num('cH'), pad=14, sc=Math.min(560/W, 460/H), w=W*sc+pad*2, h=H*sc+pad*2;
+  const X=x=>pad+x*sc, Y=z=>pad+(H-z)*sc;
+  const parts=[];
+  parts.push('<rect x="'+pad+'" y="'+pad+'" width="'+(W*sc)+'" height="'+(H*sc)+'" fill="none" stroke="var(--line)" stroke-width="2"/>');
+  COMPARTMENTS.forEach(c=>{
+    const k=compContent.get(c.key)||'none', n=compAssign.get(c.key)||0, o=compOpts.get(c.key)||{};
+    const fill = k==='drawers' ? 'rgba(245,165,36,.20)' : (k==='door'||k==='doors2') ? 'rgba(120,170,255,.18)'
+               : n>0 ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.03)';
+    const on = compSel===c.key;
+    parts.push('<g class="bay" data-bay="'+c.key+'">'
+      +'<rect x="'+X(c.x0)+'" y="'+Y(c.z1)+'" width="'+((c.x1-c.x0)*sc)+'" height="'+((c.z1-c.z0)*sc)+'" '
+      +'fill="'+fill+'" stroke="'+(on?'var(--amber)':'var(--line)')+'" stroke-width="'+(on?2.5:1)+'"/>'
+      +'<text x="'+(X(c.x0)+6)+'" y="'+(Y(c.z1)+14)+'" font-size="10" fill="'+(on?'var(--amber)':'var(--mute)')+'">'+c.id+'</text>');
+    /* shelves */
+    for(let i=1;i<=n;i++){ const z=c.z0+(c.z1-c.z0)*i/(n+1);
+      parts.push('<line x1="'+X(c.x0)+'" y1="'+Y(z)+'" x2="'+X(c.x1)+'" y2="'+Y(z)+'" stroke="var(--mute)" stroke-width="1.5"/>'); }
+    /* subdividers */
+    if(o.sub&&o.sub!=='none'){
+      const mx=(c.x0+c.x1)/2+(parseFloat(o.subx)||0), mz=(c.z0+c.z1)/2+(parseFloat(o.subz)||0);
+      if(o.sub==='vert'||o.sub==='cross') parts.push('<line x1="'+X(mx)+'" y1="'+Y(c.z0)+'" x2="'+X(mx)+'" y2="'+Y(c.z1)+'" stroke="var(--amber)" stroke-width="2"/>');
+      if(o.sub==='horiz'||o.sub==='cross') parts.push('<line x1="'+X(c.x0)+'" y1="'+Y(mz)+'" x2="'+X(c.x1)+'" y2="'+Y(mz)+'" stroke="var(--amber)" stroke-width="2"/>');
+    }
+    /* grommet */
+    if(o.gro&&o.gro!=='none'){ const gx = o.gro==='left'?c.x0+4 : o.gro==='right'?c.x1-4 : (c.x0+c.x1)/2;
+      parts.push('<circle cx="'+X(gx)+'" cy="'+(Y(c.z1)-5)+'" r="4" fill="none" stroke="#ff5a5a" stroke-width="1.5"/>'); }
+    /* doors and drawers */
+    if(k==='door'||k==='doors2'){ const hx = (o.hinge==='R')?c.x1:c.x0;
+      parts.push('<line x1="'+X(hx)+'" y1="'+Y(c.z0)+'" x2="'+X(hx)+'" y2="'+Y(c.z1)+'" stroke="#78aaff" stroke-width="3"/>'); }
+    if(k==='drawers'){ const tot=(o.nb||0)+(o.nf||0);
+      for(let i=1;i<=tot;i++){ const z=c.z0+(c.z1-c.z0)*i/(tot+1);
+        parts.push('<line x1="'+(X(c.x0)+4)+'" y1="'+Y(z)+'" x2="'+(X(c.x1)-4)+'" y2="'+Y(z)+'" stroke="var(--amber)" stroke-width="1.5"/>'); } }
+    parts.push('</g>');
+  });
+  host.innerHTML='<svg viewBox="0 0 '+w+' '+h+'">'+parts.join('')+'</svg>';
+  host.querySelectorAll('[data-bay]').forEach(g=>g.onclick=()=>{ compSel=g.dataset.bay; cfgRender(); });
+}
+function cfgDetail(){
+  const host=$('cfgDetail'); if(!host) return;
+  const c=COMPARTMENTS.find(q=>q.key===compSel)||COMPARTMENTS[0];
+  if(!c){ host.innerHTML=''; return; }
+  compSel=c.key;
+  host.innerHTML=compBlockHTML(c);
+  wireCompHandlers(host, cfgRender);
+}
+function cfgIso(){
+  const host=$('cfgIso'); if(!host) return;
+  host.innerHTML='';
+  if(!iso3dBoxes.length) return;
+  host.appendChild(isoCanvas(iso3dBoxes,{w:520,h:430,ss:2,dark:root.dataset.theme==='dark',finish:finish(),
+    yaw:-24,el:14,zoom:1,holes:holes3D()}));
+}
+function cfgRender(){ cfgDiagram(); cfgDetail(); cfgIso(); }
+$('compBtn').onclick=()=>{ if(!compSel&&COMPARTMENTS.length) compSel=COMPARTMENTS[0].key;
+  $('compPanel').hidden=false; cfgRender(); };
+$('closeComp').onclick=()=>{ $('compPanel').hidden=true; };
+$('compPanel').addEventListener('click',e=>{ if(e.target===$('compPanel')) $('closeComp').click(); });
 /* ---------- in-app documentation ---------- */
 const DOCS=[
  ['SOURCE',[
