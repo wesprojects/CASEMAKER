@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.50 -->
+<!-- BUILD_VERSION: 2026-08-31.60 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -589,7 +589,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.50";
+const BUILD_VERSION = "2026-08-31.60";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -777,7 +777,7 @@ function seedCompartments(adj){
 /* The DOORS and DRAWERS sections describe the case as a whole. Turn that into compartment work
    at build time, keeping their own vertical extents so a preset comes out exactly as drawn. */
 function seedContent(o){
-  const {nd,nb,nf,where,doorZ,stackZ}=o, jobs=[];
+  const {nd,nb,nf,where,doorZ,stackZ,dividerSpansAny}=o, jobs=[];
   if(!COMPARTMENTS.length) return jobs;
   const row=COMPARTMENTS.filter(c=>c.z0===COMPARTMENTS[0].z0);                 // the lowest band, left to right
   const pick=side=> side==='right' ? row[row.length-1] : row[0];
@@ -788,11 +788,13 @@ function seedContent(o){
            jobs.push({c,kind:nd===2?'doors2':'door',rect:{x0:c.x0,x1:c.x1,...doorZ},hinge:sel('hgSide')}); }
   }
   if(nb+nf>0){ const c = where==='full' ? row[0] : pick(where);
-    const x1 = where==='full' && row.length>1 ? row[row.length-1].x1 : c.x1;
+    /* 'full width' only spans the case when nothing divides it */
+    const x1 = (where==='full' && row.length>1 && !dividerSpansAny) ? row[row.length-1].x1 : c.x1;
     jobs.push({c,kind:'drawers',rect:{x0:c.x0,x1,...stackZ},nb,nf}); }
   return jobs;
 }
-const compKey=c=>Math.round(c.x0*16)+'_'+Math.round(c.z0*16);
+const compKey=c=>Math.round(c.x0*16)+'_'+Math.round(c.z0*16)
+  + (c.child?'_'+Math.round(c.w*16)+'_'+Math.round(c.h*16):'');   // children share an origin with their parent
 function deriveCompartments(o){
   const {T,W,bot,topY0,hasBottom,topStyle,members,dividers,depth}=o, res=[];
   const floor=hasBottom?r4(bot+T):0;
@@ -813,6 +815,9 @@ function deriveCompartments(o){
       res.push({x0,x1,z0,z1,w:r4(x1-x0),h:r4(z1-z0),d:depth});
     }
   }
+  return labelCompartments(res);
+}
+function labelCompartments(res){
   res.sort((a,b)=>a.z0-b.z0||a.x0-b.x0);
   const rows=[...new Set(res.map(c=>c.z0))].sort((a,b)=>a-b);
   const rowName=['bottom','lower','middle','upper','top'];
@@ -824,6 +829,33 @@ function deriveCompartments(o){
     c.key=compKey(c);
   });
   return res;
+}
+/* A subdivided opening becomes real compartments: the pieces are boundaries, and each side of
+   them is configurable in its own right. Repeats so a split piece can itself be split. */
+let SPLITS=[];
+function expandCompartments(base,T){
+  SPLITS=[]; let list=base;
+  for(let depth=0; depth<3; depth++){
+    const next=[]; let changed=false;
+    list.forEach(c=>{
+      const o=compOpts.get(c.key)||{}, sub=(o.sub&&o.sub!=='none')?o.sub:null;
+      if(!sub){ next.push(c); return; }
+      changed=true;
+      const mx=r4((c.x0+c.x1)/2+(parseFloat(o.subx)||0)), mz=r4((c.z0+c.z1)/2+(parseFloat(o.subz)||0));
+      SPLITS.push({x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1,sub,mx,mz,d:c.d});
+      const kids=[];
+      const xs = (sub==='vert'||sub==='cross') ? [[c.x0,r4(mx-T/2)],[r4(mx+T/2),c.x1]] : [[c.x0,c.x1]];
+      const zs = (sub==='horiz'||sub==='cross') ? [[c.z0,r4(mz-T/2)],[r4(mz+T/2),c.z1]] : [[c.z0,c.z1]];
+      xs.forEach(([x0,x1])=>zs.forEach(([z0,z1])=>{
+        if(x1-x0<1||z1-z0<1) return;
+        const kid={x0,x1,z0,z1,w:r4(x1-x0),h:r4(z1-z0),d:c.d,child:true};
+        kid.key=compKey(kid);                                                  // key it now: the next pass reads its options
+        kids.push(kid); }));
+      kids.forEach(k=>next.push(k));
+    });
+    list=next; if(!changed) break;
+  }
+  return labelCompartments(list);
 }
 let compSig='';
 function wireCompHandlers(host, after){
@@ -961,11 +993,19 @@ function buildCase(){
     const dv=newPanel(label,dh,dep,T,`${dh}" × ${dep}" × ${T}"  ·  view: LEFT FACE, floor end at Y=0${ends?`, ends butt into the ${[loHost,hiHost].filter(Boolean).join(' and ')}`:', ends are free'}`);
     orient(dv,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
     /* only set a divider back when an inset door will actually hang on it: a small hinge-adjustment clearance */
+    /* a divider is only set back when an INSET door actually hinges on it - a door hung on a
+       side wall leaves every divider at full depth */
     const globalInset = sel('cDoorStyle')==='inset';
-    const anyInset = [...compContent.entries()].some(([k2,v])=>{ if(v!=='door'&&v!=='doors2') return false;
-      const st=(compOpts.get(k2)||{}).style; return st==='inset' || (st!=='overlay' && globalInset); })
-      || (globalInset && parseInt(sel('cDoors'))>0);
-    const setBackFront = anyInset ? r4(T+num('cDoorSetback')) : 0;   // door thickness plus the hinge adjustment clearance   // door thickness plus the hinge adjustment clearance
+    const insetHingeX=[];
+    COMPARTMENTS.forEach(c=>{ const kind=compContent.get(c.key);
+      if(kind!=='door'&&kind!=='doors2') return;
+      const o=compOpts.get(c.key)||{};
+      const inset = o.style==='inset' || (o.style!=='overlay' && globalInset);
+      if(!inset) return;
+      if(kind==='doors2') insetHingeX.push(c.x0,c.x1);
+      else insetHingeX.push(o.hinge==='R' ? c.x1 : c.x0); });
+    const onThis = insetHingeX.some(x=>Math.abs(x-dx)<0.03||Math.abs(x-r4(dx+T))<0.03);
+    const setBackFront = onThis ? r4(T+num('cDoorSetback')) : 0;
     const spanFor=hn=>{ const host=out.find(q=>q.name===hn);
       const w = (!host||!host.frame) ? [bx,dep-bx]
         : [r4(Math.max(bx,host.frame.o[1]+bx)), r4(Math.min(dep-bx,host.frame.o[1]+host.d-bx))];
@@ -1001,11 +1041,17 @@ function buildCase(){
   if(divL!==null) makeDivider('DIVIDER',divL,sel('dvSpan'),parseInt($('dvShelf').value)||1,num('dvZ0'),num('dvZ1'),true);
   if(on('dv2On') && hasBottom && topStyle!=='none'){                            // a second divider, its own height and position
     const m2=parseFloat($('dv2X').value);
-    let d2 = isNaN(m2) ? (divL!==null?divL:r4(T+(inner-T)/2)) : r4(T+m2);
+    let d2;
+    if(!isNaN(m2)) d2=r4(T+m2);
+    else if(divL!==null){                                                      // no position given: split the RIGHT bay
+      const rightW=r4(W-T-(divL+T));                                           // bay shelves and seeded drawers live in the left bay
+      d2 = rightW>4 ? r4(divL+T+rightW/2-T/2) : r4(T+(divL-T)/2);
+    } else d2=r4(T+(inner-T)/2);
     d2 = Math.max(T+2, Math.min(W-2*T-2, d2));
+    if(divL!==null && Math.abs(d2-divL)<T+0.5) d2 = r4(divL + T + 2);          // never overlap the first divider
     makeDivider('DIVIDER 2',d2,sel('dv2Span'),parseInt($('dv2Shelf').value)||1,num('dv2Z0'),num('dv2Z1'),false);
   }
-  COMPARTMENTS = deriveCompartments({T,W,bot,topY0,hasBottom,topStyle,members,dividers:dividerSpans,depth:r4(backStyle==='full'?backY:D)});
+  COMPARTMENTS = expandCompartments(deriveCompartments({T,W,bot,topY0,hasBottom,topStyle,members,dividers:dividerSpans,depth:r4(backStyle==='full'?backY:D)}), T);
   { const live=new Set(COMPARTMENTS.map(c=>c.key));                            // drop assignments whose opening is gone
     [...compAssign.keys()].forEach(k=>{ if(!live.has(k)) compAssign.delete(k); });
     [...compContent.keys()].forEach(k=>{ if(!live.has(k)) compContent.delete(k); }); }
@@ -1205,7 +1251,8 @@ function buildCase(){
         const pw=r4(x1-x0);
         const q=newPanel('BACK PANEL '+(i+1),pw,bh,BT,pw+'" \u00d7 '+bh+'" \u00d7 '+BT+'"  \u00b7  view: BACK FACE, part '+(i+1)+' of 2, floor end at Y=0');
         orient(q,'BACK FACE (cam nut face, hidden)','RIGHT END of case','LEFT END of case','FLOOR END','TOP');
-        q.holes=b.holes.filter(h=>h.x>=x0-1e-6&&h.x<=x1+1e-6).map(h=>({...h,x:r4(h.x-x0)}));
+        const last = i===cuts.length-1;
+        q.holes=b.holes.filter(h=>h.x>=x0-1e-6 && (last ? h.x<=x1+1e-6 : h.x<x1-1e-6)).map(h=>({...h,x:r4(h.x-x0)}));
         q.lines=b.lines.filter(l=>l.x1>=x0-1e-6&&l.x2<=x1+1e-6).map(l=>({...l,x1:r4(l.x1-x0),x2:r4(l.x2-x0)}));
         q.box={min:[r4(bx0+bw-x1),backY,lo],max:[r4(bx0+bw-x0),backY+BT,hi]};
         q.frame={o:[r4(bx0+bw-x0),0,lo],ux:[-1,0,0],uy:[0,0,1],ax:1,shown:backY+BT,opp:backY};
@@ -1220,7 +1267,7 @@ function buildCase(){
   /* per-compartment contents: doors and drawer stacks assigned from the SHELVES list */
   const seeded = compHasContent ? [] : seedContent({
     nd:parseInt(sel('cDoors')), nb:parseInt($('drBox').value)||0, nf:parseInt($('drFile').value)||0,
-    where:sel('drWhere'),
+    where:sel('drWhere'), dividerSpansAny:dividerSpans.length>0,
     doorZ:{z0:num('cDoorY0'), z1:num('cDoorY1')},                              // the DOORS section sets its own height
     stackZ:{z0:r4(bot), z1:H} });                                              // the stack hangs off the case, not the opening
   const jobs = compHasContent
@@ -1228,7 +1275,44 @@ function buildCase(){
         return {c,kind:compContent.get(c.key)||'none',rect:{x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1},
                 hinge:o.hinge,ov:o.ov,nb:o.nb,nf:o.nf,gap:o.gap,nh:o.nh,fh:o.fh,style:o.style}; })
     : seeded;
-  /* subdividers and grommets, per compartment */
+  /* the subdivider pieces themselves, one set per split */
+  {
+    const dep=r4(backStyle==='full'?backY:D);
+    const back=out.find(q=>q.name.startsWith('BACK PANEL'));
+    const dxOfB=wx=>back&&back.frame?r4(back.frame.o[0]-wx):0;
+    const lo=back?back.box.min[2]:0;
+    const camBack=(piece,axis,pos,range)=>{
+      if(!back||!back.frame||backStyle!=='full') return;
+      buttEdge(piece,'B',j,[bx,r4(piece.w)-bx]);
+      const n0=back.holes.length;
+      recvLine(back,axis,pos,T,{...j,dowMirror:axis==='y'},range,axis==='y'?'min':'max');
+      back.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });
+    };
+    let vi=0, hi=0;
+    SPLITS.forEach(sp=>{
+      if(sp.sub==='vert'||sp.sub==='cross'){
+        const h=r4(sp.z1-sp.z0), nm='SUB DIVIDER'+(SPLITS.filter(q=>q.sub!=='horiz').length>1?' '+(++vi):'');
+        const v=newPanel(nm,h,dep,T,h+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  drops in, cams into the back only');
+        orient(v,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
+        v.box={min:[r4(sp.mx-T/2),0,sp.z0],max:[r4(sp.mx+T/2),dep,sp.z1]};
+        v.frame={o:[r4(sp.mx-T/2),0,sp.z0],ux:[0,0,1],uy:[0,1,0],ax:0,shown:r4(sp.mx-T/2),opp:r4(sp.mx+T/2)};
+        camBack(v,'x',dxOfB(r4(sp.mx+T/2)),[r4(sp.z0-lo)+bx, r4(sp.z1-lo)-bx]);
+        out.push(v);
+      }
+      if(sp.sub==='horiz'||sp.sub==='cross'){
+        const segs = sp.sub==='cross' ? [[sp.x0,r4(sp.mx-T/2)],[r4(sp.mx+T/2),sp.x1]] : [[sp.x0,sp.x1]];
+        segs.forEach(seg=>{ const w=r4(seg[1]-seg[0]); if(w<1) return;
+          const nm='SUB SHELF'+(SPLITS.reduce((n,q)=>n+(q.sub==='horiz'?1:q.sub==='cross'?2:0),0)>1?' '+(++hi):'');
+          const sh=newPanel(nm,w,dep,T,w+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  drops in, cams into the back only');
+          orient(sh,'TOP FACE','LEFT END','RIGHT END','FRONT','BACK');
+          sh.box={min:[seg[0],0,r4(sp.mz-T/2)],max:[seg[1],dep,r4(sp.mz+T/2)]};
+          sh.frame={o:[seg[0],0,r4(sp.mz-T/2)],ux:[1,0,0],uy:[0,1,0],ax:2,shown:r4(sp.mz-T/2),opp:r4(sp.mz+T/2)};
+          camBack(sh,'y',r4(sp.mz-T/2-lo),[dxOfB(r4(seg[1]-bx)), dxOfB(r4(seg[0]+bx))]);
+          out.push(sh); });
+      }
+    });
+  }
+  /* grommets, per compartment */
   COMPARTMENTS.forEach(c=>{
     const o=compOpts.get(c.key); if(!o) return;
     const dep=r4(backStyle==='full'?backY:D);
@@ -1243,29 +1327,6 @@ function buildCase(){
       recvLine(back,axis,pos,T,jbm,range,axis==='y'?'min':'max');
       back.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });
     };
-    if(o.sub&&o.sub!=='none'){
-      const mx=r4((c.x0+c.x1)/2 + (parseFloat(o.subx)||0)), mz=r4((c.z0+c.z1)/2 + (parseFloat(o.subz)||0));
-      if(o.sub==='vert'||o.sub==='cross'){
-        const h=r4(c.z1-c.z0);
-        const v=newPanel('SUB DIVIDER',h,dep,T,h+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  drops into '+c.id+', cams into the back only');
-        orient(v,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
-        v.box={min:[r4(mx-T/2),0,c.z0],max:[r4(mx+T/2),dep,c.z1]};
-        v.frame={o:[r4(mx-T/2),0,c.z0],ux:[0,0,1],uy:[0,1,0],ax:0,shown:r4(mx-T/2),opp:r4(mx+T/2)};
-        camBack(v,'x',dxOfB(r4(mx+T/2)),[r4(c.z0-lo)+bx, r4(c.z1-lo)-bx]);
-        out.push(v);
-      }
-      if(o.sub==='horiz'||o.sub==='cross'){
-        const segs = o.sub==='cross' ? [[c.x0,r4(mx-T/2)],[r4(mx+T/2),c.x1]] : [[c.x0,c.x1]];
-        segs.forEach((seg,i)=>{ const w=r4(seg[1]-seg[0]); if(w<1) return;
-          const nm = o.sub==='cross' ? 'SUB SHELF '+(i+1) : 'SUB SHELF';
-          const sh=newPanel(nm,w,dep,T,w+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  drops into '+c.id+', cams into the back only');
-          orient(sh,'TOP FACE','LEFT END','RIGHT END','FRONT','BACK');
-          sh.box={min:[seg[0],0,r4(mz-T/2)],max:[seg[1],dep,r4(mz+T/2)]};
-          sh.frame={o:[seg[0],0,r4(mz-T/2)],ux:[1,0,0],uy:[0,1,0],ax:2,shown:r4(mz-T/2),opp:r4(mz+T/2)};
-          camBack(sh,'y',r4(mz-T/2-lo),[dxOfB(r4(seg[1]-bx)), dxOfB(r4(seg[0]+bx))]);   // measured from the piece's underside
-          out.push(sh); });
-      }
-    }
     if(o.gro&&o.gro!=='none'){
       /* the grommet goes in whatever forms this opening's ceiling */
       const ceil=out.find(q=>q.box&&q.box.min&&Math.abs(q.box.min[2]-c.z1)<0.02&&
@@ -1529,9 +1590,18 @@ function hardware(){
 }
 
 /* ================= build / render ================= */
+let rebuilding=false;
 function build(){
   syncVisibility();
+  const sigBefore=COMPARTMENTS.map(c=>c.key).join('|');
   try{ panels=mode==='case'?buildCase():mode==='obj'?buildModel():buildImported(); }catch(err){ console.error(err); panels=[]; }
+  /* the divider setback reads the compartment list, which this pass may have just changed:
+     settle it with one more pass, guarded so it can never loop */
+  if(!rebuilding && mode==='case' && COMPARTMENTS.map(c=>c.key).join('|')!==sigBefore){
+    rebuilding=true;
+    try{ panels=buildCase(); }catch(err){ console.error(err); }
+    rebuilding=false;
+  }
   trueViews(panels);   // make every drawing a real view of the face that lies up — mirrored parts come out mirrored
   // edge banding: finished size entered → cut size = finished + (premill − band) per banded edge
   const ebW=sel('ebWhere'), ebt=parseFloat(sel('ebT')), pre=num('ebPre'), topC=sel('ebTop')==='contrast', topT=parseFloat(sel('ebTopT'));
@@ -2177,7 +2247,7 @@ function nestDXF(which){
   return {dxf:o,sheets:sheets.length};
 }
 /* ================= CASEMAKER project files (.casemaker) ================= */
-const PROJECT_FORMAT='CASEMAKER_PROJECT', PROJECT_VERSION=1;
+const PROJECT_FORMAT='CASEMAKER_PROJECT', PROJECT_VERSION=2;   // v2 carries the compartment decisions
 function saveProject(){
   const fields={};
   document.querySelectorAll('main input[id],main select[id]').forEach(el=>{ if(el.type==='file') return;
@@ -2186,6 +2256,7 @@ function saveProject(){
     mode, current, fields,
     disabledJoints:[...disabledJoints], partOverride:[...partOverride], nameOverride:[...nameOverride], roleOverride:[...roleOverride],
     hwOrigin:HW_ORIGIN, hwCustom:HW_CUSTOM,                                   // the hardware library travels with the job
+    compAssign:[...compAssign], compContent:[...compContent], compOpts:[...compOpts], compSeeded,   // every compartment decision
     model: model&&model.raw ? {file:model.file, raw:model.raw} : null,
     imported: imported&&imported.raw ? {file:imported.file, raw:imported.raw} : null };
   download(`${jobName()}_${stamp()}.casemaker`, JSON.stringify(proj), 'application/json');
@@ -2200,6 +2271,11 @@ function applyProject(p){
     if('c' in f) el.checked=!!f.c;
     else if(el.tagName==='SELECT'){ if([...el.options].some(o=>o.value===f.v)) el.value=f.v; }
     else el.value=f.v; });
+  compAssign.clear(); compContent.clear(); compOpts.clear(); compSig='';
+  (p.compAssign||[]).forEach(([k,v])=>compAssign.set(k,v));
+  (p.compContent||[]).forEach(([k,v])=>compContent.set(k,v));
+  (p.compOpts||[]).forEach(([k,v])=>compOpts.set(k,v));
+  compSeeded = p.compSeeded!==undefined ? p.compSeeded : (p.compAssign||[]).length>0;   // an older file re-seeds as before
   if(p.hwOrigin) Object.entries(p.hwOrigin).forEach(([k,v])=>{ if(HW_ORIGIN[k]) Object.assign(HW_ORIGIN[k],v); });
   if(p.hwCustom) Object.entries(p.hwCustom).forEach(([k,txt])=>{ const m=objToMesh(txt);
     if(m.v.length&&m.f.length){ HINGE_MESH[k]=m; HW_CUSTOM[k]=txt; delete PREVIEW_CACHE[k]; } });
