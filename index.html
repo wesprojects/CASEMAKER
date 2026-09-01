@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-08-31.60 -->
+<!-- BUILD_VERSION: 2026-09-01.68 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -439,6 +439,8 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       </div>
       <div class="row four">
         <label>FIRST HOLE FROM BOTTOM OF SIDE<input id="pClear" type="number" step="0.0001" value="6.4370" data-mm="1"></label>
+        <label class="chk"><input id="pAlign" type="checkbox"> ALIGN GRID TO FIXED SHELVES</label>
+        <label id="pAlignShowL">GRID PHASED TO<input id="pAlignShow" disabled></label>
         <label>CLEARANCE AT TOP / FIXED SHELVES<input id="pTop" type="number" step="0.0625" value="3" data-mm="1"></label>
         <label>FRONT ROW FROM FRONT EDGE<input id="pFront" type="number" step="0.0001" value="2.0472" data-mm="1"></label>
         <label>BACK ROW FROM BACK EDGE<input id="pBack" type="number" step="0.0001" value="2.6772" data-mm="1"></label>
@@ -589,7 +591,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-08-31.60";
+const BUILD_VERSION = "2026-09-01.68";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -619,8 +621,9 @@ $('cBackFlush').addEventListener('change',()=>{ $('bkCam').checked = sel('cBackF
 /* every control's factory value, captured before anything is touched: a preset restores these
    first, so settings added later can never carry over from the previous configuration */
 const FACTORY={};
-document.querySelectorAll('#srcSec input[id],#srcSec select[id],#partsSec input[id],#partsSec select[id]').forEach(el=>{
-  if(el.type==='file') return; FACTORY[el.id] = el.type==='checkbox' ? el.checked : el.value; });
+document.querySelectorAll('main input[id],main select[id]').forEach(el=>{
+  if(el.type==='file'||el.id==='cPreset'||el.id==='cJob') return;
+  FACTORY[el.id] = el.type==='checkbox' ? el.checked : el.value; });
 function resetToFactory(){
   Object.entries(FACTORY).forEach(([id,v])=>{ if(id==='cPreset'||id==='cJob') return;
     const el=document.getElementById(id); if(!el) return;
@@ -663,7 +666,8 @@ function syncVisibility(){
   document.querySelectorAll('input[data-mm]').forEach(el=>{ const host=el.closest('.fld')||el.parentElement; let u=host.querySelector('.unit.mm'); if(!u){ u=document.createElement('span'); u.className='unit mm'; host.appendChild(u); } const v=parseFloat(el.value); u.textContent=isNaN(v)?(el.placeholder==='auto'?`auto = ${pinEdgeDepth().toFixed(4)}" (${(pinEdgeDepth()*MM).toFixed(1)} mm)`:''):`= ${(v*MM).toFixed(2)} mm`; });
   $('ebTopTL').style.visibility=sel('ebTop')==='contrast'?'':'hidden';
   $('fBodyCL').style.visibility=sel('fBody')==='custom'?'':'hidden'; $('fEdgeCL').style.visibility=sel('fEdge')==='custom'?'':'hidden'; $('ebTopCL2').style.visibility=sel('ebTopC')==='custom'?'':'hidden';
-  { $('cBackWrapL').style.display=sel('cBackFit')==='over'?'':'none';
+  { $('pAlignShowL').style.display=on('pAlign')?'':'none';
+    $('cBackWrapL').style.display=sel('cBackFit')==='over'?'':'none';
     $('cBackOffL').style.display=on('cBackSplit')?'':'none'; }
   { const s1=sel('dvSpan'), s2=sel('dv2Span');
     $('dvF1').style.display=on('dvOn')?'':'none';
@@ -734,15 +738,18 @@ function recvLine(p,axis,pos,mt,j,r,camSide){
 /* ================= features ================= */
 const F={
   groove(p,{stop=0}={}){ const gw=num('gW'),gz=num('gZ'),y=p.d-num('gSet'),L=`GROOVE_W${gw}_Z${gz}`; addLine(p,L,stop,y-gw,p.w-stop,y-gw); addLine(p,L,stop,y,p.w-stop,y); },
-  pins(p,members,shelfZ,far,ov){ if(!on('pOn')) return;   // far: opposite face · ov: per-compartment overrides
-    const o=ov||{};
+  pins(p,members,shelfZ,far,ov,zBase){ if(!on('pOn')) return;   // far: opposite face · ov: overrides · zBase: this panel's height in the case
+    const o=ov||{}, z0=zBase||0;
     const dia=o.pdia||num('pDia'), z=num('pZ'), pitch=o.pitch||num('pPitch'),
-          cl=num('pClear'), clTop=num('pTop'),
+          cl=(PIN_FIRST!==null?PIN_FIRST:num('pClear')), clTop=num('pTop'),
           rowsN=(o.rows&&o.rows!=='auto')?o.rows:sel('pRows');
     const skip=$('pSkip').value.split(',').map(s=>parseInt(s)).filter(v=>!isNaN(v)); const rows=[num('pFront'),p.d-num('pBack')],L=lay('SHELFPIN',dia,z); const m=[...members].sort((a,b)=>a.y0-b.y0);   // front row from the FRONT edge, back row from the BACK edge
     const seen=new Set();
     for(let i=0;i<m.length-1;i++){ if(skip.includes(i+1)) continue; const a=m[i].y0+m[i].t+(i===0?0:clTop),b=m[i+1].y0-clTop; if(b<=a) continue;
-      let xs=[]; if(rowsN==='all'||!shelfZ){ for(let x=cl;x<=b+1e-6;x+=pitch) if(x>=a-1e-6) xs.push(x); }   // one grid from the side's bottom edge: first hole at the set height, then every pitch
+      let xs=[];
+      if(rowsN==='all'||!shelfZ){ /* one grid measured from the CASE floor, so sides and dividers agree */
+        const k0=Math.ceil((a+z0-cl)/pitch);
+        for(let k=Math.max(0,k0); ; k++){ const x=r4(cl+k*pitch-z0); if(x>b+1e-6) break; if(x>=a-1e-6) xs.push(x); } }
       else { const half=Math.floor((parseInt(rowsN)-1)/2); shelfZ.filter(sz=>sz>a-pitch&&sz<b+pitch).forEach(sz=>{ const c=sz-dia/2; for(let q=-half;q<=half;q++){ const x=c+q*pitch; if(x>=a&&x<=b) xs.push(x); } }); }
       xs.forEach(x=>{ const key=x.toFixed(3); if(seen.has(key)) return; seen.add(key); rows.forEach(y=>addHole(p,'SHELFPIN',x,y,dia,z,L,false,undefined,far)); }); } },
   glides(p){ if(!on('glOn')||sel('glWhere')!=='bottom') return; const d=num('glD'),z=num('glZ'),ix=num('glX'),iy=num('glY'),L=lay('GLIDE',d,z); [[ix,iy],[p.w-ix,iy],[ix,p.d-iy],[p.w-ix,p.d-iy]].forEach(([x,y])=>addHole(p,'GLIDE',x,y,d,z,L)); },
@@ -764,6 +771,7 @@ function hingeCount(h){ const v=sel('hgN'); if(v!=='auto') return parseInt(v); r
    Horizontal bands come from the bottom, the fixed shelves and the top; inside each band the
    dividers that span it split the width. Keys are positional, so an assignment survives a rebuild. */
 let COMPARTMENTS=[];
+let PIN_FIRST=null;   // first hole height in case coordinates, once the grid is phased
 const compAssign=new Map();
 const compContent=new Map();
 const compOpts=new Map();      // key -> {hinge:'L'|'R', ov:'full'|'half', nb, nf}
@@ -848,7 +856,7 @@ function expandCompartments(base,T){
       const zs = (sub==='horiz'||sub==='cross') ? [[c.z0,r4(mz-T/2)],[r4(mz+T/2),c.z1]] : [[c.z0,c.z1]];
       xs.forEach(([x0,x1])=>zs.forEach(([z0,z1])=>{
         if(x1-x0<1||z1-z0<1) return;
-        const kid={x0,x1,z0,z1,w:r4(x1-x0),h:r4(z1-z0),d:c.d,child:true};
+        const kid={x0,x1,z0,z1,w:r4(x1-x0),h:r4(z1-z0),d:c.d,child:true,parent:c.key};
         kid.key=compKey(kid);                                                  // key it now: the next pass reads its options
         kids.push(kid); }));
       kids.forEach(k=>next.push(k));
@@ -864,9 +872,17 @@ function wireCompHandlers(host, after){
   host.querySelectorAll('[data-hinge]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.hinge).hinge=el.value; build(); if(after) after(); });
   [['rows','rows'],['ov','ov'],['nh','nh'],['fh','fh']].forEach(([attr,prop])=>
     host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; build(); if(after) after(); }));
+  host.querySelectorAll('[data-unsplit]').forEach(el=>el.onclick=()=>{
+    const pk=el.dataset.unsplit;
+    const o=compOpts.get(pk); if(o){ o.sub='none'; }                       // the parent opens back up
+    [...compOpts.keys()].forEach(k=>{ if(k.startsWith(pk+'_')) compOpts.delete(k); });   // drop the children's settings
+    [...compAssign.keys()].forEach(k=>{ if(k.startsWith(pk+'_')) compAssign.delete(k); });
+    [...compContent.keys()].forEach(k=>{ if(k.startsWith(pk+'_')) compContent.delete(k); });
+    compSig=''; build(); renderCompartments(); });
   [['sub','sub'],['gro','gro'],['style','style']].forEach(([attr,prop])=>
     host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value; compSig=''; build(); if(after) after(); if(after) after(); }));
-  [['pitch','pitch'],['pdia','pdia'],['gap','gap'],['subx','subx'],['subz','subz'],['groy','groy']].forEach(([attr,prop])=>
+  [['pitch','pitch'],['pdia','pdia'],['gap','gap'],['subx','subx'],['subz','subz'],
+   ['groy','groy'],['grox','grox'],['grod','grod'],['grow','grow'],['groh','groh'],['gror','gror']].forEach(([attr,prop])=>
     host.querySelectorAll('[data-'+attr+']').forEach(el=>el.onchange=()=>{ optsFor(el.dataset[attr])[prop]=el.value===''?undefined:parseFloat(el.value); build(); if(after) after(); }));
   host.querySelectorAll('[data-ov]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.ov).ov=el.value; build(); if(after) after(); });
   host.querySelectorAll('[data-nb]').forEach(el=>el.onchange=()=>{ optsFor(el.dataset.nb).nb=parseInt(el.value)||0; build(); if(after) after(); });
@@ -895,13 +911,22 @@ function compBlockHTML(c){
         +'<label>FILE DRAWERS'+num_('nf',o.nf,1)+'</label>'
         +'<label>FACE HEIGHTS<input data-fh="'+c.key+'" value="'+(o.fh||'')+'" placeholder="GLOBAL"></label></div>' : '';
     /* a cross or single divider inside this opening, cammed into the back only */
-    const subCfg = '<div class="cfield"><label>SUBDIVIDE'
+    const subCfg = '<div class="cfield">'
+        +(c.parent?'<label>SPLIT FROM<button type="button" data-unsplit="'+c.parent+'">UNDO SPLIT</button></label>':'')
+        +'<label>SUBDIVIDE'
         +sel_('sub',o.sub||'none',[['none','NONE'],['vert','VERTICAL'],['horiz','HORIZONTAL'],['cross','CROSS']])+'</label>'
         +((o.sub&&o.sub!=='none')?'<label>OFFSET ACROSS'+num_('subx',o.subx||0,0.0625)+'</label>'
           +'<label>OFFSET UP'+num_('subz',o.subz||0,0.0625)+'</label>':'')
-        +'<label>GROMMET'+sel_('gro',o.gro||'none',[['none','NONE'],['left','LEFT'],['centre','CENTRE'],['right','RIGHT']])+'</label>'
-        +((o.gro&&o.gro!=='none')?'<label>GROMMET FROM BACK'+num_('groy',o.groy||'',0.0625)+'</label>':'')
-        +'</div>';
+        +'<label>GROMMET'+sel_('gro',o.gro||'none',[['none','NONE'],['round','ROUND'],['rect','RECTANGLE']])+'</label>'
+        +'</div>'
+        +((o.gro&&o.gro!=='none') ? '<div class="cfield">'
+            +(o.gro==='round' ? '<label>DIAMETER'+num_('grod',o.grod||2.375,0.0625)+'</label>'
+               : '<label>WIDTH'+num_('grow',o.grow||6,0.0625)+'</label>'
+                +'<label>HEIGHT'+num_('groh',o.groh||2,0.0625)+'</label>'
+                +'<label>CORNER RADIUS'+num_('gror',o.gror||0.5,0.0625)+'</label>')
+            +'<label>X FROM LEFT'+num_('grox',o.grox!==undefined?o.grox:'',0.0625)+'</label>'
+            +'<label>Y FROM BACK'+num_('groy',o.groy!==undefined?o.groy:3,0.0625)+'</label>'
+            +'</div>' : '');
     return '<div class="compblock"><div class="comphead"><span class="cid">'+c.label.toUpperCase()+'</span>'
       +'<span class="csz">'+c.w+'" WIDE \u00d7 '+c.h+'" HIGH</span>'
       +sel_('comp',n,[0,1,2,3,4,5,6].map(v=>[v,v?(v>1?v+' SHELVES':'1 SHELF'):'NO SHELVES']))
@@ -1052,6 +1077,20 @@ function buildCase(){
     makeDivider('DIVIDER 2',d2,sel('dv2Span'),parseInt($('dv2Shelf').value)||1,num('dv2Z0'),num('dv2Z1'),false);
   }
   COMPARTMENTS = expandCompartments(deriveCompartments({T,W,bot,topY0,hasBottom,topStyle,members,dividers:dividerSpans,depth:r4(backStyle==='full'?backY:D)}), T);
+  /* phase the pin grid so a row lands where an adjustable shelf would sit flush with a fixed
+     shelf (or a horizontal subdivider): first hole = target − pin radius, stepped back by whole pitches */
+  PIN_FIRST=null;
+  if(on('pAlign')){
+    const dia=num('pDia'), pitch=num('pPitch'), floorClear=num('pClear');
+    const targets=members.filter(m=>m.name.startsWith('SHELF')).map(m=>m.y0)
+      .concat(SPLITS.filter(sp=>sp.sub==='horiz'||sp.sub==='cross').map(sp=>r4(sp.mz-T/2)));
+    if(targets.length){
+      const t0=Math.min(...targets), want=r4(t0-dia/2);
+      let f=want; while(f-pitch>=0.25) f=r4(f-pitch);                          // walk down to the first row
+      PIN_FIRST=f;
+      $('pAlignShow').value=`${f}" first hole · ${r4(t0)}" shelf`;
+    } else { $('pAlignShow').value='no fixed shelf'; }
+  } else $('pAlignShow').value='';
   { const live=new Set(COMPARTMENTS.map(c=>c.key));                            // drop assignments whose opening is gone
     [...compAssign.keys()].forEach(k=>{ if(!live.has(k)) compAssign.delete(k); });
     [...compContent.keys()].forEach(k=>{ if(!live.has(k)) compContent.delete(k); }); }
@@ -1289,26 +1328,61 @@ function buildCase(){
       back.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });
     };
     let vi=0, hi=0;
+    const nV=SPLITS.filter(q=>q.sub!=='horiz').length, nH=SPLITS.filter(q=>q.sub!=='vert').length;
     SPLITS.forEach(sp=>{
-      if(sp.sub==='vert'||sp.sub==='cross'){
-        const h=r4(sp.z1-sp.z0), nm='SUB DIVIDER'+(SPLITS.filter(q=>q.sub!=='horiz').length>1?' '+(++vi):'');
-        const v=newPanel(nm,h,dep,T,h+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  drops in, cams into the back only');
-        orient(v,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
-        v.box={min:[r4(sp.mx-T/2),0,sp.z0],max:[r4(sp.mx+T/2),dep,sp.z1]};
-        v.frame={o:[r4(sp.mx-T/2),0,sp.z0],ux:[0,0,1],uy:[0,1,0],ax:0,shown:r4(sp.mx-T/2),opp:r4(sp.mx+T/2)};
-        camBack(v,'x',dxOfB(r4(sp.mx+T/2)),[r4(sp.z0-lo)+bx, r4(sp.z1-lo)-bx]);
-        out.push(v);
-      }
+      /* the horizontal runs right through, like a fixed shelf; the verticals dowel into it.
+         A cross gets four attachments to the back - one per leg: cams on the shelf arms
+         (nuts in its underside), dowels on the uprights. */
+      const jCam={...j,pat:'none'}, jDow={...j,dowelsOnly:true,dowSp:1e6};
+      /* one fixing at a single spot: atLocal is on the piece, atWorld is the same point in the case */
+      const point=(piece,edge,jj,atLocal,axis,pos,side,atWorld)=>{
+        buttEdge(piece,edge,jj,[r4(atLocal-0.001), r4(atLocal+0.001)]);
+        if(!back||!back.frame||backStyle!=='full') return;
+        const n0=back.holes.length;
+        recvLine(back,axis,pos,T,{...jj,dowMirror:axis==='y'},
+          axis==='y' ? [dxOfB(r4(atWorld+0.001)), dxOfB(r4(atWorld-0.001))]
+                     : [r4(atWorld-0.001-lo), r4(atWorld+0.001-lo)],
+          side);
+        back.holes.slice(n0).forEach(h2=>{ h2.layer+='_FARFACE'; h2.under=true; });
+      };
+      let horiz=null;
       if(sp.sub==='horiz'||sp.sub==='cross'){
-        const segs = sp.sub==='cross' ? [[sp.x0,r4(sp.mx-T/2)],[r4(sp.mx+T/2),sp.x1]] : [[sp.x0,sp.x1]];
-        segs.forEach(seg=>{ const w=r4(seg[1]-seg[0]); if(w<1) return;
-          const nm='SUB SHELF'+(SPLITS.reduce((n,q)=>n+(q.sub==='horiz'?1:q.sub==='cross'?2:0),0)>1?' '+(++hi):'');
-          const sh=newPanel(nm,w,dep,T,w+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  drops in, cams into the back only');
-          orient(sh,'TOP FACE','LEFT END','RIGHT END','FRONT','BACK');
-          sh.box={min:[seg[0],0,r4(sp.mz-T/2)],max:[seg[1],dep,r4(sp.mz+T/2)]};
-          sh.frame={o:[seg[0],0,r4(sp.mz-T/2)],ux:[1,0,0],uy:[0,1,0],ax:2,shown:r4(sp.mz-T/2),opp:r4(sp.mz+T/2)};
-          camBack(sh,'y',r4(sp.mz-T/2-lo),[dxOfB(r4(seg[1]-bx)), dxOfB(r4(seg[0]+bx))]);
-          out.push(sh); });
+        const w=r4(sp.x1-sp.x0), nm='SUB SHELF'+(nH>1?' '+(++hi):'');
+        horiz=newPanel(nm,w,dep,T,w+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  runs right through'
+          +(sp.sub==='cross'?', one cam per arm into the back, takes the two uprights on dowels':', cams into the back'));
+        orient(horiz,'TOP FACE','LEFT END','RIGHT END','FRONT','BACK');
+        horiz.box={min:[sp.x0,0,r4(sp.mz-T/2)],max:[sp.x1,dep,r4(sp.mz+T/2)]};
+        horiz.frame={o:[sp.x0,0,r4(sp.mz-T/2)],ux:[1,0,0],uy:[0,1,0],ax:2,shown:r4(sp.mz-T/2),opp:r4(sp.mz+T/2)};
+        if(sp.sub==='cross'){
+          [[sp.x0,r4(sp.mx-T/2)],[r4(sp.mx+T/2),sp.x1]].forEach(([a,b2])=>{     // one cam per arm
+            const cx=r4((a+b2)/2);
+            point(horiz,'B',jCam,r4(cx-sp.x0),'y',r4(sp.mz-T/2-lo),'min',cx); });
+        } else camBack(horiz,'y',r4(sp.mz-T/2-lo),[dxOfB(r4(sp.x1-bx)), dxOfB(r4(sp.x0+bx))]);
+        out.push(horiz);
+      }
+      if(sp.sub==='vert'||sp.sub==='cross'){
+        const runs = sp.sub==='cross'
+          ? [[sp.z0, r4(sp.mz-T/2), 'R'], [r4(sp.mz+T/2), sp.z1, 'L']]
+          : [[sp.z0, sp.z1, null]];
+        runs.forEach(([z0,z1,meets])=>{
+          const h=r4(z1-z0); if(h<1) return;
+          const nm='SUB DIVIDER'+(nV>1||sp.sub==='cross'?' '+(++vi):'');
+          const v=newPanel(nm,h,dep,T,h+'" \u00d7 '+dep+'" \u00d7 '+T+'"  \u00b7  '
+            +(meets?'dowelled and glued into the shelf, one dowel into the back':'drops in, cams into the back'));
+          orient(v,'LEFT FACE','FLOOR END','TOP END','FRONT','BACK');
+          v.box={min:[r4(sp.mx-T/2),0,z0],max:[r4(sp.mx+T/2),dep,z1]};
+          v.frame={o:[r4(sp.mx-T/2),0,z0],ux:[0,0,1],uy:[0,1,0],ax:0,shown:r4(sp.mx-T/2),opp:r4(sp.mx+T/2)};
+          if(meets){
+            point(v,'B',jDow,r4((z1-z0)/2),'x',dxOfB(r4(sp.mx+T/2)),'max',r4(z0+(z1-z0)/2));   // one dowel into the back
+            /* two dowels into the shelf, glued */
+            const a=bx, b2=r4(dep-bx), rng=[a,b2];
+            const jGlue={...j,dowelsOnly:true,dowSp:r4(b2-a)};
+            buttEdge(v,meets,jGlue,rng);
+            const n0=horiz.holes.length;
+            recvLine(horiz,'x',r4(sp.mx-T/2-sp.x0),T,jGlue,rng,'min');
+            if(meets==='R') horiz.holes.slice(n0).forEach(h2=>{ h2.layer+='_FARFACE'; h2.under=true; });
+          } else camBack(v,'x',dxOfB(r4(sp.mx+T/2)),[r4(z0-lo)+bx, r4(z1-lo)-bx]);
+          out.push(v); });
       }
     });
   }
@@ -1328,14 +1402,38 @@ function buildCase(){
       back.holes.slice(n0).forEach(h=>{ h.layer+='_FARFACE'; h.under=true; });
     };
     if(o.gro&&o.gro!=='none'){
-      /* the grommet goes in whatever forms this opening's ceiling */
+      /* the grommet is cut in whatever forms this opening's ceiling */
       const ceil=out.find(q=>q.box&&q.box.min&&Math.abs(q.box.min[2]-c.z1)<0.02&&
         q.box.min[0]<=c.x0+0.02&&q.box.max[0]>=c.x1-0.02&&(q.name.startsWith('SHELF')||q.name==='TOP'));
       if(ceil&&ceil.frame){
-        const gx = o.gro==='left' ? r4(c.x0+4) : o.gro==='right' ? r4(c.x1-4) : r4((c.x0+c.x1)/2);
-        const gy = (o.groy!==undefined&&o.groy!=='') ? parseFloat(o.groy) : 3;      // in from the back edge
-        const lx = r4(gx-ceil.frame.o[0]), ly = r4(Math.max(1, ceil.d-gy));
-        addHole(ceil,'GROMMET',lx,ly,num('grD'),ceil.t,'GROMMET_D'+num('grD'));
+        const offX = (o.grox!==undefined&&o.grox!=='') ? parseFloat(o.grox) : r4((c.x1-c.x0)/2);   // from this opening's left
+        const gy   = (o.groy!==undefined&&o.groy!=='') ? parseFloat(o.groy) : 3;                   // in from the back edge
+        /* project the world point into the panel's own drawing axes - some panels are drawn mirrored */
+        const f=ceil.frame, P=[r4(c.x0+offX), r4(ceil.box.max[1]-gy), ceil.box.min[2]];
+        const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+        const rel=[P[0]-f.o[0],P[1]-f.o[1],P[2]-f.o[2]];
+        const lx = r4(dot(rel,f.ux)), ly = r4(dot(rel,f.uy));
+        if(o.gro==='round'){
+          const dia = (o.grod!==undefined&&o.grod!=='') ? parseFloat(o.grod) : num('grD');
+          addHole(ceil,'GROMMET',lx,ly,dia,ceil.t,'GROMMET_D'+r4(dia));
+        } else {
+          /* rounded rectangle, drawn as a cut path so it reaches the DXF and the drawing */
+          const w=(o.grow!==undefined&&o.grow!=='')?parseFloat(o.grow):6, h=(o.groh!==undefined&&o.groh!=='')?parseFloat(o.groh):2;
+          const rMax=Math.min(w,h)/2, rr=Math.max(0, Math.min((o.gror!==undefined&&o.gror!=='')?parseFloat(o.gror):0.5, rMax));
+          const x0=r4(lx-w/2), x1=r4(lx+w/2), y0=r4(ly-h/2), y1=r4(ly+h/2), L='GROMMET_RECT';
+          const arc=(cx,cy,a0,a1)=>{ const N=8; let px=null;
+            for(let i=0;i<=N;i++){ const a=a0+(a1-a0)*i/N, x=r4(cx+rr*Math.cos(a)), y=r4(cy+rr*Math.sin(a));
+              if(px) addLine(ceil,L,px[0],px[1],x,y); px=[x,y]; } };
+          if(rr>0.001){
+            addLine(ceil,L,r4(x0+rr),y0,r4(x1-rr),y0); arc(r4(x1-rr),r4(y0+rr),-Math.PI/2,0);
+            addLine(ceil,L,x1,r4(y0+rr),x1,r4(y1-rr)); arc(r4(x1-rr),r4(y1-rr),0,Math.PI/2);
+            addLine(ceil,L,r4(x1-rr),y1,r4(x0+rr),y1); arc(r4(x0+rr),r4(y1-rr),Math.PI/2,Math.PI);
+            addLine(ceil,L,x0,r4(y1-rr),x0,r4(y0+rr)); arc(r4(x0+rr),r4(y0+rr),Math.PI,1.5*Math.PI);
+          } else {
+            addLine(ceil,L,x0,y0,x1,y0); addLine(ceil,L,x1,y0,x1,y1);
+            addLine(ceil,L,x1,y1,x0,y1); addLine(ceil,L,x0,y1,x0,y0);
+          }
+        }
       }
     }
   });
@@ -1369,7 +1467,14 @@ function buildCase(){
     const groups=new Map();
     plan.forEach(({c,n})=>{
       const w=r4((c.x1-c.x0)-2*gapA), zs=[];
-      for(let i=1;i<=n;i++) zs.push(r4(c.z0+(c.z1-c.z0)*i/(n+1)));
+      /* snap each shelf to the pin grid: its underside rests on the pin, at the top of the hole */
+      const pDia=(compOpts.get(c.key)||{}).pdia||num('pDia');
+      const pitchP=(compOpts.get(c.key)||{}).pitch||num('pPitch'), clP=(PIN_FIRST!==null?PIN_FIRST:num('pClear'));
+      for(let i=1;i<=n;i++){
+        const want=c.z0+(c.z1-c.z0)*i/(n+1);
+        const k=Math.round((want-pDia/2-clP)/pitchP);
+        zs.push(r4(clP+k*pitchP+pDia/2));
+      }
       if(!groups.has(String(w))) groups.set(String(w),{w,boxes:[],count:0,comps:[]});
       const g=groups.get(String(w));
       zs.forEach(z=>g.boxes.push({min:[r4(c.x0+gapA),yFront,z],max:[r4(c.x0+gapA+w),r4(yFront+ad),r4(z+T)]}));
@@ -1387,7 +1492,7 @@ function buildCase(){
           if(!host||!host.frame) return;
           const far=Math.abs(host.frame.shown-wx)>0.01;                        // the ladder goes on the face looking into this bay
           const zLo=host.box.min[2];
-          F.pins(host,[{y0:r4(c.z0-zLo-T),t:T},{y0:r4(c.z1-zLo),t:T}],zs.map(z=>r4(z-zLo)),far,compOpts.get(c.key));
+          F.pins(host,[{y0:r4(c.z0-zLo-T),t:T},{y0:r4(c.z1-zLo),t:T}],zs.map(z=>r4(z-zLo)),far,compOpts.get(c.key),zLo);
         }); });
     });
   }
@@ -1912,6 +2017,7 @@ const DOCS=[
   ['SHELF COUNT','Adjustable shelves in that opening, evenly spaced. Pin ladders are drilled only on the faces that carry them.'],
   ['PIN ROWS','FOLLOW GLOBAL uses the HARDWARE setting; FULL LADDER drills the whole height; 3 or 5 drills that many rows each side of every shelf.'],
   ['PIN SPACING / DIAMETER','Override the global pitch and hole size for this opening only. Blank follows HARDWARE.'],
+  ['ALIGN GRID TO FIXED SHELVES','Phases the whole pin grid so a row lands where an adjustable shelf sits flush with the lowest fixed shelf or horizontal subdivider. First hole = shelf underside − pin radius, stepped back by whole pitches. Off by default, so it never moves an existing job.'],
   ['CONTENT','OPEN, 1 DOOR, 2 DOORS or DRAWERS - built into that opening.'],
   ['DOOR STYLE','FOLLOW GLOBAL uses the DOORS section; OVERLAY or INSET set it for this opening alone. An inset door sets its divider back.'],
   ['HINGE SIDE','Which vertical the door hangs on. Cups, plates and hardware follow it.'],
@@ -1920,9 +2026,12 @@ const DOCS=[
   ['REVEAL','Gap around this door only. Blank follows the DOORS section.'],
   ['BOX / FILE DRAWERS','Counts for this opening. Files stack at the bottom.'],
   ['FACE HEIGHTS','Comma list, bottom to top, in inches or mm (e.g. 318mm, 184mm). Blank follows the DRAWERS section.'],
-  ['SUBDIVIDE','Drops a VERTICAL, HORIZONTAL or CROSS divider into the opening. These cam into the back panel only - slide them in and lock a few cam nuts.'],
+  ['SUBDIVIDE','Drops a VERTICAL, HORIZONTAL or CROSS divider into the opening. All of it cams into the back panel. On a CROSS the shelf runs right through and the two uprights cam into it, one cam and one dowel each.'],
+  ['UNDO SPLIT','On a compartment that came from a split, puts the opening back together and clears the settings of both halves.'],
   ['OFFSET ACROSS / UP','Moves the subdivider off centre.'],
-  ['GROMMET','Cuts a grommet in whatever forms this opening\u2019s ceiling, at the left, centre or right, set in from the back by the given amount.']]],
+  ['GROMMET','ROUND or RECTANGLE, cut in whatever forms this opening\u2019s ceiling.'],
+  ['DIAMETER / WIDTH / HEIGHT','Size of the cut. A rectangle also takes a CORNER RADIUS; 0 gives square corners.'],
+  ['X FROM LEFT / Y FROM BACK','Where it sits: X measured from this opening\u2019s left edge, Y in from the panel\u2019s back edge. Blank centres it across.']]],
  ['DOORS',[
   ['STYLE','OVERLAY sits in front of the case; INSET sits inside it.'],
   ['INSET CLEARANCE','With inset doors on a divider, the divider is set back by the door thickness plus this amount so the hinge can pull the door flush.'],
