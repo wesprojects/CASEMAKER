@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CASEMAKER</title>
-<!-- BUILD_VERSION: 2026-09-01.68 -->
+<!-- BUILD_VERSION: 2026-09-01.69 -->
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -440,6 +440,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
       <div class="row four">
         <label>FIRST HOLE FROM BOTTOM OF SIDE<input id="pClear" type="number" step="0.0001" value="6.4370" data-mm="1"></label>
         <label class="chk"><input id="pAlign" type="checkbox"> ALIGN GRID TO FIXED SHELVES</label>
+        <label class="chk"><input id="pSnapSub" type="checkbox" checked> SNAP SUBDIVIDERS TO THE PIN GRID</label>
         <label id="pAlignShowL">GRID PHASED TO<input id="pAlignShow" disabled></label>
         <label>CLEARANCE AT TOP / FIXED SHELVES<input id="pTop" type="number" step="0.0625" value="3" data-mm="1"></label>
         <label>FRONT ROW FROM FRONT EDGE<input id="pFront" type="number" step="0.0001" value="2.0472" data-mm="1"></label>
@@ -591,7 +592,7 @@ details summary::before{content:"▸";font-size:10px} details[open] summary::bef
 
 
 <script>
-const BUILD_VERSION = "2026-09-01.68";
+const BUILD_VERSION = "2026-09-01.69";
 document.getElementById('build').textContent = "BUILD " + BUILD_VERSION;
 const MM = 25.4;
 const $ = id => document.getElementById(id);
@@ -849,7 +850,14 @@ function expandCompartments(base,T){
       const o=compOpts.get(c.key)||{}, sub=(o.sub&&o.sub!=='none')?o.sub:null;
       if(!sub){ next.push(c); return; }
       changed=true;
-      const mx=r4((c.x0+c.x1)/2+(parseFloat(o.subx)||0)), mz=r4((c.z0+c.z1)/2+(parseFloat(o.subz)||0));
+      const mx=r4((c.x0+c.x1)/2+(parseFloat(o.subx)||0));
+      let mz=r4((c.z0+c.z1)/2+(parseFloat(o.subz)||0));
+      if(on('pSnapSub')&&(sub==='horiz'||sub==='cross')){
+        /* its underside lands on a pin line, so shelves in other openings line up with it */
+        const dia=num('pDia'), pitch=num('pPitch'), cl=(PIN_FIRST!==null?PIN_FIRST:num('pClear'));
+        const k=Math.round((mz-T/2-dia/2-cl)/pitch);
+        mz=r4(cl+k*pitch+dia/2+T/2);
+      }
       SPLITS.push({x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1,sub,mx,mz,d:c.d});
       const kids=[];
       const xs = (sub==='vert'||sub==='cross') ? [[c.x0,r4(mx-T/2)],[r4(mx+T/2),c.x1]] : [[c.x0,c.x1]];
@@ -1076,21 +1084,18 @@ function buildCase(){
     if(divL!==null && Math.abs(d2-divL)<T+0.5) d2 = r4(divL + T + 2);          // never overlap the first divider
     makeDivider('DIVIDER 2',d2,sel('dv2Span'),parseInt($('dv2Shelf').value)||1,num('dv2Z0'),num('dv2Z1'),false);
   }
-  COMPARTMENTS = expandCompartments(deriveCompartments({T,W,bot,topY0,hasBottom,topStyle,members,dividers:dividerSpans,depth:r4(backStyle==='full'?backY:D)}), T);
-  /* phase the pin grid so a row lands where an adjustable shelf would sit flush with a fixed
-     shelf (or a horizontal subdivider): first hole = target − pin radius, stepped back by whole pitches */
+  /* phase the pin grid from the fixed shelves first, so subdividers can be snapped onto it */
   PIN_FIRST=null;
   if(on('pAlign')){
-    const dia=num('pDia'), pitch=num('pPitch'), floorClear=num('pClear');
-    const targets=members.filter(m=>m.name.startsWith('SHELF')).map(m=>m.y0)
-      .concat(SPLITS.filter(sp=>sp.sub==='horiz'||sp.sub==='cross').map(sp=>r4(sp.mz-T/2)));
+    const dia=num('pDia'), pitch=num('pPitch');
+    const targets=members.filter(m=>m.name.startsWith('SHELF')).map(m=>m.y0);
     if(targets.length){
-      const t0=Math.min(...targets), want=r4(t0-dia/2);
-      let f=want; while(f-pitch>=0.25) f=r4(f-pitch);                          // walk down to the first row
-      PIN_FIRST=f;
-      $('pAlignShow').value=`${f}" first hole · ${r4(t0)}" shelf`;
-    } else { $('pAlignShow').value='no fixed shelf'; }
+      const t0=Math.min(...targets); let f=r4(t0-dia/2);
+      while(f-pitch>=0.25) f=r4(f-pitch);                                      // walk down to the first row
+      PIN_FIRST=f; $('pAlignShow').value=`${f}" first hole \u00b7 ${r4(t0)}" shelf`;
+    } else $('pAlignShow').value='no fixed shelf';
   } else $('pAlignShow').value='';
+  COMPARTMENTS = expandCompartments(deriveCompartments({T,W,bot,topY0,hasBottom,topStyle,members,dividers:dividerSpans,depth:r4(backStyle==='full'?backY:D)}), T);
   { const live=new Set(COMPARTMENTS.map(c=>c.key));                            // drop assignments whose opening is gone
     [...compAssign.keys()].forEach(k=>{ if(!live.has(k)) compAssign.delete(k); });
     [...compContent.keys()].forEach(k=>{ if(!live.has(k)) compContent.delete(k); }); }
@@ -2028,6 +2033,7 @@ const DOCS=[
   ['FACE HEIGHTS','Comma list, bottom to top, in inches or mm (e.g. 318mm, 184mm). Blank follows the DRAWERS section.'],
   ['SUBDIVIDE','Drops a VERTICAL, HORIZONTAL or CROSS divider into the opening. All of it cams into the back panel. On a CROSS the shelf runs right through and the two uprights cam into it, one cam and one dowel each.'],
   ['UNDO SPLIT','On a compartment that came from a split, puts the opening back together and clears the settings of both halves.'],
+  ['SNAP SUBDIVIDERS TO THE PIN GRID','A horizontal or cross subdivider sits with its underside on a pin line, so adjustable shelves in other openings line up with it. On by default.'],
   ['OFFSET ACROSS / UP','Moves the subdivider off centre.'],
   ['GROMMET','ROUND or RECTANGLE, cut in whatever forms this opening\u2019s ceiling.'],
   ['DIAMETER / WIDTH / HEIGHT','Size of the cut. A rectangle also takes a CORNER RADIUS; 0 gives square corners.'],
