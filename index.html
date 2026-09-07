@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<title>CASEMAKER 2</title>
+<title>CASEMAKER</title>
 <style>
 :root{--bg:#0d0f13;--panel:#151922;--panel2:#1b2130;--line:#2a3242;--ink:#e7ecf5;--mute:#7d8798;
  --amber:#f5a524;--blue:#78aaff;--green:#5ecf8d;--red:#ff6b6b;--mono:'DM Mono','SF Mono',ui-monospace,Menlo,Consolas,monospace}
@@ -91,7 +91,7 @@ label.f .mm{color:var(--mute);font-size:9px}
 <body>
 <div class="update" id="update"><span id="updateT">A NEW BUILD OF CASEMAKER IS AVAILABLE</span><button class="btn" id="updateGo">RELOAD</button><button class="x" id="updateX" title="Dismiss">✕</button></div>
 <header>
-  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.87 </div></div>
+  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.93 </div></div>
   <input class="job" id="job" value="MODEL NUMBER">
   <input class="job" id="friendly" placeholder="PRODUCT NAME" style="width:150px">
   <select id="preset"><option value="">SAMPLE PRODUCTS</option></select>
@@ -143,7 +143,7 @@ label.f .mm{color:var(--mute);font-size:9px}
 
 <script>
 /* ============================================================================
-   CASEMAKER 2 — single file build. Sections:
+   CASEMAKER — single file build. Sections:
      CORE   (inlined from core.mjs: units, model, spaces, drawers, parts, presets)
      STATE  the document and the selection
      PLAN   the elevation: parts, spaces, tools, drag
@@ -300,7 +300,7 @@ function auditJoints(ps) {
 }
 
 /* ============================================================================
-   CASEMAKER 2 — core model
+   CASEMAKER — core model
    Sections in this file:
      1  UNITS + IDS          small helpers, stable part ids
      2  DEFAULTS             every tunable number in one place
@@ -3279,7 +3279,7 @@ function download(name, data, type) {                                          /
 /* machine files carry 7-bit ASCII only: AutoCAD's DXFIN pages an error per
    non-ASCII TEXT ("press ENTER to continue"), and the OSAI dislikes them too */
 const ascii7 = s2 => String(s2).replace(/\u00b7/g, '-').replace(/\u2033/g, '"').replace(/\u2019/g, "'").replace(/[^\x20-\x7e]/g, '');
-const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.87'.slice(0, 10);
+const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.93'.slice(0, 10);
 
 function openFlyout(which) {
   UI.fly = which;
@@ -3390,7 +3390,12 @@ function openFlyout(which) {
       const k = EXP.three.units === 'mm' ? MM : 1;
       let ps = parts(M).filter(p => EXP.three.faces || !(p.role === 'face' || p.name.startsWith('DOOR')));
       if (!EXP.three.hw) ps = ps.filter(p => !p.hardware && p.role !== 'slide');
-      if (EXP.three.format === 'stl') download(stamp() + '.stl', stlBinary(ps, k), 'model/stl');
+      if (EXP.three.format === 'stl') {                                       // same scene as the DAE, audited, then flattened to one solid
+        const psS = EXP.three.hw ? ps.concat(synthHardware(ps)) : ps;
+        const xmlS = daeText(ps, k, EXP.three.units, { hw: EXP.three.hw, finish: false });
+        const badS = daeAudit(xmlS, psS, k);
+        if (badS.length) { alert('STL AUDIT FAILED - NOT EXPORTED:\n' + badS.slice(0, 8).join('\n')); return; }
+        download(stamp() + '.stl', stlBinary(ps, k, xmlS), 'model/stl'); }
       else if (EXP.three.format === 'obj') download(stamp() + '.obj', objText(ps, k), 'text/plain');
       else { const psX = EXP.three.hw === false ? ps.filter(p => !p.hardware && p.role !== 'slide') : (EXP.three.hw ? ps.concat(synthHardware(ps)) : ps);
         const xml2 = daeText(ps, k, EXP.three.units, { hw: EXP.three.hw, finish: EXP.three.finish ? (M.finish === 'cherry' ? 'cherry' : 'grey') : false });
@@ -3787,12 +3792,12 @@ async function buildInstructions() {
   };
   const flatBox = flatBoxF(false);
   const lift = Math.max(2, M.H * 0.08);
-  const dstr = '2026-09-03.87'.slice(0, 10);
+  const dstr = '2026-09-03.93'.slice(0, 10);
   const stepsPerPage = 4; const totalPages = 1 + Math.ceil(plan.length / stepsPerPage);
   const header = pg => { pdf.page(); const lh = 34, lw = lh * logo.width / logo.height; pdf.image(logo, MG, MG, lw, lh);
     pdf.text(PW - MG, MG + 12, 'Assembly Instructions', 13, true, 'right'); pdf.text(PW - MG, MG + 30, 'MODEL NO.: ' + modelNo, 15, true, 'right');
     pdf.line(MG, MG + 44, PW - MG, MG + 44, 1.4); pdf.text(PW / 2, MG + 64, ((M.friendly || '').trim() || title), 18, true, 'center'); pdf.text(PW - MG, MG + 64, dstr, 8, false, 'right');
-    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2 2026-09-03.87', 7, false, 'right', 0.4); return MG + 76; };
+    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.93', 7, false, 'right', 0.4); return MG + 76; };
   let y = header(1);
   const cw = CW / hw.length, rowH = 78; pdf.rect(MG, y, CW, rowH, { lw: 0.9 });
   hw.forEach((r, i) => { const x = MG + i * cw; if (i) pdf.line(x, y, x, y + rowH, 0.9); pdf.rect(x, y, cw, 14, { fill: 0.9 }); pdf.text(x + cw / 2, y + 10, r.code, 8, true, 'center');
@@ -3996,7 +4001,7 @@ function ncFor(p) {
   const J = M.opt.joinery || JOINERY, maxB = EXP.drill.maxBore;
   const r = cnc1Program(P), code = Array.isArray(r.code) ? r.code.join('\n') : String(r.code || '');
   const head = [];
-  head.push(';EXPORTED FROM CASEMAKER 2 2026-09-03.87 - ' + p.name + ' x' + p.qty);
+  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.93 - ' + p.name + ' x' + p.qty);
   head.push(';STOCK ' + p.t + '" - HOLE CENTERLINE ' + r3(P._ctr) + '" FROM THE CAM FACE');
   head.push(';PANEL LIES CAM FACE ' + (P._faceDown ? 'DOWN' : 'UP') + ': Z DEPTH OVERRIDE ' + P.zOverride + '" OFF THE TABLE');
   head.push(';LOAD TURNED 90 LEFT FROM THE DRAWING: ' + r3(p.w) + '" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ' + r3(p.h) + '" ACROSS X');
@@ -4078,14 +4083,72 @@ function boxTris(b, k) { const [x0, y0, z0] = b.min.map(v => v * k), [x1, y1, z1
   const v = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
   const q = [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]], t = [];
   q.forEach(f => { t.push([v[f[0]], v[f[1]], v[f[2]]], [v[f[0]], v[f[2]], v[f[3]]]); }); return t; }
-function stlBinary(ps, k) {
-  const tris = []; ps.forEach(p => (p.boxes || [p.box]).forEach(b => { if (b) boxTris(b, k).forEach(t => tris.push(t)); }));
-  const buf = new ArrayBuffer(84 + tris.length * 50), dv = new DataView(buf); dv.setUint32(80, tris.length, true);
-  tris.forEach((t, i) => { const o = 84 + i * 50; const [a, b, c] = t, u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], w2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-    const nrm = [u[1] * w2[2] - u[2] * w2[1], u[2] * w2[0] - u[0] * w2[2], u[0] * w2[1] - u[1] * w2[0]], len = Math.hypot(...nrm) || 1;
-    [nrm[0] / len, nrm[1] / len, nrm[2] / len, ...a, ...b, ...c].forEach((f, j) => dv.setFloat32(o + j * 4, f, true)); dv.setUint16(o + 48, 0, true); });
+/* STL is written from the COLLADA scene the exporter just built and audited, so the
+   solid carries the real geometry - every bore subtracted, hardware included, one
+   watertight body - instead of the plain bounding boxes it used to emit. */
+function daeWorldTris(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  if (doc.querySelector('parsererror')) return null;
+  const geo = {};
+  doc.querySelectorAll('library_geometries > geometry').forEach(g => {
+    const src = {}, id2 = g.getAttribute('id');
+    g.querySelectorAll('mesh > source').forEach(so => {
+      const fa = so.querySelector('float_array');
+      if (fa) src[so.getAttribute('id')] = fa.textContent.trim().split(/\s+/).map(Number); });
+    const vt = g.querySelector('mesh > vertices'), vin = vt && vt.querySelector('input[semantic="POSITION"]');
+    const pos = vin ? src[vin.getAttribute('source').slice(1)] : null;
+    const tri = g.querySelector('mesh > triangles'); if (!pos || !tri) return;
+    let stride = 1;
+    tri.querySelectorAll('input').forEach(inp => { const o = +inp.getAttribute('offset') || 0; if (o + 1 > stride) stride = o + 1; });
+    const vOff = +((tri.querySelector('input[semantic="VERTEX"]') || {}).getAttribute ?
+      tri.querySelector('input[semantic="VERTEX"]').getAttribute('offset') : 0) || 0;
+    const p2 = tri.querySelector('p').textContent.trim().split(/\s+/).map(Number);
+    const idx = []; for (let i = vOff; i < p2.length; i += stride) idx.push(p2[i]);
+    geo[id2] = { pos, idx }; });
+  const libNodes = {};
+  doc.querySelectorAll('library_nodes > node').forEach(n => libNodes[n.getAttribute('id')] = n);
+  const mul = (A, B) => { const C = new Array(16).fill(0);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) for (let i = 0; i < 4; i++) C[r * 4 + c] += A[r * 4 + i] * B[i * 4 + c];
+    return C; };
+  const out = [];
+  const walk = (node, Mt) => {
+    const mEl = node.querySelector(':scope > matrix');
+    let Mn = Mt;
+    if (mEl) Mn = mul(Mt, mEl.textContent.trim().split(/\s+/).map(Number));
+    node.querySelectorAll(':scope > instance_geometry').forEach(ig => {
+      const g = geo[ig.getAttribute('url').slice(1)]; if (!g) return;
+      const P = q => [Mn[0] * q[0] + Mn[1] * q[1] + Mn[2] * q[2] + Mn[3],
+                      Mn[4] * q[0] + Mn[5] * q[1] + Mn[6] * q[2] + Mn[7],
+                      Mn[8] * q[0] + Mn[9] * q[1] + Mn[10] * q[2] + Mn[11]];
+      for (let i = 0; i + 2 < g.idx.length; i += 3) {
+        const t = [0, 1, 2].map(j => { const b = g.idx[i + j] * 3; return P([g.pos[b], g.pos[b + 1], g.pos[b + 2]]); });
+        out.push(t); } });
+    node.querySelectorAll(':scope > instance_node').forEach(inn => {
+      const ln = libNodes[inn.getAttribute('url').slice(1)]; if (ln) walk(ln, Mn); });
+    node.querySelectorAll(':scope > node').forEach(ch => walk(ch, Mn)); };
+  const I = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+  doc.querySelectorAll('library_visual_scenes > visual_scene > node').forEach(n => walk(n, I));
+  return out;
+}
+function stlBinary(ps, k, xml) {
+  let tris = xml ? daeWorldTris(xml) : null;
+  if (!tris || !tris.length) { tris = [];                                      // fallback: bounding solids
+    ps.forEach(p => (p.boxes || [p.box]).forEach(b => { if (b) boxTris(b, k).forEach(t => tris.push(t)); })); }
+  const keep = [];                                                             // drop degenerate facets: they carry no normal and slicers reject them
+  tris.forEach(t => { const [a, b, c] = t;
+    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], w2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const nrm = [u[1] * w2[2] - u[2] * w2[1], u[2] * w2[0] - u[0] * w2[2], u[0] * w2[1] - u[1] * w2[0]];
+    const len = Math.hypot(nrm[0], nrm[1], nrm[2]);
+    if (len > 1e-9) keep.push({ t, n: [nrm[0] / len, nrm[1] / len, nrm[2] / len] }); });
+  const buf = new ArrayBuffer(84 + keep.length * 50), dv = new DataView(buf);
+  const hdr = 'CASEMAKER BINARY STL';                                        // 80-byte header, ASCII
+  for (let i = 0; i < hdr.length; i++) dv.setUint8(i, hdr.charCodeAt(i));
+  dv.setUint32(80, keep.length, true);
+  keep.forEach((q, i) => { const o = 84 + i * 50;
+    [q.n[0], q.n[1], q.n[2], ...q.t[0], ...q.t[1], ...q.t[2]].forEach((f, j) => dv.setFloat32(o + j * 4, f, true));
+    dv.setUint16(o + 48, 0, true); });
   return buf; }
-function objText(ps, k) { const out = ['# CASEMAKER 2 ' + stamp()]; let n = 0;
+function objText(ps, k) { const out = ['# CASEMAKER ' + stamp()]; let n = 0;
   ps.forEach((p, pi) => { const bs = (p.boxes || [p.box]).filter(Boolean); if (!bs.length) return;
     out.push('o ' + p.name.replace(/\s+/g, '_') + '_' + pi);                   // one object per part, boxes inside
     bs.forEach(b2 => boxTris(b2, k).forEach(t => { t.forEach(v => out.push('v ' + v.map(x => x.toFixed(4)).join(' '))); out.push('f ' + (n + 1) + ' ' + (n + 2) + ' ' + (n + 3)); n += 3; })); });
@@ -4768,7 +4831,7 @@ function daeText(ps, k, units, o3) { o3 = o3 || {};
       nodes.push('<node id="n' + gi + '_' + bi + '" name="' + nm + '" type="NODE"><matrix sid="transform">' + Mx.map(v => +v.toFixed(6)).join(' ') + '</matrix><instance_node url="#lib_' + id + '_' + bi + '"/></node>'); });
   });
   return '<?xml version="1.0" encoding="utf-8"?>\n<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">' +
-    '<asset><contributor><authoring_tool>CASEMAKER 2</authoring_tool></contributor><unit meter="' + (units === 'mm' ? 0.001 : 0.0254) + '" name="' + (units === 'mm' ? 'millimeter' : 'inch') + '"/><up_axis>Z_UP</up_axis></asset>' +
+    '<asset><contributor><authoring_tool>CASEMAKER</authoring_tool></contributor><unit meter="' + (units === 'mm' ? 0.001 : 0.0254) + '" name="' + (units === 'mm' ? 'millimeter' : 'inch') + '"/><up_axis>Z_UP</up_axis></asset>' +
     '<library_effects><effect id="fxMetal"><profile_COMMON><technique sid="common"><phong><diffuse><color>0.62 0.64 0.68 1</color></diffuse><specular><color>0.9 0.9 0.9 1</color></specular><shininess><float>40</float></shininess></phong></technique></profile_COMMON></effect><effect id="fxWood"><profile_COMMON><technique sid="common"><lambert><diffuse><color>' + (o3.finish ? (o3.finish === 'cherry' ? '0.69 0.42 0.24 1' : '0.60 0.63 0.68 1') : '0.72 0.55 0.38 1') + '</color></diffuse></lambert></technique></profile_COMMON></effect></library_effects>' + '<library_materials><material id="matWood" name="TFL"><instance_effect url="#fxWood"/></material><material id="matMetal" name="Hardware"><instance_effect url="#fxMetal"/></material></library_materials>' +
     '<library_geometries>' + geos.join('') + '</library_geometries>' +
     '<library_nodes>' + libs.join('') + '</library_nodes>' +
@@ -4848,11 +4911,11 @@ $('newBtn').onclick = () => { M = newCase(); HIST.past = []; HIST.future = []; H
 $('job').onchange = () => { M.job = $('job').value; };
 $('friendly').onchange = () => { M.friendly = $('friendly').value; };
 $('saveBtn').onclick = () => {
-  const doc = { format: 'CASEMAKER2', version: 1, build: '2026-09-03.87', saved: new Date().toISOString(), model: M };
-  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.87'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
+  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.93', saved: new Date().toISOString(), model: M };
+  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.93'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
 $('loadBtn').onclick = () => $('loadFile').click();
 $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
-  f.text().then(t => { try { const d = JSON.parse(t); if (d.format !== 'CASEMAKER2') throw new Error('not a CASEMAKER 2 file');
+  f.text().then(t => { try { const d = JSON.parse(t); if (d.format !== 'CASEMAKER') throw new Error('not a CASEMAKER file');
       M = d.model; UI.sel = { kind: 'case' }; UI.sc = null; $('job').value = M.job || 'MODEL NUMBER'; render(); }
     catch (err) { alert('Could not load: ' + err.message); } }); e.target.value = ''; };
 
@@ -4860,7 +4923,7 @@ $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
    Served over http: the page re-reads itself every minute and compares build stamps.
    Opened from a file: the browser blocks reading files, so tabs tell each other instead -
    opening a newer build in any tab tells every older tab on this machine. */
-const BUILD = '2026-09-03.87';
+const BUILD = '2026-09-03.93';
 const newer = (a, b) => { if (!a || !b) return false; const [da, na] = a.split('.'), [db, nb] = b.split('.');
   return da > db || (da === db && (+na || 0) > (+nb || 0)); };
 function showUpdate(build) { $('updateT').textContent = 'A NEW BUILD OF CASEMAKER IS AVAILABLE · ' + build + ' (YOU ARE ON ' + BUILD + ')'; $('update').classList.add('show'); }
