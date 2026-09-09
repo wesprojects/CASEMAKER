@@ -91,7 +91,7 @@ label.f .mm{color:var(--mute);font-size:9px}
 <body>
 <div class="update" id="update"><span id="updateT">A NEW BUILD OF CASEMAKER IS AVAILABLE</span><button class="btn" id="updateGo">RELOAD</button><button class="x" id="updateX" title="Dismiss">✕</button></div>
 <header>
-  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.94 </div></div>
+  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.95 </div></div>
   <input class="job" id="job" value="MODEL NUMBER">
   <input class="job" id="friendly" placeholder="PRODUCT NAME" style="width:150px">
   <select id="preset"><option value="">SAMPLE PRODUCTS</option></select>
@@ -2167,7 +2167,7 @@ function lockMesh() {
 }
 /* ---------- STATE ---------- */
 const $ = id => document.getElementById(id);
-const r3 = v => Math.round(v * 1000) / 1000;
+const r3 = v => Math.round(v * 10000) / 10000;                                 // every measurement reads to 4 decimals
 let M = newCase();
 const UI = { sel: { kind: 'case' }, tool: 'select', view: 'plan', drag: null, resize: null, lastXY: [0, 0], plan: null, isoOpen: false, panel: null,
              sc: null, view0: null };   // sc: locked drawing scale · view0: the viewBox it was fitted for
@@ -2336,7 +2336,7 @@ function drawPlan() {
       if (kind === 'drawer') UI.drwSel = +String(id).split('@')[1] || 0; badge(kind, id); });
     g.addEventListener('dblclick', e => { e.preventDefault();
       const it = findPart(kind, id), cur = kind === 'divider' ? it.x : it.z;
-      const v = prompt((kind === 'divider' ? 'X FROM LEFT' : 'HEIGHT FROM FLOOR') + ' (inches)', cur.toFixed(3));
+      const v = prompt((kind === 'divider' ? 'X FROM LEFT' : 'HEIGHT FROM FLOOR') + ' (inches)', cur.toFixed(4));
       if (v !== null && !isNaN(parseFloat(v))) { if (kind === 'divider') it.x = r3(parseFloat(v)); else it.z = r3(parseFloat(v)); render(); } });
   });
   $('fCase').textContent = M.W + ' × ' + M.H + ' × ' + M.D + '"';
@@ -2400,7 +2400,7 @@ function deleteSelected() { if (UI.sel.kind === 'shelf' || UI.sel.kind === 'divi
 function badge(kind, id) { const g = $('badge'), it = findPart(kind, id); if (!g || !it || !UI.plan) return;
   const v = kind === 'divider' ? it.x : kind === 'drawer' ? it.z : kind === 'grommet' ? (it.host === 'left' || it.host === 'right' ? it.z : it.x) : it.z, inp = $('badgeI');
   $('badgeL').textContent = kind === 'divider' ? 'X' : kind === 'drawer' ? 'FACE BOTTOM' : kind === 'rod' ? 'ROD HEIGHT' : kind === 'grommet' ? (it.host === 'left' || it.host === 'right' ? 'GROMMET Z' : 'GROMMET X') : 'HEIGHT';
-  if (document.activeElement !== inp) inp.value = v.toFixed(3);
+  if (document.activeElement !== inp) inp.value = v.toFixed(4);
   g.style.visibility = 'visible'; g.style.pointerEvents = 'all';
   /* anchored to the part: a shelf shows it at its right end, a divider at its top */
   const ax = kind === 'divider' ? UI.plan.X(it.x + M.T / 2) + 8 : Math.max(UI.plan.X(it.x0) + 4, UI.plan.X(it.x1) - 200);
@@ -2419,7 +2419,7 @@ function sizeBadge() { const R = UI.resize, g = $('badge'), inp = $('badgeI'); i
   $('badgeC').style.display = 'none';                                          // the case readout has no centre
   const isH = R.which === 'h', v = isH ? M.H : M.W;
   $('badgeL').textContent = isH ? 'HEIGHT' : 'WIDTH';
-  inp.value = v.toFixed(3);
+  inp.value = v.toFixed(4);
   g.style.visibility = 'visible'; g.style.pointerEvents = 'none';
   g.setAttribute('x', isH ? UI.plan.X(M.W / 2) - 75 : UI.plan.X(0) + 8);
   g.setAttribute('y', isH ? UI.plan.Y(M.H) + 6 : UI.plan.Y(M.H / 2) - 14); }
@@ -2924,8 +2924,8 @@ addEventListener('mouseup', () => { if (ORBIT.drag) { ORBIT.drag = null; isoHQ()
    Every dimension box declares the unit it is stored in (data-u="in" or "mm").
    The line under it always shows the other unit, and typing a suffix - 12mm, .5in,
    3/4" - converts the entry into the box's own unit. */
-const U_IN = v => (v * MM).toFixed(1) + ' mm';
-const U_MM = v => (v / MM).toFixed(3).replace(/0+$/, '').replace(/\.$/, '') + ' in';
+const U_IN = v => (v * MM).toFixed(4) + ' mm';
+const U_MM = v => (v / MM).toFixed(4) + ' in';
 const uConv = (v, u) => u === 'mm' ? U_MM(v) : U_IN(v);
 function uParse(txt, u) {                                                      // returns the number in the box's own unit, or null
   const t = String(txt).trim().toLowerCase().replace(/\s+/g, '');
@@ -2945,7 +2945,7 @@ function uParse(txt, u) {                                                      /
 }
 function uBox(l, id, v, st, u, ph) {                                           // one labelled dimension box
   u = u || 'in';
-  const val = v == null ? '' : (u === 'mm' ? String(+(+v).toFixed(3)) : r3(v));
+  const val = v == null ? '' : (u === 'mm' ? String(+(+v).toFixed(4)) : r3(v));
   return '<label class="f">' + l + '<input id="' + id + '" type="text" inputmode="decimal" data-u="' + u + '"' +
     ' data-step="' + (st || 0.0625) + '" value="' + val + '"' + (ph ? ' placeholder="' + ph + '"' : '') +
     '><span class="mm">' + (v == null ? '' : '= ' + uConv(+v, u)) + '</span></label>';
@@ -2960,7 +2960,7 @@ function uWire(root) {                                                         /
       span.textContent = n == null ? (el.placeholder ? '' : span.textContent) : '= ' + uConv(n, u); };
     const settle = () => { const n = uParse(el.value, u);
       if (n == null) { show(); return; }
-      const clean = u === 'mm' ? String(+n.toFixed(3)) : r3(n);
+      const clean = u === 'mm' ? String(+n.toFixed(4)) : r3(n);
       if (el.value !== clean) el.value = clean;                                // the box always ends up in its own unit
       show(); };
     el.addEventListener('input', show);
@@ -2971,7 +2971,7 @@ function uWire(root) {                                                         /
       if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
       e.preventDefault();
       const n = uParse(el.value, u) || 0;
-      el.value = u === 'mm' ? String(+(n + (e.key === 'ArrowUp' ? step : -step)).toFixed(3)) : r3(n + (e.key === 'ArrowUp' ? step : -step));
+      el.value = u === 'mm' ? String(+(n + (e.key === 'ArrowUp' ? step : -step)).toFixed(4)) : r3(n + (e.key === 'ArrowUp' ? step : -step));
       show(); el.dispatchEvent(new Event('change', { bubbles: true })); });
     el.addEventListener('change', () => settle(), true);                       // capture: the box is in its own unit before any consumer reads it
   });
@@ -3036,7 +3036,7 @@ function inspector() {
         '<label class="f">HINGE END DISTANCE<input id="hgE" type="number" step="0.125" value="' + (b.hingeEnd != null ? b.hingeEnd : '') + '" placeholder="' + ((M.opt.joinery || JOINERY).hinge.end) + '"></label></div>' +
         '<div style="color:var(--mute);font-size:9.5px;margin-top:5px;line-height:1.5">AUTO: HALF OVERLAY ON A DIVIDER, FULL ON A CASE SIDE. INSET DOORS USE THE INSET CRANK.</div></div>' +
         (() => { const dc = b.doorClr || {}, defMM = ((b.doorStyle === 'overlay' || (!b.doorStyle || b.doorStyle === 'auto') && (M.opt.door.style || 'inset') === 'overlay') ? M.opt.door.reveal : M.opt.door.insetClear) * MM;
-          const FO = (l, id, v) => uBox(l, id, v, 0.0197, 'in', 'AUTO').replace('<span class="mm"></span>', '<span class="mm">DEFAULT ' + defMM.toFixed(1) + ' mm</span>');
+          const FO = (l, id, v) => uBox(l, id, v, 0.0197, 'in', 'AUTO').replace('<span class="mm"></span>', '<span class="mm">DEFAULT ' + defMM.toFixed(4) + ' mm</span>');
           return '<div class="grp"><div class="t">EDGE GAPS · BLANK = DEFAULT</div><div class="row">' +
             FO('LEFT', 'dgL', dc.l) + FO('RIGHT', 'dgR', dc.r) + FO('TOP', 'dgT2', dc.t) + FO('BOTTOM', 'dgB', dc.b) +
             (b.content === 'doors2' ? FO('BETWEEN THE DOORS', 'dgM', dc.m) : '') + '</div></div>'; })() : '') +
@@ -3205,9 +3205,9 @@ function panelSVG(pt) {
     P.push('<text x="' + (cx + r + 2) + '" y="' + (cy - r - 1) + '" font-size="9" fill="#7d8798">' + n + '</text>'); });
   /* edge names + sizes */
   const eL = edgeNameOf(pt, 0, 0, 0, h), eR = edgeNameOf(pt, w, 0, w, h), eB = edgeNameOf(pt, 0, 0, w, 0), eT = edgeNameOf(pt, 0, h, w, h);
-  P.push('<text x="' + (X(0) - 12) + '" y="' + Y(h / 2) + '" font-size="10" fill="#7d8798" text-anchor="middle" transform="rotate(-90 ' + (X(0) - 12) + ' ' + Y(h / 2) + ')">' + (eL || '') + '  \u00b7  ' + h.toFixed(2) + '"</text>');
+  P.push('<text x="' + (X(0) - 12) + '" y="' + Y(h / 2) + '" font-size="10" fill="#7d8798" text-anchor="middle" transform="rotate(-90 ' + (X(0) - 12) + ' ' + Y(h / 2) + ')">' + (eL || '') + '  \u00b7  ' + h.toFixed(4) + '"</text>');
   if (eR) P.push('<text x="' + (X(w) + 14) + '" y="' + Y(h / 2) + '" font-size="10" fill="#7d8798" text-anchor="middle" transform="rotate(90 ' + (X(w) + 14) + ' ' + Y(h / 2) + ')">' + eR + '</text>');
-  P.push('<text x="' + X(w / 2) + '" y="' + (Y(0) + 24) + '" font-size="10" fill="#7d8798" text-anchor="middle">' + (eB || '') + '  \u00b7  ' + w.toFixed(2) + '"</text>');
+  P.push('<text x="' + X(w / 2) + '" y="' + (Y(0) + 24) + '" font-size="10" fill="#7d8798" text-anchor="middle">' + (eB || '') + '  \u00b7  ' + w.toFixed(4) + '"</text>');
   if (eT) P.push('<text x="' + X(w / 2) + '" y="' + (Y(h) - 8) + '" font-size="10" fill="#7d8798" text-anchor="middle">' + eT + '</text>');
   P.push('<text x="' + (X(0) + 3) + '" y="' + (Y(0) - 4) + '" font-size="9" fill="#7d8798">0,0</text>');
   if (pt.rodAxis) { const [rx, ry, rd] = pt.rodAxis, rr = (rd / 2) * sc;
@@ -3223,7 +3223,7 @@ function panelSVG(pt) {
 function drawParts() {
   const ps = parts(M);
   const rows = ps.filter(p => !p.hardware).map((p, i) => '<tr><td>' + p.name + '</td><td>' + p.qty + '</td>' +
-    '<td>' + p.w.toFixed(3) + '</td><td>' + p.h.toFixed(3) + '</td><td>' + p.t.toFixed(3) + '</td>' +
+    '<td>' + p.w.toFixed(4) + '</td><td>' + p.h.toFixed(4) + '</td><td>' + p.t.toFixed(4) + '</td>' +
     '<td>' + Math.round(p.w * MM) + ' × ' + Math.round(p.h * MM) + ' × ' + Math.round(p.t * MM) + '</td>' +
     '<td>' + (p.groove != null ? 'GROOVE ' + Math.round(p.groove * MM) + ' MM UP' : p.inGroove ? 'IN GROOVE' : '') + '</td>' +
     '<td class="act"><button class="btn sm" data-dxf="' + i + '">DXF</button><button class="btn sm" data-nc="' + i + '"' + (cnc1Params(p) ? '' : ' disabled title="No CNC #1 work on this part"') + '>.NC</button></td></tr>').join('');
@@ -3262,7 +3262,7 @@ function drawParts() {
       .map(([ink, t, f]) => '<span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:-1px;' + (f ? 'background:' + ink : 'border:2px solid ' + ink) + '"></span> ' + t + '</span>').join('') +
     '<span><span style="display:inline-block;width:14px;height:3px;background:#ff6b6b;vertical-align:2px"></span> Groove / notch</span>' +
     '<span>Hollow = edge hole, on the edge</span></div>' +
-    (sel2 ? '<div style="font-size:9.5px;color:var(--mute);margin:4px 2px 14px">' + sel2.w.toFixed(2) + '" \u00d7 ' + sel2.h.toFixed(2) + '" \u00d7 ' + sel2.t.toFixed(2) + '" \u00b7 view: ' + (sel2.frame ? faceWord(sel2, false) : 'FACE') + ' (cam lock face) \u00b7 edges: L=' + (pv.edges.eL || '\u2014') + ', R=' + (pv.edges.eR || '\u2014') + ', bottom of drawing=' + (pv.edges.eB || '\u2014') + ', top=' + (pv.edges.eT || '\u2014') + '</div>' : '');
+    (sel2 ? '<div style="font-size:9.5px;color:var(--mute);margin:4px 2px 14px">' + sel2.w.toFixed(4) + '" \u00d7 ' + sel2.h.toFixed(4) + '" \u00d7 ' + sel2.t.toFixed(4) + '" \u00b7 view: ' + (sel2.frame ? faceWord(sel2, false) : 'FACE') + ' (cam lock face) \u00b7 edges: L=' + (pv.edges.eL || '\u2014') + ', R=' + (pv.edges.eR || '\u2014') + ', bottom of drawing=' + (pv.edges.eB || '\u2014') + ', top=' + (pv.edges.eT || '\u2014') + '</div>' : '');
   const drillable2 = sel2 && cnc1Params(sel2);
   $('partsView').innerHTML =
     '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">' +
@@ -3302,7 +3302,7 @@ function dxfPart(p) {
   [[0, 0], [p.w, 0], [p.w, p.h], [0, p.h]].forEach(([x, y]) => { w(0, 'VERTEX'); w(8, 'OUTLINE'); w(10, x.toFixed(4)); w(20, y.toFixed(4)); w(30, 0); });
   w(0, 'SEQEND'); w(8, 'OUTLINE');
   w(0, 'TEXT'); w(8, 'TEXT'); w(10, 0); w(20, (p.h + 0.3).toFixed(4)); w(30, 0); w(40, 0.5);
-  w(1, ascii7(p.name + '  ' + p.w.toFixed(3) + ' x ' + p.h.toFixed(3) + ' x ' + p.t.toFixed(3) + '  QTY ' + p.qty + '  ' + (M.job || '')));
+  w(1, ascii7(p.name + '  ' + p.w.toFixed(4) + ' x ' + p.h.toFixed(4) + ' x ' + p.t.toFixed(4) + '  QTY ' + p.qty + '  ' + (M.job || '')));
   w(0, 'ENDSEC'); w(0, 'EOF');
   return L.join('\n') + '\n';
 }
@@ -3338,7 +3338,7 @@ function download(name, data, type) {                                          /
 /* machine files carry 7-bit ASCII only: AutoCAD's DXFIN pages an error per
    non-ASCII TEXT ("press ENTER to continue"), and the OSAI dislikes them too */
 const ascii7 = s2 => String(s2).replace(/\u00b7/g, '-').replace(/\u2033/g, '"').replace(/\u2019/g, "'").replace(/[^\x20-\x7e]/g, '');
-const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.94'.slice(0, 10);
+const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.95'.slice(0, 10);
 
 function openFlyout(which) {
   UI.fly = which;
@@ -3579,7 +3579,7 @@ function openToolpath(p) {
     const px = sg.a.x + (sg.b.x - sg.a.x) * k, py = sg.a.y + (sg.b.y - sg.a.y) * k, pz = sg.a.z + (sg.b.z - sg.a.z) * k;
     const opn = segs.slice(0, SIM.seg + 1).filter(q => q.type === 'feed').length;
     info.textContent = 'MOVE ' + (SIM.seg + 1) + '/' + segs.length + ' \u00b7 DRILL ' + opn + '/' + FEEDN + ' \u00b7 ' +
-      (sg.plane || '') + ' ' + sg.type.toUpperCase() + ' \u00b7 X' + px.toFixed(3) + ' Y' + py.toFixed(3) + ' Z' + pz.toFixed(3);
+      (sg.plane || '') + ' ' + sg.type.toUpperCase() + ' \u00b7 X' + px.toFixed(4) + ' Y' + py.toFixed(4) + ' Z' + pz.toFixed(4);
     scrub.value = Math.round(1000 * t / TOTAL); };
   const setPlaying = on => { SIM.playing = on; play.textContent = on ? 'PAUSE' : 'RUN'; play.classList.toggle('on', !on);
     if (on) { SIM.last = performance.now(); if (!TP) TP = requestAnimationFrame(tick); } };
@@ -3852,12 +3852,12 @@ async function buildInstructions() {
   };
   const flatBox = flatBoxF(false);
   const lift = Math.max(2, M.H * 0.08);
-  const dstr = '2026-09-03.94'.slice(0, 10);
+  const dstr = '2026-09-03.95'.slice(0, 10);
   const stepsPerPage = 4; const totalPages = 1 + Math.ceil(plan.length / stepsPerPage);
   const header = pg => { pdf.page(); const lh = 34, lw = lh * logo.width / logo.height; pdf.image(logo, MG, MG, lw, lh);
     pdf.text(PW - MG, MG + 12, 'Assembly Instructions', 13, true, 'right'); pdf.text(PW - MG, MG + 30, 'MODEL NO.: ' + modelNo, 15, true, 'right');
     pdf.line(MG, MG + 44, PW - MG, MG + 44, 1.4); pdf.text(PW / 2, MG + 64, ((M.friendly || '').trim() || title), 18, true, 'center'); pdf.text(PW - MG, MG + 64, dstr, 8, false, 'right');
-    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.94', 7, false, 'right', 0.4); return MG + 76; };
+    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.95', 7, false, 'right', 0.4); return MG + 76; };
   let y = header(1);
   const cw = CW / hw.length, rowH = 78; pdf.rect(MG, y, CW, rowH, { lw: 0.9 });
   hw.forEach((r, i) => { const x = MG + i * cw; if (i) pdf.line(x, y, x, y + rowH, 0.9); pdf.rect(x, y, cw, 14, { fill: 0.9 }); pdf.text(x + cw / 2, y + 10, r.code, 8, true, 'center');
@@ -4061,7 +4061,7 @@ function ncFor(p) {
   const J = M.opt.joinery || JOINERY, maxB = EXP.drill.maxBore;
   const r = cnc1Program(P), code = Array.isArray(r.code) ? r.code.join('\n') : String(r.code || '');
   const head = [];
-  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.94 - ' + p.name + ' x' + p.qty);
+  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.95 - ' + p.name + ' x' + p.qty);
   head.push(';STOCK ' + p.t + '" - HOLE CENTERLINE ' + r3(P._ctr) + '" FROM THE CAM FACE');
   head.push(';PANEL LIES CAM FACE ' + (P._faceDown ? 'DOWN' : 'UP') + ': Z DEPTH OVERRIDE ' + P.zOverride + '" OFF THE TABLE');
   head.push(';LOAD TURNED 90 LEFT FROM THE DRAWING: ' + r3(p.w) + '" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ' + r3(p.h) + '" ACROSS X');
@@ -4133,7 +4133,7 @@ function dxfSheet(sh, i, n, o, tag) {
     it.holes.filter(h => !h.edge).forEach(h => { const [hx, hy] = map(h.x, h.y); circle(holeLayer(h), hx, hy, h.d); });
     it.lines.forEach(l => { const [x1, y1] = map(l.x1, l.y1), [x2, y2] = map(l.x2, l.y2); line('GROOVE', x1, y1, x2, y2); });
     if (it.groove != null && !it.lines.length) line('GROOVE', it.x, it.y + it.groove, it.x + it.a, it.y + it.groove);
-    text('TEXT', it.x + 0.3, it.y + 0.3, Math.min(0.6, it.b / 4), it.name + '  ' + it.a.toFixed(3) + ' x ' + it.b.toFixed(3)); });
+    text('TEXT', it.x + 0.3, it.y + 0.3, Math.min(0.6, it.b / 4), it.name + '  ' + it.a.toFixed(4) + ' x ' + it.b.toFixed(4)); });
   w(0, 'ENDSEC'); w(0, 'EOF');
   return L.join('\n') + '\n';
 }
@@ -4972,8 +4972,8 @@ $('newBtn').onclick = () => { M = newCase(); HIST.past = []; HIST.future = []; H
 $('job').onchange = () => { M.job = $('job').value; };
 $('friendly').onchange = () => { M.friendly = $('friendly').value; };
 $('saveBtn').onclick = () => {
-  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.94', saved: new Date().toISOString(), model: M };
-  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.94'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
+  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.95', saved: new Date().toISOString(), model: M };
+  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.95'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
 $('loadBtn').onclick = () => $('loadFile').click();
 $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
   f.text().then(t => { try { const d = JSON.parse(t); if (d.format !== 'CASEMAKER') throw new Error('not a CASEMAKER file');
@@ -4984,7 +4984,7 @@ $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
    Served over http: the page re-reads itself every minute and compares build stamps.
    Opened from a file: the browser blocks reading files, so tabs tell each other instead -
    opening a newer build in any tab tells every older tab on this machine. */
-const BUILD = '2026-09-03.94';
+const BUILD = '2026-09-03.95';
 const newer = (a, b) => { if (!a || !b) return false; const [da, na] = a.split('.'), [db, nb] = b.split('.');
   return da > db || (da === db && (+na || 0) > (+nb || 0)); };
 function showUpdate(build) { $('updateT').textContent = 'A NEW BUILD OF CASEMAKER IS AVAILABLE · ' + build + ' (YOU ARE ON ' + BUILD + ')'; $('update').classList.add('show'); }
