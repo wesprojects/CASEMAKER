@@ -91,7 +91,7 @@ label.f .mm{color:var(--mute);font-size:9px}
 <body>
 <div class="update" id="update"><span id="updateT">A NEW BUILD OF CASEMAKER IS AVAILABLE</span><button class="btn" id="updateGo">RELOAD</button><button class="x" id="updateX" title="Dismiss">✕</button></div>
 <header>
-  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.93 </div></div>
+  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.94 </div></div>
   <input class="job" id="job" value="MODEL NUMBER">
   <input class="job" id="friendly" placeholder="PRODUCT NAME" style="width:150px">
   <select id="preset"><option value="">SAMPLE PRODUCTS</option></select>
@@ -2920,12 +2920,70 @@ addEventListener('mouseup', () => { if (ORBIT.drag) { ORBIT.drag = null; isoHQ()
 
 
 /* ---------- INSPECTOR ---------- */
-const F = (l, id, v, st) => '<label class="f">' + l + '<input id="' + id + '" type="number" step="' + (st || 0.0625) + '" value="' + r3(v) + '"><span class="mm">= ' + (v * MM).toFixed(1) + ' mm</span></label>';
+/* ---------- UNIT BOXES ----------
+   Every dimension box declares the unit it is stored in (data-u="in" or "mm").
+   The line under it always shows the other unit, and typing a suffix - 12mm, .5in,
+   3/4" - converts the entry into the box's own unit. */
+const U_IN = v => (v * MM).toFixed(1) + ' mm';
+const U_MM = v => (v / MM).toFixed(3).replace(/0+$/, '').replace(/\.$/, '') + ' in';
+const uConv = (v, u) => u === 'mm' ? U_MM(v) : U_IN(v);
+function uParse(txt, u) {                                                      // returns the number in the box's own unit, or null
+  const t = String(txt).trim().toLowerCase().replace(/\s+/g, '');
+  if (!t) return null;
+  const m = t.match(/^(-?\d*\.?\d+(?:\/\d+)?)(mm|cm|m|in|inch|inches|"|'')?$/);
+  if (!m) return null;
+  let n = m[1].indexOf('/') > 0 ? (+m[1].split('/')[0] / +m[1].split('/')[1]) : +m[1];
+  if (!isFinite(n)) return null;
+  const sfx = m[2];
+  let inches;
+  if (!sfx) return n;                                                          // bare number: already the box's unit
+  if (sfx === 'mm') inches = n / MM;
+  else if (sfx === 'cm') inches = n * 10 / MM;
+  else if (sfx === 'm') inches = n * 1000 / MM;
+  else inches = n;                                                             // in / inch / " / ''
+  return u === 'mm' ? inches * MM : inches;
+}
+function uBox(l, id, v, st, u, ph) {                                           // one labelled dimension box
+  u = u || 'in';
+  const val = v == null ? '' : (u === 'mm' ? String(+(+v).toFixed(3)) : r3(v));
+  return '<label class="f">' + l + '<input id="' + id + '" type="text" inputmode="decimal" data-u="' + u + '"' +
+    ' data-step="' + (st || 0.0625) + '" value="' + val + '"' + (ph ? ' placeholder="' + ph + '"' : '') +
+    '><span class="mm">' + (v == null ? '' : '= ' + uConv(+v, u)) + '</span></label>';
+}
+function uWire(root) {                                                         // suffix conversion + live companion line + arrow-key stepping
+  (root || document).querySelectorAll('input[data-u]').forEach(el => {
+    if (el.__uw) return; el.__uw = 1;
+    const u = el.dataset.u, step = +el.dataset.step || 0.0625;
+    const span = el.parentNode.querySelector('.mm');
+    const show = () => { if (!span) return;
+      const n = uParse(el.value, u);
+      span.textContent = n == null ? (el.placeholder ? '' : span.textContent) : '= ' + uConv(n, u); };
+    const settle = () => { const n = uParse(el.value, u);
+      if (n == null) { show(); return; }
+      const clean = u === 'mm' ? String(+n.toFixed(3)) : r3(n);
+      if (el.value !== clean) el.value = clean;                                // the box always ends up in its own unit
+      show(); };
+    el.addEventListener('input', show);
+    el.addEventListener('blur', () => { const before = el.value; settle();
+      if (el.value !== before) el.dispatchEvent(new Event('change', { bubbles: true })); });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { settle(); el.dispatchEvent(new Event('change', { bubbles: true })); return; }
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      const n = uParse(el.value, u) || 0;
+      el.value = u === 'mm' ? String(+(n + (e.key === 'ArrowUp' ? step : -step)).toFixed(3)) : r3(n + (e.key === 'ArrowUp' ? step : -step));
+      show(); el.dispatchEvent(new Event('change', { bubbles: true })); });
+    el.addEventListener('change', () => settle(), true);                       // capture: the box is in its own unit before any consumer reads it
+  });
+}
+const F = (l, id, v, st) => uBox(l, id, v, st, 'in');
 const SL = (l, id, v, o) => '<label class="f">' + l + '<select id="' + id + '">' + o.map(a => '<option value="' + a[0] + '"' + (a[0] === v ? ' selected' : '') + '>' + a[1] + '</option>').join('') + '</select></label>';
 const seg = (t, id, val, opts) => '<div class="grp"><div class="t">' + t + '</div><div class="seg" id="' + id + '">' +
   opts.map(o => '<button data-v="' + o[0] + '" class="' + (String(val) === String(o[0]) ? 'on' : '') + '">' + o[1] + '</button>').join('') + '</div></div>';
 const wire = (id, fn) => { const el = $(id); if (el) el.querySelectorAll('button').forEach(x => x.onclick = () => { fn(x.dataset.v); render(); }); };
-const bind = (id, fn) => { const el = $(id); if (el) el.onchange = e => { fn(el.type === 'number' ? parseFloat(e.target.value) : e.target.value); render(); }; };
+const bind = (id, fn) => { const el = $(id); if (el) el.onchange = e => {
+  const numeric = el.type === 'number' || el.dataset.u;                        // unit boxes are text but always hold a number
+  fn(numeric ? parseFloat(e.target.value) : e.target.value); render(); }; };
 
 function inspector() {
   const box = $('insp'), sel = UI.sel; $('rmBtn').style.display = 'none';
@@ -2978,7 +3036,7 @@ function inspector() {
         '<label class="f">HINGE END DISTANCE<input id="hgE" type="number" step="0.125" value="' + (b.hingeEnd != null ? b.hingeEnd : '') + '" placeholder="' + ((M.opt.joinery || JOINERY).hinge.end) + '"></label></div>' +
         '<div style="color:var(--mute);font-size:9.5px;margin-top:5px;line-height:1.5">AUTO: HALF OVERLAY ON A DIVIDER, FULL ON A CASE SIDE. INSET DOORS USE THE INSET CRANK.</div></div>' +
         (() => { const dc = b.doorClr || {}, defMM = ((b.doorStyle === 'overlay' || (!b.doorStyle || b.doorStyle === 'auto') && (M.opt.door.style || 'inset') === 'overlay') ? M.opt.door.reveal : M.opt.door.insetClear) * MM;
-          const FO = (l, id, v) => '<label class="f">' + l + '<input id="' + id + '" type="number" step="0.0197" value="' + (v == null ? '' : r3(v)) + '" placeholder="AUTO"><span class="mm">' + (v == null ? 'DEFAULT ' + defMM.toFixed(1) + ' mm' : '= ' + (v * MM).toFixed(1) + ' mm') + '</span></label>';
+          const FO = (l, id, v) => uBox(l, id, v, 0.0197, 'in', 'AUTO').replace('<span class="mm"></span>', '<span class="mm">DEFAULT ' + defMM.toFixed(1) + ' mm</span>');
           return '<div class="grp"><div class="t">EDGE GAPS · BLANK = DEFAULT</div><div class="row">' +
             FO('LEFT', 'dgL', dc.l) + FO('RIGHT', 'dgR', dc.r) + FO('TOP', 'dgT2', dc.t) + FO('BOTTOM', 'dgB', dc.b) +
             (b.content === 'doors2' ? FO('BETWEEN THE DOORS', 'dgM', dc.m) : '') + '</div></div>'; })() : '') +
@@ -3114,6 +3172,7 @@ function inspector() {
   bind('cW', v => M.W = v); bind('cH', v => M.H = v); bind('cD', v => M.D = v); bind('cT', v => M.T = v); bind('cBT', v => M.backT = v);
   bind('cK', v => M.kick = v); bind('cKI', v => M.kickInset = v); bind('cTF', v => M.topFront = v); bind('cTE', v => M.topEnds = v);
   bind('ptTop', v => M.top = v); bind('ptBot', v => M.bottom = v); bind('ptBack', v => M.back = v); bind('ptBackE', v => M.backEdge = v);
+  uWire($('insp'));
 }
 
 /* ---------- PARTS LIST ---------- */
@@ -3279,14 +3338,14 @@ function download(name, data, type) {                                          /
 /* machine files carry 7-bit ASCII only: AutoCAD's DXFIN pages an error per
    non-ASCII TEXT ("press ENTER to continue"), and the OSAI dislikes them too */
 const ascii7 = s2 => String(s2).replace(/\u00b7/g, '-').replace(/\u2033/g, '"').replace(/\u2019/g, "'").replace(/[^\x20-\x7e]/g, '');
-const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.93'.slice(0, 10);
+const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.94'.slice(0, 10);
 
 function openFlyout(which) {
   UI.fly = which;
   const F = $('flyout'), body = $('fyBody'), foot = $('fyFoot');
   $('rail').querySelectorAll('button').forEach(q => q.classList.toggle('on', q.classList.contains('out') ? q.dataset.v === which : q.dataset.v === UI.view));
   const opt = (l, id, v, list) => '<label class="f">' + l + '<select id="' + id + '">' + list.map(a => '<option value="' + a[0] + '"' + (String(a[0]) === String(v) ? ' selected' : '') + '>' + a[1] + '</option>').join('') + '</select></label>';
-  const num = (l, id, v, st) => '<label class="f">' + l + '<input id="' + id + '" type="number" step="' + (st || 0.0625) + '" value="' + v + '"><span class="mm">= ' + (v * MM).toFixed(1) + ' mm</span></label>';
+  const num = (l, id, v, st, u) => uBox(l, id, v, st, u || 'in');
   const summary = () => { const ps = parts(M); const n = ps.reduce((a, p) => a + (p.hardware ? 0 : p.qty), 0);
     return n + ' PARTS · ' + ps.filter(p => p.hardware).reduce((a, p) => a + p.qty, 0) + ' HARDWARE'; };
 
@@ -3304,11 +3363,11 @@ function openFlyout(which) {
       (EXP.nest.proto ? '<div style="color:var(--mute);font-size:9.5px;margin-top:5px">TRUE TO SIZE \u00b7 NO EDGE \u00b7 CUT AT FINISHED DIMENSIONS.</div>' :
         '<div class="row" style="margin-top:8px">' +
         opt('SHELF EDGE', 'nEdgeS', String(EXP.nest.shelfEdgeT), [['1', '1 MM'], ['2', '2 MM'], ['3', '3 MM']]) +
-        num('SHELF PRE-MILL (MM)', 'nPreS', EXP.nest.shelfPre, 0.1) + '</div>' +
+        num('SHELF PRE-MILL', 'nPreS', EXP.nest.shelfPre, 0.1, 'mm') + '</div>' +
         '<div class="row" style="margin-top:6px;align-items:flex-end">' +
         '<label class="ck" style="margin-bottom:6px"><input type="checkbox" id="nKickOn"' + (EXP.nest.kickEdge ? ' checked' : '') + '> KICK EDGE</label>' +
         (EXP.nest.kickEdge ? opt('KICK EDGE', 'nEdgeK', String(EXP.nest.kickEdgeT), [['1', '1 MM'], ['2', '2 MM'], ['3', '3 MM']]) +
-          num('KICK PRE-MILL (MM)', 'nPreK', EXP.nest.kickPre, 0.1) : '') + '</div>' +
+          num('KICK PRE-MILL', 'nPreK', EXP.nest.kickPre, 0.1, 'mm') : '') + '</div>' +
         '<div style="color:var(--mute);font-size:9.5px;margin-top:5px">BANDED EDGES CUT SHORT BY EDGE \u2212 PRE-MILL, SO THEY FINISH TRUE. SHELF FRONTS; THE KICK ONLY WHEN TICKED.</div>') +
       '</div>' +
       stock('case', 'CASE SHEET · PANELS, SHELVES, DOORS, FACES', EXP.nest.case) +
@@ -3365,7 +3424,7 @@ function openFlyout(which) {
     const plan = asmPlan(), hwn = asmHardware();
     $('fyT').textContent = 'ASSEMBLY'; $('fyS').textContent = 'ASSEMBLY MANUAL EXPORT';
     EXP.assy = Object.assign({ spare: 0, dims: false, stickers: true, tools: true, notes: '' }, EXP.assy || {});
-    body.innerHTML = '<div class="grp">' + num('SPARE HARDWARE PER ITEM', 'asSpare', EXP.assy.spare, 1).replace('step="1"', 'step="1" min="0"').replace('<span class="mm">= ' + (EXP.assy.spare * MM).toFixed(1) + ' mm</span>', '<span class="mm">EXTRA PIECES ADDED TO EACH LINE OF THE HARDWARE TABLE</span>') + '</div>' +
+    body.innerHTML = '<div class="grp"><label class="f">SPARE HARDWARE PER ITEM<input id="asSpare" type="number" step="1" min="0" value="' + EXP.assy.spare + '"></label></div>' +
       '<div class="grp">' + opt('CAM COVER STICKERS', 'asStick', EXP.assy.stickers ? '1' : '0', [['1', 'INCLUDE (ONE PER CAM NUT)'], ['0', 'LEAVE OFF']]) + '</div>' +
       '<div class="grp">' + opt('TOOLS LINE', 'asTools', EXP.assy.tools ? '1' : '0', [['1', 'LIST THE TOOLS NEEDED'], ['0', 'LEAVE OFF']]) + '</div>' +
       '<div class="grp">' + opt('PANEL DIMENSIONS', 'asDims', EXP.assy.dims ? '1' : '0', [['0', 'OFF'], ['1', 'SHOW ON THE PARTS LIST']]) + '</div>' +
@@ -3404,6 +3463,7 @@ function openFlyout(which) {
         download(stamp() + '.dae', xml2, 'model/vnd.collada+xml'); } };
   }
   F.classList.add('open');
+  uWire($('fyBody'));                                                          // unit boxes: companion line + suffix conversion
 }
 function closeFlyout() { UI.fly = null; $('flyout').classList.remove('open');
   $('rail').querySelectorAll('button').forEach(q => q.classList.toggle('on', !q.classList.contains('out') && q.dataset.v === UI.view)); }
@@ -3792,12 +3852,12 @@ async function buildInstructions() {
   };
   const flatBox = flatBoxF(false);
   const lift = Math.max(2, M.H * 0.08);
-  const dstr = '2026-09-03.93'.slice(0, 10);
+  const dstr = '2026-09-03.94'.slice(0, 10);
   const stepsPerPage = 4; const totalPages = 1 + Math.ceil(plan.length / stepsPerPage);
   const header = pg => { pdf.page(); const lh = 34, lw = lh * logo.width / logo.height; pdf.image(logo, MG, MG, lw, lh);
     pdf.text(PW - MG, MG + 12, 'Assembly Instructions', 13, true, 'right'); pdf.text(PW - MG, MG + 30, 'MODEL NO.: ' + modelNo, 15, true, 'right');
     pdf.line(MG, MG + 44, PW - MG, MG + 44, 1.4); pdf.text(PW / 2, MG + 64, ((M.friendly || '').trim() || title), 18, true, 'center'); pdf.text(PW - MG, MG + 64, dstr, 8, false, 'right');
-    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.93', 7, false, 'right', 0.4); return MG + 76; };
+    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.94', 7, false, 'right', 0.4); return MG + 76; };
   let y = header(1);
   const cw = CW / hw.length, rowH = 78; pdf.rect(MG, y, CW, rowH, { lw: 0.9 });
   hw.forEach((r, i) => { const x = MG + i * cw; if (i) pdf.line(x, y, x, y + rowH, 0.9); pdf.rect(x, y, cw, 14, { fill: 0.9 }); pdf.text(x + cw / 2, y + 10, r.code, 8, true, 'center');
@@ -4001,7 +4061,7 @@ function ncFor(p) {
   const J = M.opt.joinery || JOINERY, maxB = EXP.drill.maxBore;
   const r = cnc1Program(P), code = Array.isArray(r.code) ? r.code.join('\n') : String(r.code || '');
   const head = [];
-  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.93 - ' + p.name + ' x' + p.qty);
+  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.94 - ' + p.name + ' x' + p.qty);
   head.push(';STOCK ' + p.t + '" - HOLE CENTERLINE ' + r3(P._ctr) + '" FROM THE CAM FACE');
   head.push(';PANEL LIES CAM FACE ' + (P._faceDown ? 'DOWN' : 'UP') + ': Z DEPTH OVERRIDE ' + P.zOverride + '" OFF THE TABLE');
   head.push(';LOAD TURNED 90 LEFT FROM THE DRAWING: ' + r3(p.w) + '" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ' + r3(p.h) + '" ACROSS X');
@@ -4896,7 +4956,8 @@ function drawOpts() {
   const grp = optTab === 'DRAWERS' ? M.opt.drawer : optTab === 'SHELVES' ? M.opt.shelf : optTab === 'JOINERY' ? J2 : optTab === 'GLIDES' ? (J2.glide || (J2.glide = structuredClone(JOINERY.glide))) : M.opt.door;
   $('optBody').innerHTML = OPT[optTab].map(([k, l, ty, os]) => ty === 'sel'
     ? '<div class="sec"><h3>' + l + '</h3><select data-k="' + k + '">' + os.map(o => '<option value="' + o[0] + '"' + (grp[k] === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>'
-    : '<div class="sec"><h3>' + l + '</h3><input data-k="' + k + '" type="number" step="0.0001" value="' + (grp[k] == null ? '' : r3(grp[k])) + '"' + (grp[k] == null ? ' placeholder="auto"' : '') + '><div class="mm">' + (grp[k] == null ? '' : '= ' + (grp[k] * MM).toFixed(1) + ' mm') + '</div></div>').join('');
+    : '<div class="sec"><h3>' + l + '</h3><input data-k="' + k + '" type="text" inputmode="decimal" data-u="in" data-step="0.0625" value="' + (grp[k] == null ? '' : r3(grp[k])) + '"' + (grp[k] == null ? ' placeholder="auto"' : '') + '><div class="mm">' + (grp[k] == null ? '' : '= ' + U_IN(grp[k])) + '</div></div>').join('');
+  uWire($('optBody'));
   $('optBody').querySelectorAll('input,select').forEach(i => i.onchange = () => { grp[i.dataset.k] = i.tagName === 'SELECT' ? i.value : (i.value === '' ? null : parseFloat(i.value)); drawOpts(); render(); });
 }
 $('optBtn').onclick = () => { drawOpts(); $('optModal').hidden = false; };
@@ -4911,8 +4972,8 @@ $('newBtn').onclick = () => { M = newCase(); HIST.past = []; HIST.future = []; H
 $('job').onchange = () => { M.job = $('job').value; };
 $('friendly').onchange = () => { M.friendly = $('friendly').value; };
 $('saveBtn').onclick = () => {
-  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.93', saved: new Date().toISOString(), model: M };
-  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.93'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
+  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.94', saved: new Date().toISOString(), model: M };
+  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.94'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
 $('loadBtn').onclick = () => $('loadFile').click();
 $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
   f.text().then(t => { try { const d = JSON.parse(t); if (d.format !== 'CASEMAKER') throw new Error('not a CASEMAKER file');
@@ -4923,7 +4984,7 @@ $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
    Served over http: the page re-reads itself every minute and compares build stamps.
    Opened from a file: the browser blocks reading files, so tabs tell each other instead -
    opening a newer build in any tab tells every older tab on this machine. */
-const BUILD = '2026-09-03.93';
+const BUILD = '2026-09-03.94';
 const newer = (a, b) => { if (!a || !b) return false; const [da, na] = a.split('.'), [db, nb] = b.split('.');
   return da > db || (da === db && (+na || 0) > (+nb || 0)); };
 function showUpdate(build) { $('updateT').textContent = 'A NEW BUILD OF CASEMAKER IS AVAILABLE · ' + build + ' (YOU ARE ON ' + BUILD + ')'; $('update').classList.add('show'); }
