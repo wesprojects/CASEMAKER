@@ -91,7 +91,7 @@ label.f .mm{color:var(--mute);font-size:9px}
 <body>
 <div class="update" id="update"><span id="updateT">A NEW BUILD OF CASEMAKER IS AVAILABLE</span><button class="btn" id="updateGo">RELOAD</button><button class="x" id="updateX" title="Dismiss">✕</button></div>
 <header>
-  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.96 </div></div>
+  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.98 </div></div>
   <input class="job" id="job" value="MODEL NUMBER">
   <input class="job" id="friendly" placeholder="PRODUCT NAME" style="width:150px">
   <select id="preset"><option value="">SAMPLE PRODUCTS</option></select>
@@ -3290,13 +3290,17 @@ function drawParts() {
 }
 /* one part, finished size, drawn from its own corner: outline, groove, label */
 function dxfPart(p) {
-  const L = [], w = (c, v) => L.push(c, v), layers = [...new Set(['OUTLINE', 'TEXT', 'GROOVE', ...(p.holes || []).map(holeLayer), ...(p.lines || []).map(l => l.layer)])];
+  const c1 = cnc1DrilledSet(p.name, p.holes);
+  const L = [], w = (c, v) => L.push(c, v), layers = [...new Set(['OUTLINE', 'TEXT', 'GROOVE', ...(p.holes || []).map(h => holeLayerFor(p.name, p.holes, h, c1)), ...(p.lines || []).map(l => l.layer)])];
   w(0, 'SECTION'); w(2, 'HEADER'); w(9, '$ACADVER'); w(1, 'AC1009');
   w(9, '$EXTMIN'); w(10, 0); w(20, 0); w(30, 0); w(9, '$EXTMAX'); w(10, p.w.toFixed(4)); w(20, (p.h + 1).toFixed(4)); w(30, 0); w(0, 'ENDSEC');
   w(0, 'SECTION'); w(2, 'TABLES'); w(0, 'TABLE'); w(2, 'LAYER'); w(70, layers.length);
-  layers.forEach((l, k) => { w(0, 'LAYER'); w(2, l); w(70, 0); w(62, [7, 8, 5][k] || 3); w(6, 'CONTINUOUS'); });
+  layers.forEach((l, k) => { w(0, 'LAYER'); w(2, l); w(70, 0); w(62, layerColor(l, k, [7, 8, 5])); w(6, 'CONTINUOUS'); });
   w(0, 'ENDTAB'); w(0, 'ENDSEC'); w(0, 'SECTION'); w(2, 'ENTITIES');
-  (p.holes || []).forEach(h => { w(0, 'CIRCLE'); w(8, holeLayer(h)); w(10, h.x.toFixed(4)); w(20, h.y.toFixed(4)); w(30, 0); w(40, (h.d / 2).toFixed(4)); });   // edge holes drawn on the edge line at their spot
+  if (c1.size) { const ys = [...c1].map(h => h.y), xs = [...c1].map(h => h.x);                 // one label beside the row
+    w(0, 'TEXT'); w(8, CNC1_LAYER); w(10, (Math.max(...xs) + 0.6).toFixed(4)); w(20, (Math.min(...ys) - 0.12).toFixed(4)); w(30, 0); w(40, 0.25);
+    w(1, ascii7('DRILLED ON CNC #1 - DO NOT PROGRAM')); }
+  (p.holes || []).forEach(h => { w(0, 'CIRCLE'); w(8, holeLayerFor(p.name, p.holes, h, c1)); w(10, h.x.toFixed(4)); w(20, h.y.toFixed(4)); w(30, 0); w(40, (h.d / 2).toFixed(4)); });   // edge holes drawn on the edge line at their spot
   (p.lines || []).forEach(l => { w(0, 'LINE'); w(8, l.layer); w(10, l.x1.toFixed(4)); w(20, l.y1.toFixed(4)); w(30, 0); w(11, l.x2.toFixed(4)); w(21, l.y2.toFixed(4)); w(31, 0); });
   w(0, 'POLYLINE'); w(8, 'OUTLINE'); w(66, 1); w(70, 1); w(10, 0); w(20, 0); w(30, 0);
   [[0, 0], [p.w, 0], [p.w, p.h], [0, p.h]].forEach(([x, y]) => { w(0, 'VERTEX'); w(8, 'OUTLINE'); w(10, x.toFixed(4)); w(20, y.toFixed(4)); w(30, 0); });
@@ -3327,7 +3331,7 @@ const EXP = { nest: { proto: false, shelfEdgeT: 2, shelfPre: 0.5, kickEdge: true
                       case: { sheet: '48,96', gap: 0.5, margin: 0.25, grain: 'match' },
                       box:  { sheet: '48,96', gap: 0.25, margin: 0.25, grain: 'any' },
                       slot: { sheet: '48,96', gap: 0.25, margin: 0.25, grain: 'any' } },
-              drill: { maxBore: 0.5, faceCam: 'T4', faceDowel: 'T10', edge: 'T9' },
+              drill: { maxBore: 0.5, faceCam: 'T4', faceDowel: 'T10', edge: 'T9', safeZ: 4, vacX: 26 },
               three: { format: 'dae', units: 'in', faces: true, hw: true, finish: false },
               assy: { spare: 0, dims: false } };
 function download(name, data, type) {                                          // straight to the browser's download folder
@@ -3338,7 +3342,7 @@ function download(name, data, type) {                                          /
 /* machine files carry 7-bit ASCII only: AutoCAD's DXFIN pages an error per
    non-ASCII TEXT ("press ENTER to continue"), and the OSAI dislikes them too */
 const ascii7 = s2 => String(s2).replace(/\u00b7/g, '-').replace(/\u2033/g, '"').replace(/\u2019/g, "'").replace(/[^\x20-\x7e]/g, '');
-const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.96'.slice(0, 10);
+const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.98'.slice(0, 10);
 
 function openFlyout(which) {
   UI.fly = which;
@@ -3397,6 +3401,10 @@ function openFlyout(which) {
       '<label class="f">FACE 3/8<input value="' + EXP.drill.faceCam + '" id="dCam"></label>' +
       '<label class="f">FACE DOWEL<input value="' + EXP.drill.faceDowel + '" id="dDow"></label></div></div>' +
       '<div class="grp">' + num('MAX BORE ON CNC #1', 'dMax', EXP.drill.maxBore, 0.0625) + '</div>' +
+      '<div class="grp"><div class="t">MACHINE</div><div class="row">' +
+        num('SAFE Z ABOVE PANEL', 'dSafeZ', EXP.drill.safeZ != null ? EXP.drill.safeZ : 4, 0.5) +
+        num('VACUUM ZONE 1 ACROSS X', 'dVacX', EXP.drill.vacX != null ? EXP.drill.vacX : 26, 0.5) + '</div>' +
+      '<div style="color:var(--mute);font-size:9.5px;margin-top:5px">ZONE 2 (M606) ONLY WHEN THE PANEL RUNS PAST ZONE 1 ACROSS X.</div></div>' +
       '<div class="grp"><div class="t">PARTS</div>' + drillable.map((p, i) =>
         '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line)">' +
         '<span style="flex:1;font-size:10px">' + p.name + ' \u00d7 ' + p.qty + '</span>' +
@@ -3405,7 +3413,9 @@ function openFlyout(which) {
         '<button class="btn sm" data-dtp="' + i + '">TOOLPATH</button></div>').join('') + '</div>' +
       '';
     foot.innerHTML = '<div style="display:flex;gap:10px"><button class="btn on" id="fyGo">CNC #1 FILES</button><button class="btn on" id="fyCs">CUTSHEETS</button></div>';
-    const readOpts = () => { EXP.drill = { edge: $('dEdge').value, faceCam: $('dCam').value, faceDowel: $('dDow').value, maxBore: +$('dMax').value }; };
+    const readOpts = () => { EXP.drill = { edge: $('dEdge').value, faceCam: $('dCam').value, faceDowel: $('dDow').value, maxBore: +$('dMax').value,
+      safeZ: +$('dSafeZ').value || 4, vacX: +$('dVacX').value || 26 }; };
+    ['dSafeZ', 'dVacX', 'dMax'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', readOpts); });
     $('fyGo').onclick = () => { readOpts();
       drillable.map(p => ({ name: stamp() + '_' + p.name.replace(/[^A-Za-z0-9]+/g, '') + '.nc', text: ncFor(p) }))
         .forEach((f, i) => setTimeout(() => download(f.name, f.text, 'text/plain'), i * 300));
@@ -3852,12 +3862,12 @@ async function buildInstructions() {
   };
   const flatBox = flatBoxF(false);
   const lift = Math.max(2, M.H * 0.08);
-  const dstr = '2026-09-03.96'.slice(0, 10);
+  const dstr = '2026-09-03.98'.slice(0, 10);
   const stepsPerPage = 4; const totalPages = 1 + Math.ceil(plan.length / stepsPerPage);
   const header = pg => { pdf.page(); const lh = 34, lw = lh * logo.width / logo.height; pdf.image(logo, MG, MG, lw, lh);
     pdf.text(PW - MG, MG + 12, 'Assembly Instructions', 13, true, 'right'); pdf.text(PW - MG, MG + 30, 'MODEL NO.: ' + modelNo, 15, true, 'right');
     pdf.line(MG, MG + 44, PW - MG, MG + 44, 1.4); pdf.text(PW / 2, MG + 64, ((M.friendly || '').trim() || title), 18, true, 'center'); pdf.text(PW - MG, MG + 64, dstr, 8, false, 'right');
-    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.96', 7, false, 'right', 0.4); return MG + 76; };
+    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.98', 7, false, 'right', 0.4); return MG + 76; };
   let y = header(1);
   const cw = CW / hw.length, rowH = 78; pdf.rect(MG, y, CW, rowH, { lw: 0.9 });
   hw.forEach((r, i) => { const x = MG + i * cw; if (i) pdf.line(x, y, x, y + rowH, 0.9); pdf.rect(x, y, cw, 14, { fill: 0.9 }); pdf.text(x + cw / 2, y + 10, r.code, 8, true, 'center');
@@ -4029,8 +4039,22 @@ function cnc1Params(p) {
   const J = M.opt.joinery || JOINERY, maxB = EXP.drill.maxBore, tol = 0.02, r = v => Math.round(v * 10000) / 10000;
   const faceDown = p.name === 'BACK PANEL';                                   // v1: its cams sit on the hidden outside face
   const ctr = Math.min(J.ctr, p.t / 2), drillZ = faceDown ? r(ctr) : r(p.t - ctr);
+  /* Load orientation. The standard load is turned 90 left from the drawing: the drawing's
+     width runs down Y (the long axis of vacuum zone 1) and its height runs across X.
+     A panel drawn taller than it is wide (a back panel on a tall, narrow case) would put
+     its LONG side across X and spill off zone 1 - so those load UPRIGHT instead: width
+     across X, height down Y. Machine planes are by position: FRONT = min Y, BACK = max Y,
+     LEFT = min X, RIGHT = max X. */
+  const vacX = EXP.drill.vacX > 0 ? EXP.drill.vacX : 26;
+  const upright = p.h > vacX && p.w <= vacX;
   const rot = h => { const x = faceDown ? r(p.w - h.x) : h.x;
     const atL = faceDown ? h.x >= p.w - tol : h.x <= tol, atR = faceDown ? h.x <= tol : h.x >= p.w - tol;
+    if (upright) {
+      if (h.y <= tol) return { plane: 'FRONT', pos: r(x) };
+      if (h.y >= p.h - tol) return { plane: 'BACK', pos: r(x) };
+      if (atL) return { plane: 'LEFT', pos: r(h.y) };
+      if (atR) return { plane: 'RIGHT', pos: r(h.y) };
+      return null; }
     if (h.y <= tol) return { plane: 'RIGHT', pos: r(x) };
     if (h.y >= p.h - tol) return { plane: 'LEFT', pos: r(x) };
     if (atL) return { plane: 'FRONT', pos: r(p.h - h.y) };
@@ -4049,29 +4073,32 @@ function cnc1Params(p) {
     const cand = p.holes.filter(h => !h.edge && (h.type === 'PIN' || h.type === 'DOWEL') && h.d <= maxB && (!!h.under !== upIsShown));
     if (cand.length) { const yBot = Math.min(...cand.map(h => h.y));                // the bottom-panel row is the lowest one on the back
       cand.filter(h => Math.abs(h.y - yBot) <= tol)
-        .forEach(h => faceHoles.push({ x: r(p.h - h.y), y: r(faceDown ? p.w - h.x : h.x), t: h.type === 'DOWEL' ? 'dowel' : 'cam' })); } }
+        .forEach(h => faceHoles.push(upright ? { x: r(faceDown ? p.w - h.x : h.x), y: r(h.y), t: h.type === 'DOWEL' ? 'dowel' : 'cam' }
+                                             : { x: r(p.h - h.y), y: r(faceDown ? p.w - h.x : h.x), t: h.type === 'DOWEL' ? 'dowel' : 'cam' })); } }
   if (!Object.values(holes).some(a => a.length) && !faceHoles.length) return null;
   Object.values(holes).forEach(a => a.sort((x, y) => (typeof x === 'object' ? x.p : x) - (typeof y === 'object' ? y.p : y)));
   return { jobName: (M.job || 'CASE') + '_' + p.name.replace(/[^A-Za-z0-9]+/g, ''), jobLocation: '', qty: p.qty,
     toolOffset: 3.484252, bitOffset: 1.5, slot2Offset: 0, totalOffset: 3.484252 + 1.5,      // exactly toolOffset + bitOffset, unrounded - the approach math prints 5 places
-    panelWidth: r(p.h), panelLength: r(p.w), thickness: p.t, zOverride: drillZ,
+    panelWidth: r(upright ? p.w : p.h), panelLength: r(upright ? p.h : p.w), thickness: p.t, zOverride: drillZ,
     holeDepth: r((J.pinEZ && J.pinEZ > 0) ? J.pinEZ : J.inset + 0.1181), holeDepthDowel: r(J.dowEZ),
-    retract: 0.5, safeZ: 2, spindle: 6000, feedIn: 100, feedOut: 500, tool: +String(EXP.drill.edge).replace(/\D/g, '') || 9, origin: 9, parkY: 75, dropDustHood: false,
-    vacZone1: true, vacZone2: r(p.h) > 24,
+    retract: 0.5, safeZ: (EXP.drill.safeZ > 0 ? EXP.drill.safeZ : 4), spindle: 6000, feedIn: 100, feedOut: 500, tool: +String(EXP.drill.edge).replace(/\D/g, '') || 9, origin: 9, parkY: 75, dropDustHood: false,
+    vacZone1: true, vacZone2: r(upright ? p.w : p.h) > vacX,                  // zone 1 covers 4 ft up Y and ~26 in across X; zone 2 only past that
     faceCam: { tool: String(EXP.drill.faceCam).replace(/\D/g, '') || '4', rpm: '16000', feed: '210', depth: r(p.t - J.pinFZ) },
     faceDowel: { tool: String(EXP.drill.faceDowel).replace(/\D/g, '') || '10', rpm: '18000', feed: '190', depth: r(p.t - J.dowFZ) },
-    faceHoles, holes, _faceDown: faceDown, _ctr: ctr };
+    faceHoles, holes, _faceDown: faceDown, _ctr: ctr, _upright: upright };
 }
 function ncFor(p) {
   const P = cnc1Params(p); if (!P) return '';
   const J = M.opt.joinery || JOINERY, maxB = EXP.drill.maxBore;
   const r = cnc1Program(P), code = Array.isArray(r.code) ? r.code.join('\n') : String(r.code || '');
   const head = [];
-  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.96 - ' + p.name + ' x' + p.qty);
+  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.98 - ' + p.name + ' x' + p.qty);
   head.push(';STOCK ' + p.t + '" - HOLE CENTERLINE ' + r3(P._ctr) + '" FROM THE CAM FACE');
   head.push(';PANEL LIES CAM FACE ' + (P._faceDown ? 'DOWN' : 'UP') + ': Z DEPTH OVERRIDE ' + P.zOverride + '" OFF THE TABLE');
-  head.push(';LOAD TURNED 90 LEFT FROM THE DRAWING: ' + r3(p.w) + '" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ' + r3(p.h) + '" ACROSS X');
-  head.push(';VACUUM: ZONE 1 (M604)' + (P.vacZone2 ? ' + ZONE 2 (M606) - PANEL IS ' + r3(p.h) + '" ACROSS X, PAST 24"' : ' ONLY'));
+  head.push(P._upright ? ';LOAD UPRIGHT AS DRAWN: ' + r3(p.h) + '" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ' + r3(p.w) + '" ACROSS X'
+                       : ';LOAD TURNED 90 LEFT FROM THE DRAWING: ' + r3(p.w) + '" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ' + r3(p.h) + '" ACROSS X');
+  head.push(';VACUUM: ZONE 1 (M604)' + (P.vacZone2 ? ' + ZONE 2 (M606) - PANEL IS ' + r3(P.panelWidth) + '" ACROSS X, PAST ' + r3(EXP.drill.vacX > 0 ? EXP.drill.vacX : 26) + '"' : ' ONLY - PANEL IS ' + r3(P.panelWidth) + '" ACROSS X'));
+  head.push(';SAFE Z BETWEEN PLANES: ' + r3(P.safeZ) + '" ABOVE THE PANEL (Z' + r3(p.t + P.safeZ) + ')');
   const miss = [];
   const cnt = t => p.holes.filter(h => h.type === t).length;
   if (cnt('CAM')) miss.push(cnt('CAM') + 'x CAM BORE ' + r3(J.camD) + '" (' + Math.round(J.camD * MM) + ' mm)');
@@ -4115,16 +4142,26 @@ function nestParts(o, pick) {
   return sheets;
 }
 /* R12 DXF: POLYLINE outlines, LINE grooves, TEXT labels. Layer count written from the real table. */
+const CNC1_LAYER = 'DRILLED_ON_CNC1';                                          // grey, labelled: already in the CNC #1 program, do not re-program
+function cnc1DrilledSet(name, holes) {                                         // the back panel's bottom row - same rule as cnc1Params
+  if (name !== 'BACK PANEL' || !holes) return new Set();
+  const maxB = EXP.drill.maxBore, cand = holes.filter(h => !h.edge && (h.type === 'PIN' || h.type === 'DOWEL') && h.d <= maxB && h.under);
+  if (!cand.length) return new Set();
+  const yBot = Math.min(...cand.map(h => h.y));
+  return new Set(cand.filter(h => Math.abs(h.y - yBot) <= 0.02));
+}
 const holeLayer = h => (h.type === 'SHELFPIN' ? 'SHELFPIN' : h.type === 'HINGE' ? 'HINGE_CUP' : h.type === 'SCREW' ? 'HINGE_SCREW' : h.type) +
   '_D' + Math.round(h.d * MM) + (h.edge ? '_EDGE' : '') + (h.under ? '_FARFACE' : '');
+const holeLayerFor = (name, holes, h, set) => (set || cnc1DrilledSet(name, holes)).has(h) ? CNC1_LAYER : holeLayer(h);
+const layerColor = (l, k, table) => l === CNC1_LAYER ? 8 : (table[k] || 3);   // ACI 8 = grey
 function dxfSheet(sh, i, n, o, tag) {
   const L = [], w = (c, v) => L.push(c, v);
-  const layers = [...new Set(['OUTLINE', 'SHEET', 'TEXT', 'GROOVE', ...sh.items.flatMap(it => it.holes.filter(h => !h.edge).map(holeLayer)), ...sh.items.flatMap(it => it.lines.map(l => l.layer))])];
+  const layers = [...new Set(['OUTLINE', 'SHEET', 'TEXT', 'GROOVE', ...sh.items.flatMap(it => { const c1 = cnc1DrilledSet(it.name, it.holes); return it.holes.filter(h => !h.edge).map(h => holeLayerFor(it.name, it.holes, h, c1)); }), ...sh.items.flatMap(it => it.lines.map(l => l.layer))])];
   w(0, 'SECTION'); w(2, 'HEADER'); w(9, '$ACADVER'); w(1, 'AC1009');
   w(9, '$EXTMIN'); w(10, 0); w(20, 0); w(30, 0); w(9, '$EXTMAX'); w(10, sh.L.toFixed(4)); w(20, (sh.W + 2).toFixed(4)); w(30, 0);
   w(0, 'ENDSEC');
   w(0, 'SECTION'); w(2, 'TABLES'); w(0, 'TABLE'); w(2, 'LAYER'); w(70, layers.length);
-  layers.forEach((l, k) => { w(0, 'LAYER'); w(2, l); w(70, 0); w(62, [7, 8, 8, 5][k] || 3); w(6, 'CONTINUOUS'); });
+  layers.forEach((l, k) => { w(0, 'LAYER'); w(2, l); w(70, 0); w(62, layerColor(l, k, [7, 8, 8, 5])); w(6, 'CONTINUOUS'); });
   w(0, 'ENDTAB'); w(0, 'ENDSEC'); w(0, 'SECTION'); w(2, 'ENTITIES');
   const circle = (lay, x, y, d) => { w(0, 'CIRCLE'); w(8, lay); w(10, x.toFixed(4)); w(20, y.toFixed(4)); w(30, 0); w(40, (d / 2).toFixed(4)); };
   const rect = (lay, x, y, a, b) => { w(0, 'POLYLINE'); w(8, lay); w(66, 1); w(70, 1); w(10, 0); w(20, 0); w(30, 0);
@@ -4136,7 +4173,10 @@ function dxfSheet(sh, i, n, o, tag) {
   text('TEXT', 0.5, sh.W + 0.5, 1, (tag || 'CASE') + ' SHEET ' + (i + 1) + ' of ' + n + (EXP.nest.proto ? '  PROTOTYPE - TRUE SIZE - NO EDGE' : '  SHELF EDGE ' + EXP.nest.shelfEdgeT + 'MM PM ' + EXP.nest.shelfPre + (EXP.nest.kickEdge === false ? '  KICK EDGE OFF' : '  KICK EDGE ' + EXP.nest.kickEdgeT + 'MM PM ' + EXP.nest.kickPre)) + '  ' + sh.W + ' x ' + sh.L + '  ' + (M.job || '') + (o.grain === 'match' ? '  GRAIN RUNS WITH THE SHEET LENGTH' : ''));
   sh.items.forEach(it => { rect('OUTLINE', it.x, it.y, it.a, it.b);
     const map = (x, y) => it.rot ? [it.x + (it.h - y), it.y + x] : [it.x + x, it.y + y];   // a rotated part turns 90° on the sheet
-    it.holes.filter(h => !h.edge).forEach(h => { const [hx, hy] = map(h.x, h.y); circle(holeLayer(h), hx, hy, h.d); });
+    const c1 = cnc1DrilledSet(it.name, it.holes);
+    it.holes.filter(h => !h.edge).forEach(h => { const [hx, hy] = map(h.x, h.y); circle(holeLayerFor(it.name, it.holes, h, c1), hx, hy, h.d); });
+    if (c1.size) { const [lx, ly] = map(Math.max(...[...c1].map(h => h.x)) + 0.6, Math.min(...[...c1].map(h => h.y)) - 0.12);
+      text(CNC1_LAYER, lx, ly, 0.25, 'DRILLED ON CNC #1 - DO NOT PROGRAM'); }
     it.lines.forEach(l => { const [x1, y1] = map(l.x1, l.y1), [x2, y2] = map(l.x2, l.y2); line('GROOVE', x1, y1, x2, y2); });
     if (it.groove != null && !it.lines.length) line('GROOVE', it.x, it.y + it.groove, it.x + it.a, it.y + it.groove);
     text('TEXT', it.x + 0.3, it.y + 0.3, Math.min(0.6, it.b / 4), it.name + '  ' + it.a.toFixed(4) + ' x ' + it.b.toFixed(4)); });
@@ -4978,8 +5018,8 @@ $('newBtn').onclick = () => { M = newCase(); HIST.past = []; HIST.future = []; H
 $('job').onchange = () => { M.job = $('job').value; };
 $('friendly').onchange = () => { M.friendly = $('friendly').value; };
 $('saveBtn').onclick = () => {
-  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.96', saved: new Date().toISOString(), model: M };
-  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.96'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
+  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.98', saved: new Date().toISOString(), model: M };
+  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.98'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
 $('loadBtn').onclick = () => $('loadFile').click();
 $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
   f.text().then(t => { try { const d = JSON.parse(t); if (d.format !== 'CASEMAKER') throw new Error('not a CASEMAKER file');
@@ -4990,7 +5030,7 @@ $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
    Served over http: the page re-reads itself every minute and compares build stamps.
    Opened from a file: the browser blocks reading files, so tabs tell each other instead -
    opening a newer build in any tab tells every older tab on this machine. */
-const BUILD = '2026-09-03.96';
+const BUILD = '2026-09-03.98';
 const newer = (a, b) => { if (!a || !b) return false; const [da, na] = a.split('.'), [db, nb] = b.split('.');
   return da > db || (da === db && (+na || 0) > (+nb || 0)); };
 function showUpdate(build) { $('updateT').textContent = 'A NEW BUILD OF CASEMAKER IS AVAILABLE · ' + build + ' (YOU ARE ON ' + BUILD + ')'; $('update').classList.add('show'); }
