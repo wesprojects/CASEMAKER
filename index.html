@@ -91,7 +91,7 @@ label.f .mm{color:var(--mute);font-size:9px}
 <body>
 <div class="update" id="update"><span id="updateT">A NEW BUILD OF CASEMAKER IS AVAILABLE</span><button class="btn" id="updateGo">RELOAD</button><button class="x" id="updateX" title="Dismiss">✕</button></div>
 <header>
-  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.98 </div></div>
+  <div><h1>CASEMAKER</h1><div class="build">BUILD 2026-09-03.99 </div></div>
   <input class="job" id="job" value="MODEL NUMBER">
   <input class="job" id="friendly" placeholder="PRODUCT NAME" style="width:150px">
   <select id="preset"><option value="">SAMPLE PRODUCTS</option></select>
@@ -3331,7 +3331,7 @@ const EXP = { nest: { proto: false, shelfEdgeT: 2, shelfPre: 0.5, kickEdge: true
                       case: { sheet: '48,96', gap: 0.5, margin: 0.25, grain: 'match' },
                       box:  { sheet: '48,96', gap: 0.25, margin: 0.25, grain: 'any' },
                       slot: { sheet: '48,96', gap: 0.25, margin: 0.25, grain: 'any' } },
-              drill: { maxBore: 0.5, faceCam: 'T4', faceDowel: 'T10', edge: 'T9', safeZ: 4, vacX: 26 },
+              drill: { maxBore: 0.5, faceCam: 'T4', faceDowel: 'T10', edge: 'T9', safeZ: 4, vacX: 30, vacY: 50 },
               three: { format: 'dae', units: 'in', faces: true, hw: true, finish: false },
               assy: { spare: 0, dims: false } };
 function download(name, data, type) {                                          // straight to the browser's download folder
@@ -3342,7 +3342,7 @@ function download(name, data, type) {                                          /
 /* machine files carry 7-bit ASCII only: AutoCAD's DXFIN pages an error per
    non-ASCII TEXT ("press ENTER to continue"), and the OSAI dislikes them too */
 const ascii7 = s2 => String(s2).replace(/\u00b7/g, '-').replace(/\u2033/g, '"').replace(/\u2019/g, "'").replace(/[^\x20-\x7e]/g, '');
-const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.98'.slice(0, 10);
+const stamp = () => (M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.99'.slice(0, 10);
 
 function openFlyout(which) {
   UI.fly = which;
@@ -3403,8 +3403,9 @@ function openFlyout(which) {
       '<div class="grp">' + num('MAX BORE ON CNC #1', 'dMax', EXP.drill.maxBore, 0.0625) + '</div>' +
       '<div class="grp"><div class="t">MACHINE</div><div class="row">' +
         num('SAFE Z ABOVE PANEL', 'dSafeZ', EXP.drill.safeZ != null ? EXP.drill.safeZ : 4, 0.5) +
-        num('VACUUM ZONE 1 ACROSS X', 'dVacX', EXP.drill.vacX != null ? EXP.drill.vacX : 26, 0.5) + '</div>' +
-      '<div style="color:var(--mute);font-size:9.5px;margin-top:5px">ZONE 2 (M606) ONLY WHEN THE PANEL RUNS PAST ZONE 1 ACROSS X.</div></div>' +
+        num('VACUUM ZONE 1 ACROSS X', 'dVacX', EXP.drill.vacX != null ? EXP.drill.vacX : 30, 0.5) +
+        num('VACUUM ZONE 1 DOWN Y', 'dVacY', EXP.drill.vacY != null ? EXP.drill.vacY : 50, 0.5) + '</div>' +
+      '<div style="color:var(--mute);font-size:9.5px;margin-top:5px">ZONE 2 (M606) ONLY WHEN THE PANEL RUNS PAST ZONE 1 IN EITHER DIRECTION.</div></div>' +
       '<div class="grp"><div class="t">PARTS</div>' + drillable.map((p, i) =>
         '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line)">' +
         '<span style="flex:1;font-size:10px">' + p.name + ' \u00d7 ' + p.qty + '</span>' +
@@ -3414,8 +3415,8 @@ function openFlyout(which) {
       '';
     foot.innerHTML = '<div style="display:flex;gap:10px"><button class="btn on" id="fyGo">CNC #1 FILES</button><button class="btn on" id="fyCs">CUTSHEETS</button></div>';
     const readOpts = () => { EXP.drill = { edge: $('dEdge').value, faceCam: $('dCam').value, faceDowel: $('dDow').value, maxBore: +$('dMax').value,
-      safeZ: +$('dSafeZ').value || 4, vacX: +$('dVacX').value || 26 }; };
-    ['dSafeZ', 'dVacX', 'dMax'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', readOpts); });
+      safeZ: +$('dSafeZ').value || 4, vacX: +$('dVacX').value || 30, vacY: +$('dVacY').value || 50 }; };
+    ['dSafeZ', 'dVacX', 'dVacY', 'dMax'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', readOpts); });
     $('fyGo').onclick = () => { readOpts();
       drillable.map(p => ({ name: stamp() + '_' + p.name.replace(/[^A-Za-z0-9]+/g, '') + '.nc', text: ncFor(p) }))
         .forEach((f, i) => setTimeout(() => download(f.name, f.text, 'text/plain'), i * 300));
@@ -3862,12 +3863,12 @@ async function buildInstructions() {
   };
   const flatBox = flatBoxF(false);
   const lift = Math.max(2, M.H * 0.08);
-  const dstr = '2026-09-03.98'.slice(0, 10);
+  const dstr = '2026-09-03.99'.slice(0, 10);
   const stepsPerPage = 4; const totalPages = 1 + Math.ceil(plan.length / stepsPerPage);
   const header = pg => { pdf.page(); const lh = 34, lw = lh * logo.width / logo.height; pdf.image(logo, MG, MG, lw, lh);
     pdf.text(PW - MG, MG + 12, 'Assembly Instructions', 13, true, 'right'); pdf.text(PW - MG, MG + 30, 'MODEL NO.: ' + modelNo, 15, true, 'right');
     pdf.line(MG, MG + 44, PW - MG, MG + 44, 1.4); pdf.text(PW / 2, MG + 64, ((M.friendly || '').trim() || title), 18, true, 'center'); pdf.text(PW - MG, MG + 64, dstr, 8, false, 'right');
-    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.98', 7, false, 'right', 0.4); return MG + 76; };
+    pdf.text(MG, PH - MG + 8, 'SHEET ' + pg + ' OF ' + totalPages, 7, false, 'left', 0.4); pdf.text(PW - MG, PH - MG + 8, 'CASEMAKER 2026-09-03.99', 7, false, 'right', 0.4); return MG + 76; };
   let y = header(1);
   const cw = CW / hw.length, rowH = 78; pdf.rect(MG, y, CW, rowH, { lw: 0.9 });
   hw.forEach((r, i) => { const x = MG + i * cw; if (i) pdf.line(x, y, x, y + rowH, 0.9); pdf.rect(x, y, cw, 14, { fill: 0.9 }); pdf.text(x + cw / 2, y + 10, r.code, 8, true, 'center');
@@ -4045,7 +4046,7 @@ function cnc1Params(p) {
      its LONG side across X and spill off zone 1 - so those load UPRIGHT instead: width
      across X, height down Y. Machine planes are by position: FRONT = min Y, BACK = max Y,
      LEFT = min X, RIGHT = max X. */
-  const vacX = EXP.drill.vacX > 0 ? EXP.drill.vacX : 26;
+  const vacX = EXP.drill.vacX > 0 ? EXP.drill.vacX : 30, vacY = EXP.drill.vacY > 0 ? EXP.drill.vacY : 50;
   const upright = p.h > vacX && p.w <= vacX;
   const rot = h => { const x = faceDown ? r(p.w - h.x) : h.x;
     const atL = faceDown ? h.x >= p.w - tol : h.x <= tol, atR = faceDown ? h.x <= tol : h.x >= p.w - tol;
@@ -4082,7 +4083,7 @@ function cnc1Params(p) {
     panelWidth: r(upright ? p.w : p.h), panelLength: r(upright ? p.h : p.w), thickness: p.t, zOverride: drillZ,
     holeDepth: r((J.pinEZ && J.pinEZ > 0) ? J.pinEZ : J.inset + 0.1181), holeDepthDowel: r(J.dowEZ),
     retract: 0.5, safeZ: (EXP.drill.safeZ > 0 ? EXP.drill.safeZ : 4), spindle: 6000, feedIn: 100, feedOut: 500, tool: +String(EXP.drill.edge).replace(/\D/g, '') || 9, origin: 9, parkY: 75, dropDustHood: false,
-    vacZone1: true, vacZone2: r(upright ? p.w : p.h) > vacX,                  // zone 1 covers 4 ft up Y and ~26 in across X; zone 2 only past that
+    vacZone1: true, vacZone2: r(upright ? p.w : p.h) > vacX || r(upright ? p.h : p.w) > vacY,   // zone 1: 30 in across X, 50 in down Y; zone 2 only past either
     faceCam: { tool: String(EXP.drill.faceCam).replace(/\D/g, '') || '4', rpm: '16000', feed: '210', depth: r(p.t - J.pinFZ) },
     faceDowel: { tool: String(EXP.drill.faceDowel).replace(/\D/g, '') || '10', rpm: '18000', feed: '190', depth: r(p.t - J.dowFZ) },
     faceHoles, holes, _faceDown: faceDown, _ctr: ctr, _upright: upright };
@@ -4092,12 +4093,14 @@ function ncFor(p) {
   const J = M.opt.joinery || JOINERY, maxB = EXP.drill.maxBore;
   const r = cnc1Program(P), code = Array.isArray(r.code) ? r.code.join('\n') : String(r.code || '');
   const head = [];
-  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.98 - ' + p.name + ' x' + p.qty);
+  head.push(';EXPORTED FROM CASEMAKER 2026-09-03.99 - ' + p.name + ' x' + p.qty);
   head.push(';STOCK ' + p.t + '" - HOLE CENTERLINE ' + r3(P._ctr) + '" FROM THE CAM FACE');
   head.push(';PANEL LIES CAM FACE ' + (P._faceDown ? 'DOWN' : 'UP') + ': Z DEPTH OVERRIDE ' + P.zOverride + '" OFF THE TABLE');
   head.push(P._upright ? ';LOAD UPRIGHT AS DRAWN: ' + r3(p.h) + '" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ' + r3(p.w) + '" ACROSS X'
                        : ';LOAD TURNED 90 LEFT FROM THE DRAWING: ' + r3(p.w) + '" LONG SIDE RUNS DOWN Y (VACUUM ZONE), ' + r3(p.h) + '" ACROSS X');
-  head.push(';VACUUM: ZONE 1 (M604)' + (P.vacZone2 ? ' + ZONE 2 (M606) - PANEL IS ' + r3(P.panelWidth) + '" ACROSS X, PAST ' + r3(EXP.drill.vacX > 0 ? EXP.drill.vacX : 26) + '"' : ' ONLY - PANEL IS ' + r3(P.panelWidth) + '" ACROSS X'));
+  { const vx = EXP.drill.vacX > 0 ? EXP.drill.vacX : 30, vy = EXP.drill.vacY > 0 ? EXP.drill.vacY : 50;
+    head.push(';VACUUM: ZONE 1 (M604)' + (P.vacZone2 ? ' + ZONE 2 (M606) - PANEL IS ' + r3(P.panelWidth) + '" ACROSS X x ' + r3(P.panelLength) + '" DOWN Y, PAST ZONE 1 (' + r3(vx) + '" X / ' + r3(vy) + '" Y)'
+                                                      : ' ONLY - PANEL IS ' + r3(P.panelWidth) + '" ACROSS X x ' + r3(P.panelLength) + '" DOWN Y')); }
   head.push(';SAFE Z BETWEEN PLANES: ' + r3(P.safeZ) + '" ABOVE THE PANEL (Z' + r3(p.t + P.safeZ) + ')');
   const miss = [];
   const cnt = t => p.holes.filter(h => h.type === t).length;
@@ -5018,8 +5021,8 @@ $('newBtn').onclick = () => { M = newCase(); HIST.past = []; HIST.future = []; H
 $('job').onchange = () => { M.job = $('job').value; };
 $('friendly').onchange = () => { M.friendly = $('friendly').value; };
 $('saveBtn').onclick = () => {
-  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.98', saved: new Date().toISOString(), model: M };
-  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.98'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
+  const doc = { format: 'CASEMAKER', version: 1, build: '2026-09-03.99', saved: new Date().toISOString(), model: M };
+  download((M.job || 'CASE').replace(/\s+/g, '_') + '_' + '2026-09-03.99'.slice(0, 10) + '.casemaker2', JSON.stringify(doc), 'application/json'); };
 $('loadBtn').onclick = () => $('loadFile').click();
 $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
   f.text().then(t => { try { const d = JSON.parse(t); if (d.format !== 'CASEMAKER') throw new Error('not a CASEMAKER file');
@@ -5030,7 +5033,7 @@ $('loadFile').onchange = e => { const f = e.target.files[0]; if (!f) return;
    Served over http: the page re-reads itself every minute and compares build stamps.
    Opened from a file: the browser blocks reading files, so tabs tell each other instead -
    opening a newer build in any tab tells every older tab on this machine. */
-const BUILD = '2026-09-03.98';
+const BUILD = '2026-09-03.99';
 const newer = (a, b) => { if (!a || !b) return false; const [da, na] = a.split('.'), [db, nb] = b.split('.');
   return da > db || (da === db && (+na || 0) > (+nb || 0)); };
 function showUpdate(build) { $('updateT').textContent = 'A NEW BUILD OF CASEMAKER IS AVAILABLE · ' + build + ' (YOU ARE ON ' + BUILD + ')'; $('update').classList.add('show'); }
